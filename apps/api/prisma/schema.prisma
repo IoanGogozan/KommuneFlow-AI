@@ -59,36 +59,38 @@ enum AITriageStatus {
 }
 
 model Tenant {
-  id              String           @id @default(cuid())
-  name            String
-  slug            String           @unique
-  primaryLanguage TenantLanguage   @default(nb)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  departments     Department[]
-  users           User[]
-  citizenProfiles CitizenProfile[]
-  cases           Case[]
-  auditEvents     AuditEvent[]
-  internalNotes   InternalNote[]
-  documents       CaseDocument[]
-  aiTriageResults AITriageResult[]
-  aiReviews       AIReview[]
+  id                      String                   @id @default(cuid())
+  name                    String
+  slug                    String                   @unique
+  primaryLanguage         TenantLanguage           @default(nb)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  departments             Department[]
+  users                   User[]
+  citizenProfiles         CitizenProfile[]
+  cases                   Case[]
+  auditEvents             AuditEvent[]
+  internalNotes           InternalNote[]
+  documents               CaseDocument[]
+  aiTriageResults         AITriageResult[]
+  aiReviews               AIReview[]
+  analyticsDailySnapshots AnalyticsDailySnapshot[]
+  retentionPolicy         RetentionPolicy?
 
   @@map("tenants")
 }
 
 model Department {
-  id          String   @id @default(cuid())
-  tenantId    String
-  name        String
-  slug        String
-  description String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  users       User[]
-  cases       Case[]
+  id                       String           @id @default(cuid())
+  tenantId                 String
+  name                     String
+  slug                     String
+  description              String
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+  tenant                   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users                    User[]
+  cases                    Case[]
   suggestedAITriageResults AITriageResult[]
   approvedAIReviews        AIReview[]
 
@@ -98,23 +100,23 @@ model Department {
 }
 
 model User {
-  id                  String       @id @default(cuid())
-  tenantId            String
-  departmentId        String?
-  email               String       @unique
-  passwordHash        String
-  name                String
-  role                UserRole
-  status              UserStatus   @default(active)
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-  tenant              Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  department          Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  assignedCases       Case[]       @relation("AssignedCases")
-  actorAuditEvents    AuditEvent[] @relation("ActorUserAuditEvents")
-  internalNotes        InternalNote[]
-  uploadedDocuments    CaseDocument[]
-  aiReviews            AIReview[]
+  id                String         @id @default(cuid())
+  tenantId          String
+  departmentId      String?
+  email             String         @unique
+  passwordHash      String
+  name              String
+  role              UserRole
+  status            UserStatus     @default(active)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  department        Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  assignedCases     Case[]         @relation("AssignedCases")
+  actorAuditEvents  AuditEvent[]   @relation("ActorUserAuditEvents")
+  internalNotes     InternalNote[]
+  uploadedDocuments CaseDocument[]
+  aiReviews         AIReview[]
 
   @@index([tenantId])
   @@index([tenantId, departmentId])
@@ -122,17 +124,18 @@ model User {
 }
 
 model CitizenProfile {
-  id               String       @id @default(cuid())
-  tenantId         String
-  name             String
-  email            String
-  phone            String?
-  address          String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  tenant           Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  cases            Case[]
-  actorAuditEvents AuditEvent[] @relation("ActorCitizenAuditEvents")
+  id                String         @id @default(cuid())
+  tenantId          String
+  name              String
+  email             String
+  phone             String?
+  address           String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cases             Case[]
+  actorAuditEvents  AuditEvent[]   @relation("ActorCitizenAuditEvents")
+  uploadedDocuments CaseDocument[]
 
   @@index([tenantId])
   @@index([tenantId, email])
@@ -140,24 +143,24 @@ model CitizenProfile {
 }
 
 model Case {
-  id                   String          @id @default(cuid())
+  id                   String           @id @default(cuid())
   tenantId             String
   citizenProfileId     String
   assignedDepartmentId String?
   assignedUserId       String?
   title                String
   description          String
-  category             CaseCategory    @default(unknown)
-  status               CaseStatus      @default(new)
-  urgency              CaseUrgency     @default(normal)
+  category             CaseCategory     @default(unknown)
+  status               CaseStatus       @default(new)
+  urgency              CaseUrgency      @default(normal)
   sourceLanguage       TenantLanguage
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
   closedAt             DateTime?
-  tenant               Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  citizenProfile       CitizenProfile  @relation(fields: [citizenProfileId], references: [id], onDelete: Restrict)
-  assignedDepartment   Department?     @relation(fields: [assignedDepartmentId], references: [id], onDelete: SetNull)
-  assignedUser         User?           @relation("AssignedCases", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  tenant               Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  citizenProfile       CitizenProfile   @relation(fields: [citizenProfileId], references: [id], onDelete: Restrict)
+  assignedDepartment   Department?      @relation(fields: [assignedDepartmentId], references: [id], onDelete: SetNull)
+  assignedUser         User?            @relation("AssignedCases", fields: [assignedUserId], references: [id], onDelete: SetNull)
   internalNotes        InternalNote[]
   documents            CaseDocument[]
   aiTriageResults      AITriageResult[]
@@ -170,49 +173,52 @@ model Case {
 }
 
 model CaseDocument {
-  id               String   @id @default(cuid())
-  tenantId         String
-  caseId           String
-  uploadedByUserId String
-  originalFileName String
-  storageKey       String   @unique
-  mimeType         String
-  sizeBytes        Int
-  checksumSha256   String
-  isSensitive      Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  deletedAt        DateTime?
-  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  case             Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  uploadedBy       User     @relation(fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+  id                         String          @id @default(cuid())
+  tenantId                   String
+  caseId                     String
+  uploadedByUserId           String?
+  uploadedByCitizenProfileId String?
+  originalFileName           String
+  storageKey                 String          @unique
+  mimeType                   String
+  sizeBytes                  Int
+  checksumSha256             String
+  isSensitive                Boolean         @default(false)
+  createdAt                  DateTime        @default(now())
+  deletedAt                  DateTime?
+  tenant                     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  case                       Case            @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploadedBy                 User?           @relation(fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+  uploadedByCitizenProfile   CitizenProfile? @relation(fields: [uploadedByCitizenProfileId], references: [id], onDelete: Restrict)
 
   @@index([tenantId])
   @@index([tenantId, caseId])
+  @@index([tenantId, uploadedByCitizenProfileId])
   @@index([tenantId, checksumSha256])
   @@map("case_documents")
 }
 
 model AITriageResult {
-  id                    String         @id @default(cuid())
-  tenantId              String
-  caseId                String
-  model                 String
-  promptVersion         String
-  suggestedCategory     CaseCategory?
-  suggestedDepartmentId String?
-  suggestedUrgency      CaseUrgency?
-  summary               String?
+  id                     String         @id @default(cuid())
+  tenantId               String
+  caseId                 String
+  model                  String
+  promptVersion          String
+  suggestedCategory      CaseCategory?
+  suggestedDepartmentId  String?
+  suggestedUrgency       CaseUrgency?
+  summary                String?
   missingInformationJson Json
-  confidenceScore       Float?
-  reasoningSummary      String?
-  rawResponseJson       Json
-  status                AITriageStatus @default(pending)
-  failureReason         String?
-  createdAt             DateTime       @default(now())
-  tenant                Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  case                  Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  suggestedDepartment   Department?    @relation(fields: [suggestedDepartmentId], references: [id], onDelete: SetNull)
-  reviews               AIReview[]
+  confidenceScore        Float?
+  reasoningSummary       String?
+  rawResponseJson        Json
+  status                 AITriageStatus @default(pending)
+  failureReason          String?
+  createdAt              DateTime       @default(now())
+  tenant                 Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  case                   Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  suggestedDepartment    Department?    @relation(fields: [suggestedDepartmentId], references: [id], onDelete: SetNull)
+  reviews                AIReview[]
 
   @@index([tenantId])
   @@index([tenantId, caseId])
@@ -280,4 +286,38 @@ model AuditEvent {
   @@index([tenantId])
   @@index([tenantId, entityType, entityId])
   @@map("audit_events")
+}
+
+model AnalyticsDailySnapshot {
+  id                    String   @id @default(cuid())
+  tenantId              String
+  date                  DateTime
+  totalCases            Int
+  casesByStatusJson     Json
+  casesByCategoryJson   Json
+  casesByDepartmentJson Json
+  aiReviewsTotal        Int
+  aiCorrectionsTotal    Int
+  aiCorrectionRate      Float
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, date])
+  @@index([tenantId, date])
+  @@map("analytics_daily_snapshots")
+}
+
+model RetentionPolicy {
+  id                           String   @id @default(cuid())
+  tenantId                     String   @unique
+  closedCaseRetentionDays      Int      @default(2555)
+  deletedDocumentRetentionDays Int      @default(90)
+  auditEventRetentionDays      Int      @default(2555)
+  analyticsRetentionDays       Int      @default(1095)
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+  tenant                       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("retention_policies")
 }

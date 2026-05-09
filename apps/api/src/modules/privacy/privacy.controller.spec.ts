@@ -20,6 +20,9 @@ describe('PrivacyController', () => {
     getStatus: jest.fn(),
     exportCitizenData: jest.fn(),
     anonymizeCitizenProfile: jest.fn(),
+    getRetentionPolicy: jest.fn(),
+    updateRetentionPolicy: jest.fn(),
+    runRetentionCleanup: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -35,6 +38,9 @@ describe('PrivacyController', () => {
     });
     privacyService.exportCitizenData.mockReset();
     privacyService.anonymizeCitizenProfile.mockReset();
+    privacyService.getRetentionPolicy.mockReset();
+    privacyService.updateRetentionPolicy.mockReset();
+    privacyService.runRetentionCleanup.mockReset();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [DatabaseModule, AuthModule, PrivacyModule],
@@ -150,6 +156,7 @@ describe('PrivacyController', () => {
 
     await request(app.getHttpServer())
       .post('/api/v1/privacy/citizen-profiles/citizen_1/anonymize')
+      .set('Origin', process.env.APP_BASE_URL ?? 'http://localhost:3000')
       .set('Cookie', [`${AUTH_COOKIE_NAME}=valid-token`])
       .expect(403);
   });
@@ -175,6 +182,7 @@ describe('PrivacyController', () => {
 
     const response = await request(app.getHttpServer())
       .post('/api/v1/privacy/citizen-profiles/citizen_1/anonymize')
+      .set('Origin', process.env.APP_BASE_URL ?? 'http://localhost:3000')
       .set('Cookie', [`${AUTH_COOKIE_NAME}=valid-token`])
       .expect(201);
 
@@ -192,6 +200,64 @@ describe('PrivacyController', () => {
         role: 'super_admin',
       }),
       'citizen_1',
+    );
+  });
+
+  it('returns retention policy for super admins', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      id: 'user_1',
+      tenantId: 'tenant_1',
+      departmentId: null,
+      email: 'admin@example.local',
+      role: 'super_admin',
+    });
+    privacyService.getRetentionPolicy.mockResolvedValue({
+      tenantId: 'tenant_1',
+      deletedDocumentRetentionDays: 90,
+    });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/privacy/retention-policy')
+      .set('Cookie', [`${AUTH_COOKIE_NAME}=valid-token`])
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantId: 'tenant_1',
+      deletedDocumentRetentionDays: 90,
+    });
+  });
+
+  it('runs retention cleanup dry-run for super admins', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      id: 'user_1',
+      tenantId: 'tenant_1',
+      departmentId: null,
+      email: 'admin@example.local',
+      role: 'super_admin',
+    });
+    privacyService.runRetentionCleanup.mockResolvedValue({
+      mode: 'dry_run',
+      candidates: {
+        deletedDocuments: 3,
+      },
+    });
+
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/privacy/retention-cleanup')
+      .set('Origin', process.env.APP_BASE_URL ?? 'http://localhost:3000')
+      .set('Cookie', [`${AUTH_COOKIE_NAME}=valid-token`])
+      .send({ confirm: false })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      mode: 'dry_run',
+    });
+    expect(privacyService.runRetentionCleanup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant_1',
+        role: 'super_admin',
+      }),
+      { confirm: false },
     );
   });
 });

@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PrismaService } from '../../database/prisma.service';
@@ -99,6 +99,85 @@ describe('DocumentsService', () => {
       service.uploadForCase('case_1', caseWorker(), textFile(), {
         isSensitive: false,
       }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects empty files', async () => {
+    const service = createService({});
+
+    await expect(
+      service.uploadForCase(
+        'case_1',
+        caseWorker(),
+        {
+          ...pdfFile(),
+          size: 0,
+          buffer: Buffer.alloc(0),
+        },
+        {
+          isSensitive: false,
+        },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects fake extension and MIME combinations using magic bytes', async () => {
+    const service = createService({});
+
+    await expect(
+      service.uploadForCase(
+        'case_1',
+        caseWorker(),
+        {
+          ...pdfFile(),
+          originalname: 'malware.pdf',
+          mimetype: 'application/pdf',
+          buffer: Buffer.from('MZ executable content'),
+          size: 21,
+        },
+        {
+          isSensitive: false,
+        },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects path traversal file names', async () => {
+    const service = createService({});
+
+    await expect(
+      service.uploadForCase(
+        'case_1',
+        caseWorker(),
+        {
+          ...pdfFile(),
+          originalname: '../permit.pdf',
+        },
+        {
+          isSensitive: false,
+        },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects executable uploads', async () => {
+    const service = createService({});
+
+    await expect(
+      service.uploadForCase(
+        'case_1',
+        caseWorker(),
+        {
+          ...pdfFile(),
+          originalname: 'payload.exe',
+          mimetype: 'application/x-msdownload',
+          buffer: Buffer.from('MZ executable content'),
+          size: 21,
+        },
+        {
+          isSensitive: false,
+        },
+      ),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -245,6 +324,143 @@ describe('DocumentsService', () => {
     );
   });
 
+  it('returns a download stream and records a document download audit event', async () => {
+    const recordMock = jest.fn().mockResolvedValue(undefined);
+    await mkdir(join(storagePath, 'tenant_1', 'case_1'), { recursive: true });
+    await writeFile(
+      join(storagePath, 'tenant_1', 'case_1', 'document.pdf'),
+      Buffer.from('%PDF-1.7\npdf contents'),
+    );
+    const service = createService(
+      {
+        case: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            assignedDepartmentId: 'department_1',
+          }),
+        },
+        caseDocument: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'document_1',
+            originalFileName: 'permit.pdf',
+            storageKey: 'tenant_1/case_1/document.pdf',
+            mimeType: 'application/pdf',
+            sizeBytes: 21,
+            checksumSha256: 'checksum',
+            isSensitive: false,
+          }),
+        },
+      },
+      { record: recordMock } as unknown as AuditService,
+    );
+
+    await expect(
+      service.getDownloadForCase('case_1', 'document_1', caseWorker()),
+    ).resolves.toMatchObject({
+      fileName: 'permit.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: 21,
+    });
+    expect(recordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant_1',
+        action: 'document.downloaded',
+        entityType: 'case_document',
+        entityId: 'document_1',
+      }),
+    );
+  });
+
+  it('blocks cross-tenant document storage key access by requiring tenant and case filters', async () => {
+    let capturedDocumentFindFirstInput: unknown;
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          assignedDepartmentId: 'department_1',
+        }),
+      },
+      caseDocument: {
+        findFirst: jest.fn((input: unknown) => {
+          capturedDocumentFindFirstInput = input;
+          return Promise.resolve(null);
+        }),
+      },
+    });
+
+    await expect(
+      service.getDownloadForCase('case_1', 'guessed_document_id', caseWorker()),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(capturedDocumentFindFirstInput).toMatchObject({
+      where: {
+        id: 'guessed_document_id',
+        tenantId: 'tenant_1',
+        caseId: 'case_1',
+        deletedAt: null,
+      },
+    });
+  });
+
+  it('blocks sensitive document downloads when the user lacks sensitive permission', async () => {
+    let capturedDocumentFindFirstInput: unknown;
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          assignedDepartmentId: 'department_1',
+        }),
+      },
+      caseDocument: {
+        findFirst: jest.fn((input: unknown) => {
+          capturedDocumentFindFirstInput = input;
+          return Promise.resolve(null);
+        }),
+      },
+    });
+
+    await expect(
+      service.getDownloadForCase('case_1', 'sensitive_document', caseWorker()),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(capturedDocumentFindFirstInput).toMatchObject({
+      where: {
+        isSensitive: false,
+      },
+    });
+  });
+
+  it('rejects document storage keys that escape the upload root', async () => {
+    const recordMock = jest.fn().mockResolvedValue(undefined);
+    const service = createService(
+      {
+        case: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            assignedDepartmentId: 'department_1',
+          }),
+        },
+        caseDocument: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'document_1',
+            originalFileName: 'permit.pdf',
+            storageKey: '../outside.pdf',
+            mimeType: 'application/pdf',
+            sizeBytes: 21,
+            checksumSha256: 'checksum',
+            isSensitive: false,
+          }),
+        },
+      },
+      { record: recordMock } as unknown as AuditService,
+    );
+
+    await expect(
+      service.getDownloadForCase('case_1', 'document_1', caseWorker()),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(recordMock).not.toHaveBeenCalled();
+  });
+
   it('blocks auditors from soft-deleting documents', async () => {
     const service = createService({
       case: {
@@ -318,8 +534,8 @@ function pdfFile(): Express.Multer.File {
     originalname: 'permit.pdf',
     encoding: '7bit',
     mimetype: 'application/pdf',
-    size: 12,
-    buffer: Buffer.from('pdf contents'),
+    size: 21,
+    buffer: Buffer.from('%PDF-1.7\npdf contents'),
   } as Express.Multer.File;
 }
 

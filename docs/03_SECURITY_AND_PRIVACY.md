@@ -95,12 +95,23 @@ The app may process:
 
 ## Retention Rules
 
-For demo purposes:
+The implementation supports tenant-level retention configuration for:
 
-- Closed cases: 180 days.
-- Documents: 180 days after case closure.
-- Audit logs: 365 days.
-- Aggregated anonymized analytics: no strict deletion requirement in demo.
+- closed cases
+- soft-deleted documents
+- audit events
+- analytics snapshots
+
+Cleanup supports dry-run mode and confirmed deletion mode. Both modes are audited.
+
+Default demo policy:
+
+- Closed cases: 2555 days.
+- Soft-deleted documents: 90 days.
+- Audit logs: 2555 days.
+- Aggregated analytics snapshots: 1095 days.
+
+Real deployments must adjust these values to the municipality's legal, archival, and operational requirements.
 
 ## Required Privacy Actions
 
@@ -110,6 +121,8 @@ The system must include backend services for:
 - anonymizing a citizen profile
 - soft-deleting documents
 - logging privacy-related actions in the audit log
+- configuring tenant retention policy
+- running retention cleanup dry-run and confirmed deletion
 
 ## Security Acceptance Criteria
 

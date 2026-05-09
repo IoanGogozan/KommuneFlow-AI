@@ -46,6 +46,43 @@ describe('AuthGuard', () => {
     expect(verifyAsyncMock).toHaveBeenCalledWith('cookie-token');
     expect(request).toHaveProperty('user');
   });
+
+  it('returns 401 for malformed bearer tokens', async () => {
+    const verifyAsyncMock = jest.fn().mockRejectedValue(new Error('malformed'));
+    const jwtService = {
+      verifyAsync: verifyAsyncMock,
+    } as unknown as JwtService;
+    const guard = new AuthGuard(jwtService);
+
+    await expect(
+      guard.canActivate(
+        createContext({
+          headers: {
+            authorization: 'Bearer malformed-token',
+          },
+        }),
+      ),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('returns 401 for expired cookie tokens', async () => {
+    const verifyAsyncMock = jest.fn().mockRejectedValue(new Error('expired'));
+    const jwtService = {
+      verifyAsync: verifyAsyncMock,
+    } as unknown as JwtService;
+    const guard = new AuthGuard(jwtService);
+
+    await expect(
+      guard.canActivate(
+        createContext({
+          headers: {},
+          cookies: {
+            [AUTH_COOKIE_NAME]: 'expired-token',
+          },
+        }),
+      ),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
 });
 
 function currentUserPayload() {

@@ -27,7 +27,13 @@ The application UI must support:
 | [12_PROFESSIONAL_QUALITY_BAR.md](./12_PROFESSIONAL_QUALITY_BAR.md) | Defines the final portfolio quality bar for repository polish, demo quality, documentation, deployment, and interview readiness. |
 | [13_DEVELOPMENT_PLAN.md](./13_DEVELOPMENT_PLAN.md) | Adds practical execution guidance, first milestones, planning rules, and recommended initial backlog. |
 | [14_IMPLEMENTATION_CHECKLIST.md](./14_IMPLEMENTATION_CHECKLIST.md) | Tracks implementation progress across all roadmap phases with clear checkboxes and current focus. |
+| [API_REFERENCE.md](./API_REFERENCE.md) | Documents the current REST API endpoint groups and auth requirements. |
+| [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) | Provides an interview-ready product walkthrough. |
+| [SCREENSHOTS.md](./SCREENSHOTS.md) | Lists planned portfolio screenshots and capture filenames. |
 | [RUNBOOK.md](./RUNBOOK.md) | Documents operational procedures for restart, logs, migrations, backup, restore, AI provider failure, and database failure. |
+| [privacy/PRIVACY_NOTICE.md](./privacy/PRIVACY_NOTICE.md) | Provides the citizen-facing and deployment privacy notice baseline. |
+| [privacy/DATA_PROCESSING_INVENTORY.md](./privacy/DATA_PROCESSING_INVENTORY.md) | Maps data categories, purpose, storage, access, retention, and privacy notes. |
+| [privacy/DPIA_LITE.md](./privacy/DPIA_LITE.md) | Documents a lightweight privacy risk assessment and remaining real-deployment gaps. |
 
 ## How To Use These Documents
 
@@ -45,4 +51,4 @@ Before implementing a feature:
 
 ## Product Positioning
 
-KommuneFlow AI is a professional portfolio project inspired by Norwegian municipal service development. It is a multi-tenant platform for citizen case intake, document handling, AI-assisted case triage, role-based access control, audit logging, privacy workflows, and operational analytics. AI is used as decision support with human review, and the system is deployed to Hetzner Cloud using Docker Compose, PostgreSQL, HTTPS, firewall rules, and a documented backup strategy.
+KommuneFlow AI is a professional portfolio project inspired by Norwegian municipal service development. It is a multi-tenant platform for citizen case intake, document handling, AI-assisted case triage, role-based access control, audit logging, privacy workflows, retention, and operational analytics. AI is used as decision support with human review. The target deployment is Hetzner Cloud using Docker Compose, PostgreSQL, HTTPS, firewall rules, and a documented backup strategy.

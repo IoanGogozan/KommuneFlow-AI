@@ -151,6 +151,8 @@ Goal: support safe upload and controlled document access.
 - [x] Add sensitive document flag
 - [x] Audit document upload
 - [x] Audit sensitive document access
+- [x] Add citizen document upload during public intake
+- [x] Audit citizen document upload
 - [x] Add tests for valid upload
 - [x] Add tests for invalid file type rejection
 - [x] Add tests for oversized file rejection
@@ -160,6 +162,7 @@ Phase completion criteria:
 
 - [x] Valid PDFs/images can be uploaded
 - [x] Invalid files are rejected
+- [x] Citizens can upload documents during intake
 - [x] Document access follows RBAC
 - [x] Document actions are audited
 
@@ -200,26 +203,30 @@ Phase completion criteria:
 
 Goal: demonstrate privacy-by-design behavior.
 
-- [ ] Add privacy notice to intake form
+- [x] Add privacy notice to intake form
 - [x] Add privacy backend module
 - [x] Add citizen data export service
 - [x] Add citizen data export endpoint
 - [x] Add citizen anonymization service
 - [x] Add citizen anonymization endpoint
 - [x] Add document soft-delete behavior
-- [ ] Add retention configuration
+- [x] Add retention configuration
+- [x] Add retention cleanup command
 - [x] Add privacy audit events
 - [x] Add tests for citizen data export
 - [x] Add tests for anonymization
 - [x] Add tests for document soft-delete
 - [x] Add tests for privacy audit events
+- [x] Add tests for retention cleanup dry-run and confirmed delete
+- [x] Add data processing inventory
+- [x] Add DPIA-lite risk assessment
 
 Phase completion criteria:
 
 - [x] Export works
 - [x] Anonymization works
 - [x] Privacy actions are audited
-- [ ] Analytics avoids personal identifiers where possible
+- [x] Analytics avoids personal identifiers where possible
 
 ## Phase 8: Observability And Operations
 
@@ -257,79 +264,79 @@ Phase completion criteria:
 
 Goal: provide operational insight without exposing unnecessary personal data.
 
-- [ ] Add analytics database tables
-- [ ] Add aggregation job
-- [ ] Add case volume metrics
-- [ ] Add category metrics
-- [ ] Add department metrics
-- [ ] Add AI correction rate metric
-- [ ] Add analytics API
-- [ ] Add analytics dashboard UI
-- [ ] Add tests for aggregation job
-- [ ] Add tests for rerunnable aggregation
-- [ ] Add tests ensuring analytics avoids unnecessary personal data
+- [x] Add analytics database tables
+- [x] Add aggregation job
+- [x] Add case volume metrics
+- [x] Add category metrics
+- [x] Add department metrics
+- [x] Add AI correction rate metric
+- [x] Add analytics API
+- [x] Add analytics dashboard UI
+- [x] Add tests for aggregation job
+- [x] Add tests for rerunnable aggregation
+- [x] Add tests ensuring analytics avoids unnecessary personal data
 
 Phase completion criteria:
 
-- [ ] Analytics dashboard shows useful metrics
-- [ ] Aggregation can be rerun safely
-- [ ] Analytics does not expose unnecessary personal data
+- [x] Analytics dashboard shows useful metrics
+- [x] Aggregation can be rerun safely
+- [x] Analytics does not expose unnecessary personal data
 
 ## Phase 10: Security Hardening And Release Gate
 
 Goal: expand negative testing and make security release criteria explicit.
 
-- [ ] Add login wrong-password test
-- [ ] Add unknown-email generic-message test
-- [ ] Add disabled-user login test
-- [ ] Add malformed token test
-- [ ] Add expired token/session test if token expiry can be tested deterministically
-- [ ] Add auditor mutation tests for notes, status, and AI review
-- [ ] Add cross-tenant update-by-guessed-ID tests
-- [ ] Add cross-tenant document storage key access test
-- [ ] Add invalid JSON body test
-- [ ] Add oversized body test
+- [x] Add login wrong-password test
+- [x] Add unknown-email generic-message test
+- [x] Add disabled-user login test
+- [x] Add malformed token test
+- [x] Add expired token/session test if token expiry can be tested deterministically
+- [x] Add auditor mutation tests for notes, status, and AI review
+- [x] Add cross-tenant update-by-guessed-ID tests
+- [x] Add cross-tenant document storage key access test
+- [x] Add invalid JSON body test
+- [x] Add oversized body test
 - [ ] Add unsupported HTTP method safe-error test
-- [ ] Add CORS production configuration test or documented manual check
-- [ ] Add executable upload rejection test
-- [ ] Add fake extension/MIME upload rejection test
-- [ ] Add empty file upload rejection test
-- [ ] Add path traversal filename test
+- [x] Add CORS production configuration test or documented manual check
+- [x] Add executable upload rejection test
+- [x] Add fake extension/MIME upload rejection test
+- [x] Add empty file upload rejection test
+- [x] Add path traversal filename test
 - [ ] Add malformed AI JSON test
-- [ ] Add missing AI fields test
-- [ ] Add invalid AI enum test
-- [ ] Add AI confidence range test
+- [x] Add missing AI fields test
+- [x] Add invalid AI enum test
+- [x] Add AI confidence range test
 - [ ] Add AI output safe-rendering test
 - [ ] Add privacy workflow tests after privacy module exists
-- [ ] Add dependency audit command to CI or release checklist
+- [x] Add dependency audit command to CI or release checklist
 
 Phase completion criteria:
 
-- [ ] Tenant isolation tests pass
-- [ ] RBAC tests pass
-- [ ] Auth negative tests pass
-- [ ] File upload abuse tests pass
-- [ ] AI safety tests pass
+- [x] Tenant isolation tests pass
+- [x] RBAC tests pass
+- [x] Auth negative tests pass
+- [x] File upload abuse tests pass
+- [x] AI safety tests pass
 - [ ] Privacy workflow tests pass
-- [ ] Production build passes
+- [x] Production build passes
 
 ## Phase 11: Hetzner Deployment
 
 Goal: deploy the application in a production-like environment.
 
-- [ ] Create production Dockerfiles
-- [ ] Create production Docker Compose file
-- [ ] Add reverse proxy configuration
-- [ ] Add HTTPS configuration
-- [ ] Add production environment variable documentation
-- [ ] Add persistent PostgreSQL volume
-- [ ] Add persistent upload storage
-- [ ] Add migration command for production
-- [ ] Add seed command for demo-safe production data
-- [ ] Add database backup script
-- [ ] Add upload backup strategy
-- [ ] Document Hetzner firewall rules
-- [ ] Document restore procedure
+- [x] Create production Dockerfiles
+- [x] Create production Docker Compose file
+- [x] Add reverse proxy configuration
+- [x] Add HTTPS configuration
+- [x] Add production environment variable documentation
+- [x] Add persistent PostgreSQL volume
+- [x] Add persistent upload storage
+- [x] Add migration command for production
+- [x] Add seed command for demo-safe production data
+- [x] Add database backup script
+- [x] Add upload backup strategy
+- [x] Document Hetzner firewall rules
+- [x] Document restore procedure
 - [ ] Verify app over HTTPS
 - [ ] Verify auth in deployed environment
 - [ ] Verify file upload in deployed environment
@@ -347,24 +354,24 @@ Phase completion criteria:
 
 Goal: make the project easy to understand and show in interviews.
 
-- [ ] Add professional README
-- [ ] Add architecture diagram
+- [x] Add professional README
+- [x] Add architecture diagram
 - [ ] Add screenshots
-- [ ] Add demo users section
-- [ ] Add demo video script
-- [ ] Add deployment notes
-- [ ] Add security and privacy highlights
-- [ ] Add API documentation
-- [ ] Add ADR for tenant ID filtering
-- [ ] Add ADR for human-reviewed AI suggestions
-- [ ] Add ADR for `AIProvider`
-- [ ] Add ADR for Docker Compose on Hetzner
-- [ ] Add ADR for PostgreSQL
-- [ ] Add ADR for i18n strategy
-- [ ] Add known limitations section
-- [ ] Add future improvements section
-- [ ] Add English job application project description
-- [ ] Add Norwegian job application project description
+- [x] Add demo users section
+- [x] Add demo video script
+- [x] Add deployment notes
+- [x] Add security and privacy highlights
+- [x] Add API documentation
+- [x] Add ADR for tenant ID filtering
+- [x] Add ADR for human-reviewed AI suggestions
+- [x] Add ADR for `AIProvider`
+- [x] Add ADR for Docker Compose on Hetzner
+- [x] Add ADR for PostgreSQL
+- [x] Add ADR for i18n strategy
+- [x] Add known limitations section
+- [x] Add future improvements section
+- [x] Add English job application project description
+- [x] Add Norwegian job application project description
 
 Phase completion criteria:
 
@@ -378,9 +385,9 @@ Phase completion criteria:
 Update this section manually whenever work starts on a new task.
 
 ```txt
-Current phase: Phase 7: Privacy And GDPR Features
-Current task: Privacy backend module, citizen data export, citizen anonymization, and document soft-delete completed
-Next task: Add retention configuration
+Current phase: Phase 12 Portfolio Polish
+Current task: README, API reference, demo script, ADRs, architecture diagrams, limitations, future improvements, and portfolio descriptions completed
+Next task: Capture screenshots or verify production Hetzner deployment
 Blocked by: None
 Last updated: 2026-05-09
 ```
@@ -410,3 +417,14 @@ Use this section for short implementation notes. Longer architectural decisions 
 - Privacy backend module added with super-admin-only citizen data export, tenant-scoped lookup by citizen profile ID or email, safe document metadata export, relevant audit event export, and privacy export audit event.
 - Citizen anonymization added with super-admin-only access, tenant-scoped profile lookup, personal identifier masking, and privacy anonymization audit event.
 - Document soft-delete added with `deletedAt`, tenant-scoped delete endpoint, operational list filtering, privacy export metadata, and `document.soft_deleted` audit event.
+- Release readiness implementation plan added to `docs/13_DEVELOPMENT_PLAN.md` with ordered work for baseline verification, Hetzner deployment, security hardening, analytics, document workflow completion, AI hardening, privacy retention, demo data, and portfolio polish.
+- Baseline local verification completed on 2026-05-09: `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` all pass locally.
+- Phase 11 deployment assets added with API and web Dockerfiles, Next.js standalone output, production Compose for PostgreSQL/API/web/Caddy, Caddy HTTPS reverse proxy config, production env example, persistent database/upload/Caddy volumes, production migration and demo seed commands, PostgreSQL and uploads backup scripts, restore script, smoke test script, and concrete Hetzner firewall/deployment documentation.
+- Phase 11 local verification completed on 2026-05-09: production Compose config validates, Caddyfile validates with `caddy validate`, API and web Docker images build, production migration command applies all migrations on a clean PostgreSQL volume, API health/readiness pass inside the production container, and the web container becomes healthy.
+- Phase 10 security hardening added with Helmet headers, explicit JSON/form body size limits, CORS allowlist, Origin/Referer validation for cookie-authenticated state-changing requests, magic-byte upload validation, empty file rejection, unsafe filename rejection, negative auth/token tests, cross-tenant mutation tests, invalid JSON and oversized body e2e tests, dependency audit in CI, and documented Gitleaks/Trivy release scans.
+- Secure document download added with `GET /api/v1/cases/:caseId/documents/:documentId/download`, tenant-scoped case and document lookup, sensitive-document permission filtering, upload-root path containment, no-store response caching, attachment headers, `document.downloaded` audit event, internal UI download link, and tests for successful download, guessed document IDs, sensitive access blocking, and unsafe storage keys.
+- Citizen document upload added to public intake with optional multipart `documents` files, `payload` JSON support, `uploadedByCitizenProfileId` document ownership, `document.uploaded_by_citizen` audit events, internal document list support for citizen uploaders, and bilingual file input labels.
+- Phase 9 Analytics MVP added with `AnalyticsDailySnapshot` table, rerunnable tenant/day aggregation service, protected `/api/v1/analytics/aggregate` and `/api/v1/analytics/summary` endpoints, case volume by status/category/department, AI correction rate, `/internal/analytics` dashboard, RBAC controller tests, aggregation idempotency tests, and privacy tests proving analytics snapshots avoid citizen personal identifiers.
+- Retention policy added with per-tenant `RetentionPolicy`, default periods for closed cases, soft-deleted documents, audit events, and analytics snapshots, privacy API endpoints for read/update/cleanup, dry-run-by-default cleanup, confirmed delete mode, and audit events for policy update, cleanup dry-run, and cleanup execution.
+- Privacy documentation completed with detailed intake privacy text, `docs/privacy/PRIVACY_NOTICE.md`, `docs/privacy/DATA_PROCESSING_INVENTORY.md`, and `docs/privacy/DPIA_LITE.md`, covering data categories, purpose, legal basis assumptions, AI processing, retention, security controls, risk assessment, and remaining real-deployment gaps.
+- Portfolio polish added with professional README, Mermaid architecture diagrams, demo users, demo walkthrough, API reference, screenshot capture plan, deployment status notes, security/privacy highlights, known limitations, future improvements, English/Norwegian portfolio descriptions, and ADRs for tenant filtering, human-reviewed AI, AIProvider, Docker Compose on Hetzner, PostgreSQL, and i18n.

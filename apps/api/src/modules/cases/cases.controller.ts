@@ -7,8 +7,11 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { ZodError } from 'zod';
 import { AuthGuard } from '../auth/auth.guard';
@@ -30,23 +33,39 @@ export class PublicCasesController {
 
   @Post()
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @UseInterceptors(FilesInterceptor('documents', 5))
   async createPublicCase(
     @Param('tenantSlug') tenantSlug: string,
     @Body() body: unknown,
+    @UploadedFiles() files: Express.Multer.File[] = [],
   ) {
     try {
       return await this.casesService.createPublicCase(
         tenantSlug,
-        createPublicCaseSchema.parse(body),
+        createPublicCaseSchema.parse(parsePublicCaseBody(body)),
+        files,
       );
     } catch (error) {
-      if (error instanceof ZodError) {
+      if (error instanceof ZodError || error instanceof SyntaxError) {
         throw new BadRequestException('Invalid case intake payload.');
       }
 
       throw error;
     }
   }
+}
+
+function parsePublicCaseBody(body: unknown) {
+  if (
+    typeof body === 'object' &&
+    body !== null &&
+    'payload' in body &&
+    typeof (body as { payload?: unknown }).payload === 'string'
+  ) {
+    return JSON.parse((body as { payload: string }).payload) as unknown;
+  }
+
+  return body;
 }
 
 @Controller('cases')

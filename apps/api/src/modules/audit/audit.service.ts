@@ -10,6 +10,7 @@ export class AuditService {
   async record(input: {
     tenantId: string;
     actor?: CurrentUser;
+    actorCitizenProfileId?: string;
     action: string;
     entityType: string;
     entityId: string;
@@ -19,6 +20,7 @@ export class AuditService {
       data: {
         tenantId: input.tenantId,
         actorUserId: input.actor?.id,
+        actorCitizenProfileId: input.actorCitizenProfileId,
         actorRole: input.actor?.role,
         action: input.action,
         entityType: input.entityType,

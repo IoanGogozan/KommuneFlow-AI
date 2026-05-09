@@ -4,13 +4,17 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   Param,
   Post,
+  Res,
+  StreamableFile,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { ZodError } from 'zod';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUserParam } from '../auth/current-user.decorator';
@@ -31,6 +35,30 @@ export class DocumentsController {
     @CurrentUserParam() user: CurrentUser,
   ) {
     return this.documentsService.listForCase(caseId, user);
+  }
+
+  @Get(':documentId/download')
+  @Header('Cache-Control', 'private, no-store')
+  async downloadForCase(
+    @Param('caseId') caseId: string,
+    @Param('documentId') documentId: string,
+    @CurrentUserParam() user: CurrentUser,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const download = await this.documentsService.getDownloadForCase(
+      caseId,
+      documentId,
+      user,
+    );
+
+    response.setHeader('Content-Type', download.mimeType);
+    response.setHeader('Content-Length', String(download.sizeBytes));
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${sanitizeHeaderFileName(download.fileName)}"`,
+    );
+
+    return new StreamableFile(download.stream);
   }
 
   @Post()
@@ -67,4 +95,8 @@ export class DocumentsController {
   ) {
     return this.documentsService.softDeleteForCase(caseId, documentId, user);
   }
+}
+
+function sanitizeHeaderFileName(fileName: string) {
+  return fileName.replace(/["\r\n\\]/g, '_');
 }

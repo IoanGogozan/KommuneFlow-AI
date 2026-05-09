@@ -194,6 +194,149 @@ describe('PrivacyService', () => {
       ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
+
+  it('creates default retention policy when missing', async () => {
+    const service = createService({
+      retentionPolicy: {
+        upsert: jest.fn().mockResolvedValue({
+          id: 'retention_1',
+          tenantId: 'tenant_1',
+          closedCaseRetentionDays: 2555,
+          deletedDocumentRetentionDays: 90,
+          auditEventRetentionDays: 2555,
+          analyticsRetentionDays: 1095,
+        }),
+      },
+    });
+
+    await expect(
+      service.getRetentionPolicy(superAdmin()),
+    ).resolves.toMatchObject({
+      tenantId: 'tenant_1',
+      deletedDocumentRetentionDays: 90,
+    });
+  });
+
+  it('updates retention policy and records an audit event', async () => {
+    const auditRecordMock = jest.fn().mockResolvedValue(undefined);
+    let capturedUpsertInput: unknown;
+    const service = createService(
+      {
+        retentionPolicy: {
+          upsert: jest.fn((input: unknown) => {
+            capturedUpsertInput = input;
+            return Promise.resolve({
+              id: 'retention_1',
+              tenantId: 'tenant_1',
+              closedCaseRetentionDays: 3650,
+              deletedDocumentRetentionDays: 120,
+              auditEventRetentionDays: 3650,
+              analyticsRetentionDays: 1095,
+            });
+          }),
+        },
+      },
+      { record: auditRecordMock } as unknown as AuditService,
+    );
+
+    await service.updateRetentionPolicy(superAdmin(), {
+      deletedDocumentRetentionDays: 120,
+    });
+
+    expect(capturedUpsertInput).toMatchObject({
+      where: { tenantId: 'tenant_1' },
+      create: {
+        tenantId: 'tenant_1',
+        deletedDocumentRetentionDays: 120,
+      },
+      update: {
+        deletedDocumentRetentionDays: 120,
+      },
+    });
+    expect(auditRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'privacy.retention_policy_updated',
+        entityType: 'retention_policy',
+        entityId: 'retention_1',
+      }),
+    );
+  });
+
+  it('dry-runs retention cleanup without deleting records', async () => {
+    const auditRecordMock = jest.fn().mockResolvedValue(undefined);
+    const deleteManyMock = jest.fn();
+    const service = createService(
+      retentionPrismaShape({
+        deleteManyMock,
+        counts: {
+          closedCases: 2,
+          deletedDocuments: 3,
+          auditEvents: 4,
+          analyticsSnapshots: 5,
+        },
+      }),
+      { record: auditRecordMock } as unknown as AuditService,
+    );
+
+    await expect(
+      service.runRetentionCleanup(superAdmin(), { confirm: false }),
+    ).resolves.toMatchObject({
+      mode: 'dry_run',
+      candidates: {
+        closedCases: 2,
+        deletedDocuments: 3,
+        auditEvents: 4,
+        analyticsSnapshots: 5,
+      },
+      deleted: {
+        closedCases: 0,
+        deletedDocuments: 0,
+        auditEvents: 0,
+        analyticsSnapshots: 0,
+      },
+    });
+    expect(deleteManyMock).not.toHaveBeenCalled();
+    expect(auditRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'privacy.retention_cleanup_dry_run',
+      }),
+    );
+  });
+
+  it('deletes expired records when retention cleanup is confirmed', async () => {
+    const auditRecordMock = jest.fn().mockResolvedValue(undefined);
+    const deleteManyMock = jest.fn().mockResolvedValue({ count: 7 });
+    const service = createService(
+      retentionPrismaShape({
+        deleteManyMock,
+        counts: {
+          closedCases: 2,
+          deletedDocuments: 3,
+          auditEvents: 4,
+          analyticsSnapshots: 5,
+        },
+      }),
+      { record: auditRecordMock } as unknown as AuditService,
+    );
+
+    await expect(
+      service.runRetentionCleanup(superAdmin(), { confirm: true }),
+    ).resolves.toMatchObject({
+      mode: 'delete',
+      deleted: {
+        closedCases: 7,
+        deletedDocuments: 7,
+        auditEvents: 7,
+        analyticsSnapshots: 7,
+      },
+    });
+    expect(deleteManyMock).toHaveBeenCalledTimes(4);
+    expect(auditRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'privacy.retention_cleanup_executed',
+      }),
+    );
+  });
 });
 
 function createService(
@@ -260,5 +403,44 @@ function auditEvent() {
     actorRole: null,
     metadataJson: {},
     createdAt: new Date('2026-05-09T07:00:00.000Z'),
+  };
+}
+
+function retentionPrismaShape(input: {
+  deleteManyMock: jest.Mock;
+  counts: {
+    closedCases: number;
+    deletedDocuments: number;
+    auditEvents: number;
+    analyticsSnapshots: number;
+  };
+}) {
+  return {
+    retentionPolicy: {
+      upsert: jest.fn().mockResolvedValue({
+        id: 'retention_1',
+        tenantId: 'tenant_1',
+        closedCaseRetentionDays: 2555,
+        deletedDocumentRetentionDays: 90,
+        auditEventRetentionDays: 2555,
+        analyticsRetentionDays: 1095,
+      }),
+    },
+    case: {
+      count: jest.fn().mockResolvedValue(input.counts.closedCases),
+      deleteMany: input.deleteManyMock,
+    },
+    caseDocument: {
+      count: jest.fn().mockResolvedValue(input.counts.deletedDocuments),
+      deleteMany: input.deleteManyMock,
+    },
+    auditEvent: {
+      count: jest.fn().mockResolvedValue(input.counts.auditEvents),
+      deleteMany: input.deleteManyMock,
+    },
+    analyticsDailySnapshot: {
+      count: jest.fn().mockResolvedValue(input.counts.analyticsSnapshots),
+      deleteMany: input.deleteManyMock,
+    },
   };
 }

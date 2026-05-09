@@ -25,7 +25,8 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
     setError(null);
     setIsSubmitting(true);
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const payload = {
       citizen: {
         name: String(formData.get("name") ?? ""),
@@ -40,16 +41,21 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
       },
       privacyAccepted: formData.get("privacyAccepted") === "on",
     };
+    const requestBody = new FormData();
+    requestBody.set("payload", JSON.stringify(payload));
+
+    for (const file of formData.getAll("documents")) {
+      if (file instanceof File && file.size > 0) {
+        requestBody.append("documents", file);
+      }
+    }
 
     try {
       const response = await fetch(
         `${getApiBaseUrl()}/public/tenants/arendal/cases`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
+          body: requestBody,
         },
       );
 
@@ -58,7 +64,7 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
       }
 
       setResult((await response.json()) as SubmissionResult);
-      event.currentTarget.reset();
+      form.reset();
     } catch {
       setError(dictionary.error);
     } finally {
@@ -129,6 +135,20 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
           />
         </label>
       </div>
+
+      <label className="mt-4 grid gap-2">
+        <span className="text-sm font-medium text-slate-700">
+          {dictionary.documentsLabel}
+        </span>
+        <input
+          name="documents"
+          type="file"
+          multiple
+          accept="application/pdf,image/png,image/jpeg"
+          className="rounded-md border border-slate-300 px-3 py-2 text-slate-950 outline-none focus:border-slate-600"
+        />
+        <span className="text-sm text-slate-500">{dictionary.documentsHelp}</span>
+      </label>
 
       <label className="mt-5 flex gap-3 rounded-md border border-slate-200 bg-slate-50 p-4">
         <input

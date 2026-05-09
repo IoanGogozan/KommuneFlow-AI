@@ -4,10 +4,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CaseStatus, Prisma, UserRole } from '@prisma/client';
+import { createHash, randomUUID } from 'node:crypto';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname, extname } from 'node:path';
 import { PrismaService } from '../../database/prisma.service';
 import { CurrentUser } from '../auth/current-user';
 import { roleHasPermission } from '../auth/permissions';
 import { AuditService } from '../audit/audit.service';
+import {
+  resolveDocumentStoragePath,
+  validateDocumentFile,
+} from '../documents/documents.service';
 import {
   CreateInternalNoteInput,
   CreatePublicCaseInput,
@@ -22,7 +29,13 @@ export class CasesService {
     private readonly auditService: AuditService,
   ) {}
 
-  async createPublicCase(tenantSlug: string, input: CreatePublicCaseInput) {
+  async createPublicCase(
+    tenantSlug: string,
+    input: CreatePublicCaseInput,
+    files: Express.Multer.File[] = [],
+  ) {
+    files.forEach(validateDocumentFile);
+
     const tenant = await this.prisma.tenant.findUnique({
       where: { slug: tenantSlug },
       select: { id: true, slug: true },
@@ -63,6 +76,7 @@ export class CasesService {
 
     await this.auditService.record({
       tenantId: tenant.id,
+      actorCitizenProfileId: citizenProfile.id,
       action: 'case.created_by_citizen',
       entityType: 'case',
       entityId: caseRecord.id,
@@ -73,10 +87,20 @@ export class CasesService {
       },
     });
 
+    for (const file of files) {
+      await this.storeCitizenUploadedDocument({
+        tenantId: tenant.id,
+        caseId: caseRecord.id,
+        citizenProfileId: citizenProfile.id,
+        file,
+      });
+    }
+
     return {
       caseId: caseRecord.id,
       status: caseRecord.status,
       createdAt: caseRecord.createdAt,
+      documentCount: files.length,
     };
   }
 
@@ -297,6 +321,57 @@ export class CasesService {
     }
 
     throw new ForbiddenException('You do not have access to this case.');
+  }
+
+  private async storeCitizenUploadedDocument(input: {
+    tenantId: string;
+    caseId: string;
+    citizenProfileId: string;
+    file: Express.Multer.File;
+  }) {
+    const checksumSha256 = createHash('sha256')
+      .update(input.file.buffer)
+      .digest('hex');
+    const extension = extname(input.file.originalname).toLowerCase();
+    const storageKey = `${input.tenantId}/${input.caseId}/${randomUUID()}${extension}`;
+    const storagePath = resolveDocumentStoragePath(storageKey);
+
+    await mkdir(dirname(storagePath), { recursive: true });
+    await writeFile(storagePath, input.file.buffer, { flag: 'wx' });
+
+    const document = await this.prisma.caseDocument.create({
+      data: {
+        tenantId: input.tenantId,
+        caseId: input.caseId,
+        uploadedByCitizenProfileId: input.citizenProfileId,
+        originalFileName: input.file.originalname,
+        storageKey,
+        mimeType: input.file.mimetype,
+        sizeBytes: input.file.size,
+        checksumSha256,
+        isSensitive: false,
+      },
+      select: {
+        id: true,
+        mimeType: true,
+        sizeBytes: true,
+        checksumSha256: true,
+      },
+    });
+
+    await this.auditService.record({
+      tenantId: input.tenantId,
+      actorCitizenProfileId: input.citizenProfileId,
+      action: 'document.uploaded_by_citizen',
+      entityType: 'case_document',
+      entityId: document.id,
+      metadata: {
+        caseId: input.caseId,
+        mimeType: document.mimeType,
+        sizeBytes: document.sizeBytes,
+        checksumSha256: document.checksumSha256,
+      },
+    });
   }
 
   private assertCanUpdateCase(

@@ -1,11 +1,33 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CaseStatus, UserRole } from '@prisma/client';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { PrismaService } from '../../database/prisma.service';
 import { CurrentUser } from '../auth/current-user';
 import { AuditService } from '../audit/audit.service';
 import { CasesService } from './cases.service';
 
 describe('CasesService', () => {
+  let previousStoragePath: string | undefined;
+  let storagePath: string;
+
+  beforeEach(async () => {
+    previousStoragePath = process.env.UPLOAD_STORAGE_PATH;
+    storagePath = await mkdtemp(join(tmpdir(), 'kommuneflow-cases-'));
+    process.env.UPLOAD_STORAGE_PATH = storagePath;
+  });
+
+  afterEach(async () => {
+    if (previousStoragePath === undefined) {
+      delete process.env.UPLOAD_STORAGE_PATH;
+    } else {
+      process.env.UPLOAD_STORAGE_PATH = previousStoragePath;
+    }
+
+    await rm(storagePath, { recursive: true, force: true });
+  });
+
   it('creates a public case with tenant association and audit event', async () => {
     const auditRecordMock = jest.fn().mockResolvedValue(undefined);
     const service = createService(
@@ -61,6 +83,90 @@ describe('CasesService', () => {
         action: 'case.created_by_citizen',
         entityType: 'case',
         entityId: 'case_1',
+      }),
+    );
+  });
+
+  it('creates public case documents uploaded by citizens', async () => {
+    const auditRecordMock = jest.fn().mockResolvedValue(undefined);
+    let capturedDocumentCreateInput: unknown;
+    const service = createService(
+      {
+        tenant: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'tenant_1',
+            slug: 'arendal',
+          }),
+        },
+        citizenProfile: {
+          create: jest.fn().mockResolvedValue({
+            id: 'citizen_1',
+          }),
+        },
+        case: {
+          create: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            title: 'Road damage report',
+            status: CaseStatus.new,
+            createdAt: new Date('2026-05-09T07:00:00.000Z'),
+          }),
+        },
+        caseDocument: {
+          create: jest.fn((input: unknown) => {
+            capturedDocumentCreateInput = input;
+            return Promise.resolve({
+              id: 'document_1',
+              mimeType: 'application/pdf',
+              sizeBytes: 21,
+              checksumSha256: 'checksum',
+            });
+          }),
+        },
+      },
+      {
+        record: auditRecordMock,
+      } as unknown as AuditService,
+    );
+
+    await expect(
+      service.createPublicCase(
+        'arendal',
+        {
+          citizen: {
+            name: 'Demo Citizen',
+            email: 'citizen@example.local',
+            phone: '',
+            address: '',
+          },
+          case: {
+            title: 'Road damage report',
+            description:
+              'There is a damaged road surface near the school entrance.',
+            sourceLanguage: 'en',
+          },
+          privacyAccepted: true,
+        },
+        [pdfFile()],
+      ),
+    ).resolves.toMatchObject({
+      caseId: 'case_1',
+      documentCount: 1,
+    });
+
+    expect(capturedDocumentCreateInput).toMatchObject({
+      data: {
+        tenantId: 'tenant_1',
+        caseId: 'case_1',
+        uploadedByCitizenProfileId: 'citizen_1',
+        originalFileName: 'citizen-document.pdf',
+        mimeType: 'application/pdf',
+        isSensitive: false,
+      },
+    });
+    expect(auditRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'document.uploaded_by_citizen',
+        actorCitizenProfileId: 'citizen_1',
       }),
     );
   });
@@ -179,6 +285,74 @@ describe('CasesService', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
+  it('blocks auditor internal note mutation attempts', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          tenantId: 'tenant_1',
+          assignedDepartmentId: 'department_1',
+        }),
+      },
+    });
+
+    await expect(
+      service.addInternalNote('case_1', auditor(), {
+        body: 'Auditor should not be able to mutate cases.',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('blocks cross-tenant status updates by requiring tenant-filtered lookup', async () => {
+    let capturedFindFirstInput: unknown;
+    const service = createService({
+      case: {
+        findFirst: jest.fn((input: unknown) => {
+          capturedFindFirstInput = input;
+          return Promise.resolve(null);
+        }),
+      },
+    });
+
+    await expect(
+      service.updateStatus('guessed_case_id', caseWorker(), {
+        status: CaseStatus.in_progress,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(capturedFindFirstInput).toMatchObject({
+      where: {
+        id: 'guessed_case_id',
+        tenantId: 'tenant_1',
+      },
+    });
+  });
+
+  it('blocks cross-tenant internal notes by requiring tenant-filtered lookup', async () => {
+    let capturedFindFirstInput: unknown;
+    const service = createService({
+      case: {
+        findFirst: jest.fn((input: unknown) => {
+          capturedFindFirstInput = input;
+          return Promise.resolve(null);
+        }),
+      },
+    });
+
+    await expect(
+      service.addInternalNote('guessed_case_id', caseWorker(), {
+        body: 'Attempted cross-tenant note.',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(capturedFindFirstInput).toMatchObject({
+      where: {
+        id: 'guessed_case_id',
+        tenantId: 'tenant_1',
+      },
+    });
+  });
+
   it('updates a department case and records an audit event', async () => {
     const recordMock = jest.fn().mockResolvedValue(undefined);
     const auditService = {
@@ -294,4 +468,15 @@ function auditor(): CurrentUser {
     email: 'auditor@arendal.local',
     role: UserRole.auditor,
   };
+}
+
+function pdfFile(): Express.Multer.File {
+  return {
+    fieldname: 'documents',
+    originalname: 'citizen-document.pdf',
+    encoding: '7bit',
+    mimetype: 'application/pdf',
+    size: 21,
+    buffer: Buffer.from('%PDF-1.7\npdf contents'),
+  } as Express.Multer.File;
 }

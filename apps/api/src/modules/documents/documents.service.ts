@@ -6,8 +6,16 @@ import {
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, extname, resolve } from 'node:path';
+import { createReadStream } from 'node:fs';
+import { access, mkdir, writeFile } from 'node:fs/promises';
+import {
+  basename,
+  dirname,
+  extname,
+  isAbsolute,
+  relative,
+  resolve,
+} from 'node:path';
 import { PrismaService } from '../../database/prisma.service';
 import { CurrentUser } from '../auth/current-user';
 import { roleHasPermission } from '../auth/permissions';
@@ -58,6 +66,12 @@ export class DocumentsService {
             id: true,
             name: true,
             role: true,
+          },
+        },
+        uploadedByCitizenProfile: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },
@@ -143,6 +157,71 @@ export class DocumentsService {
     return updatedDocument;
   }
 
+  async getDownloadForCase(
+    caseId: string,
+    documentId: string,
+    user: CurrentUser,
+  ) {
+    const caseRecord = await this.findAccessibleCase(caseId, user);
+    const canReadSensitive = roleHasPermission(
+      user.role,
+      'document:read:sensitive',
+    );
+
+    const document = await this.prisma.caseDocument.findFirst({
+      where: {
+        id: documentId,
+        tenantId: user.tenantId,
+        caseId: caseRecord.id,
+        deletedAt: null,
+        ...(canReadSensitive ? {} : { isSensitive: false }),
+      },
+      select: {
+        id: true,
+        originalFileName: true,
+        storageKey: true,
+        mimeType: true,
+        sizeBytes: true,
+        checksumSha256: true,
+        isSensitive: true,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found.');
+    }
+
+    const storagePath = resolveDocumentStoragePath(document.storageKey);
+
+    try {
+      await access(storagePath);
+    } catch {
+      throw new NotFoundException('Document file not found.');
+    }
+
+    await this.auditService.record({
+      tenantId: user.tenantId,
+      actor: user,
+      action: 'document.downloaded',
+      entityType: 'case_document',
+      entityId: document.id,
+      metadata: {
+        caseId: caseRecord.id,
+        mimeType: document.mimeType,
+        sizeBytes: document.sizeBytes,
+        isSensitive: document.isSensitive,
+        checksumSha256: document.checksumSha256,
+      },
+    });
+
+    return {
+      stream: createReadStream(storagePath),
+      fileName: document.originalFileName,
+      mimeType: document.mimeType,
+      sizeBytes: document.sizeBytes,
+    };
+  }
+
   async uploadForCase(
     caseId: string,
     user: CurrentUser,
@@ -153,7 +232,7 @@ export class DocumentsService {
       throw new BadRequestException('Document file is required.');
     }
 
-    this.validateFile(file);
+    validateDocumentFile(file);
     const caseRecord = await this.findAccessibleCase(caseId, user);
     this.assertCanUploadToCase(user, caseRecord.assignedDepartmentId);
 
@@ -162,7 +241,7 @@ export class DocumentsService {
       .digest('hex');
     const extension = extname(file.originalname).toLowerCase();
     const storageKey = `${user.tenantId}/${caseRecord.id}/${randomUUID()}${extension}`;
-    const storagePath = resolve(getUploadStoragePath(), storageKey);
+    const storagePath = resolveDocumentStoragePath(storageKey);
 
     await mkdir(dirname(storagePath), { recursive: true });
     await writeFile(storagePath, file.buffer, { flag: 'wx' });
@@ -227,22 +306,6 @@ export class DocumentsService {
     return caseRecord;
   }
 
-  private validateFile(file: Express.Multer.File) {
-    if (file.size > maxFileSizeBytes) {
-      throw new BadRequestException('Document exceeds the 10 MB limit.');
-    }
-
-    if (!allowedMimeTypes.has(file.mimetype)) {
-      throw new BadRequestException('Unsupported document MIME type.');
-    }
-
-    const extension = extname(file.originalname).toLowerCase();
-
-    if (!allowedExtensions.has(extension)) {
-      throw new BadRequestException('Unsupported document file extension.');
-    }
-  }
-
   private assertCanReadCase(
     user: CurrentUser,
     assignedDepartmentId: string | null,
@@ -289,4 +352,80 @@ export class DocumentsService {
 
 function getUploadStoragePath() {
   return process.env.UPLOAD_STORAGE_PATH ?? './storage/uploads';
+}
+
+export function resolveDocumentStoragePath(storageKey: string) {
+  const storageRoot = resolve(getUploadStoragePath());
+  const storagePath = resolve(storageRoot, storageKey);
+  const relativePath = relative(storageRoot, storagePath);
+
+  if (
+    relativePath.startsWith('..') ||
+    relativePath === '..' ||
+    isAbsolute(relativePath)
+  ) {
+    throw new NotFoundException('Document not found.');
+  }
+
+  return storagePath;
+}
+
+export function validateDocumentFile(file: Express.Multer.File) {
+  if (file.size === 0 || file.buffer.length === 0) {
+    throw new BadRequestException('Document file cannot be empty.');
+  }
+
+  if (file.size > maxFileSizeBytes) {
+    throw new BadRequestException('Document exceeds the 10 MB limit.');
+  }
+
+  if (isUnsafeOriginalFileName(file.originalname)) {
+    throw new BadRequestException('Unsafe document file name.');
+  }
+
+  if (!allowedMimeTypes.has(file.mimetype)) {
+    throw new BadRequestException('Unsupported document MIME type.');
+  }
+
+  const extension = extname(file.originalname).toLowerCase();
+
+  if (!allowedExtensions.has(extension)) {
+    throw new BadRequestException('Unsupported document file extension.');
+  }
+
+  if (!fileMagicBytesMatch(file.buffer, file.mimetype)) {
+    throw new BadRequestException('Document content does not match file type.');
+  }
+}
+
+function isUnsafeOriginalFileName(originalFileName: string) {
+  return (
+    originalFileName !== basename(originalFileName) ||
+    originalFileName.includes('..') ||
+    originalFileName.includes('/') ||
+    originalFileName.includes('\\')
+  );
+}
+
+function fileMagicBytesMatch(buffer: Buffer, mimeType: string) {
+  if (mimeType === 'application/pdf') {
+    return buffer.subarray(0, 4).equals(Buffer.from('%PDF'));
+  }
+
+  if (mimeType === 'image/png') {
+    return buffer
+      .subarray(0, 8)
+      .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  }
+
+  if (mimeType === 'image/jpeg') {
+    return (
+      buffer.length >= 3 &&
+      buffer[0] === 0xff &&
+      buffer[1] === 0xd8 &&
+      buffer[2] === 0xff
+    );
+  }
+
+  return false;
 }

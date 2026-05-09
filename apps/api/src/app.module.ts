@@ -4,6 +4,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AIModule } from './modules/ai/ai.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CasesModule } from './modules/cases/cases.module';
 import { DatabaseModule } from './database/database.module';
@@ -25,6 +26,7 @@ import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
     CasesModule,
     DocumentsModule,
     AIModule,
+    AnalyticsModule,
     OperationsModule,
     PrivacyModule,
   ],

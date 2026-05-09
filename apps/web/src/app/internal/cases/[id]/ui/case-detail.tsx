@@ -43,7 +43,10 @@ type CaseDocumentResponse = {
   uploadedBy: {
     name: string;
     role: string;
-  };
+  } | null;
+  uploadedByCitizenProfile: {
+    name: string;
+  } | null;
 };
 
 type AITriageResultResponse = {
@@ -581,9 +584,18 @@ export function CaseDetail({ caseId }: { caseId: string }) {
                       Sensitive
                     </span>
                   ) : null}
+                  <a
+                    href={`${getApiBaseUrl()}/cases/${caseId}/documents/${document.id}/download`}
+                    className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-800"
+                  >
+                    Download
+                  </a>
                 </div>
                 <p className="mt-2 text-xs text-slate-500">
-                  Uploaded by {document.uploadedBy.name}
+                  Uploaded by{" "}
+                  {document.uploadedBy?.name ??
+                    document.uploadedByCitizenProfile?.name ??
+                    "Unknown"}
                 </p>
               </article>
             ))}

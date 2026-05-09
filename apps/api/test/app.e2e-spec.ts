@@ -48,6 +48,99 @@ describe('AppController (e2e)', () => {
       .expect('Hello World!');
   });
 
+  it('sets security headers', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1')
+      .expect(200);
+
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['x-frame-options']).toBe('SAMEORIGIN');
+    expect(response.headers['referrer-policy']).toBe('no-referrer');
+  });
+
+  it('allows configured CORS origins', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1')
+      .set('Origin', process.env.APP_BASE_URL ?? 'http://localhost:3000')
+      .expect(200);
+
+    expect(response.headers['access-control-allow-origin']).toBe(
+      process.env.APP_BASE_URL ?? 'http://localhost:3000',
+    );
+    expect(response.headers['access-control-allow-credentials']).toBe('true');
+  });
+
+  it('does not allow arbitrary CORS origins', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1')
+      .set('Origin', 'https://evil.example')
+      .expect(200);
+
+    expect(response.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('rejects cookie-authenticated state changes from invalid origins', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/auth/logout')
+      .set('Origin', 'https://evil.example')
+      .set('Cookie', ['kommuneflow_access_token=fake-token'])
+      .expect(403);
+
+    expect(response.body).toMatchObject({
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Invalid request origin.',
+      },
+    });
+  });
+
+  it('allows cookie-authenticated state changes from configured origins', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/logout')
+      .set('Origin', process.env.APP_BASE_URL ?? 'http://localhost:3000')
+      .set('Cookie', ['kommuneflow_access_token=fake-token'])
+      .expect(201);
+  });
+
+  it('returns a safe error for invalid JSON bodies', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/public/tenants/arendal/cases')
+      .set('Content-Type', 'application/json')
+      .send('{"citizen":')
+      .expect(400);
+
+    expect(response.body).toMatchObject({
+      error: {
+        code: 'BAD_REQUEST',
+      },
+    });
+  });
+
+  it('rejects oversized JSON bodies', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/public/tenants/arendal/cases')
+      .set('Content-Type', 'application/json')
+      .send({
+        citizen: {
+          name: 'Demo Citizen',
+          email: 'citizen@example.local',
+        },
+        case: {
+          title: 'Oversized request',
+          description: 'x'.repeat(1024 * 1024 + 1),
+          sourceLanguage: 'en',
+        },
+        privacyAccepted: true,
+      })
+      .expect(413);
+
+    expect(response.body).toMatchObject({
+      error: {
+        code: 'PAYLOAD_TOO_LARGE',
+      },
+    });
+  });
+
   it('adds a generated request ID response header', async () => {
     const response = await request(app.getHttpServer())
       .get('/api/v1')

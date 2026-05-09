@@ -20,10 +20,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = context.getResponse<Response>();
     const request = context.getRequest<Request & RequestWithId>();
     const requestId = request.requestId ?? randomUUID();
-    const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status = getStatus(exception);
     const errorCode = statusToCode(status);
     const safeMessage = getErrorMessage(exception);
 
@@ -101,6 +98,32 @@ function getErrorMessage(exception: unknown) {
   return 'Internal server error.';
 }
 
+function getStatus(exception: unknown) {
+  if (exception instanceof HttpException) {
+    return exception.getStatus();
+  }
+
+  if (
+    typeof exception === 'object' &&
+    exception !== null &&
+    'statusCode' in exception &&
+    typeof exception.statusCode === 'number'
+  ) {
+    return exception.statusCode;
+  }
+
+  if (
+    typeof exception === 'object' &&
+    exception !== null &&
+    'status' in exception &&
+    typeof exception.status === 'number'
+  ) {
+    return exception.status;
+  }
+
+  return HttpStatus.INTERNAL_SERVER_ERROR;
+}
+
 function shouldLogStack(exception: unknown): exception is Error {
   return process.env.NODE_ENV === 'development' && exception instanceof Error;
 }
@@ -111,6 +134,7 @@ function statusToCode(status: number) {
     [HttpStatus.UNAUTHORIZED]: 'UNAUTHORIZED',
     [HttpStatus.FORBIDDEN]: 'FORBIDDEN',
     [HttpStatus.NOT_FOUND]: 'NOT_FOUND',
+    [HttpStatus.PAYLOAD_TOO_LARGE]: 'PAYLOAD_TOO_LARGE',
     [HttpStatus.TOO_MANY_REQUESTS]: 'TOO_MANY_REQUESTS',
   };
 

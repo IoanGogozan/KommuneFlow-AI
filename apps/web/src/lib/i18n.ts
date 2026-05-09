@@ -16,6 +16,8 @@ export type IntakeDictionary = {
   addressLabel: string;
   caseTitleLabel: string;
   descriptionLabel: string;
+  documentsLabel: string;
+  documentsHelp: string;
   privacyLabel: string;
   privacyText: string;
   submit: string;
@@ -43,9 +45,11 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     addressLabel: "Adresse",
     caseTitleLabel: "Tittel",
     descriptionLabel: "Beskrivelse",
+    documentsLabel: "Dokumenter",
+    documentsHelp: "Valgfritt. Last opp PDF, PNG eller JPG. Maks 10 MB per fil.",
     privacyLabel: "Personvern",
     privacyText:
-      "Jeg forstar at opplysningene brukes til a behandle henvendelsen min.",
+      "Jeg forstar at opplysningene og eventuelle dokumenter brukes til a registrere og behandle henvendelsen min. Tilgang loggfores, og data kan eksporteres, anonymiseres eller slettes etter kommunens retensjonsregler.",
     submit: "Send inn",
     submitting: "Sender inn...",
     successTitle: "Henvendelsen er registrert",
@@ -69,9 +73,11 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     addressLabel: "Address",
     caseTitleLabel: "Title",
     descriptionLabel: "Description",
+    documentsLabel: "Documents",
+    documentsHelp: "Optional. Upload PDF, PNG, or JPG. Maximum 10 MB per file.",
     privacyLabel: "Privacy",
     privacyText:
-      "I understand that my information is used to process this request.",
+      "I understand that my information and any documents are used to register and process this request. Access is audited, and data may be exported, anonymized, or deleted according to the municipality's retention policy.",
     submit: "Submit",
     submitting: "Submitting...",
     successTitle: "Request registered",
