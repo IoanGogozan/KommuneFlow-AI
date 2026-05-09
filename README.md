@@ -79,6 +79,8 @@ case.worker@arendal.local
 DemoPassword123!
 ```
 
+Internal authentication uses an `HttpOnly` cookie set by the API. The web app does not store access tokens in `localStorage`.
+
 ## Useful Commands
 
 ```bash

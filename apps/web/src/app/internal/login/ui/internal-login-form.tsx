@@ -19,6 +19,7 @@ export function InternalLoginForm() {
     try {
       const response = await fetch(`${getApiBaseUrl()}/auth/login`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: String(formData.get("email") ?? ""),
@@ -30,17 +31,6 @@ export function InternalLoginForm() {
         throw new Error("Login failed");
       }
 
-      const result = (await response.json()) as {
-        accessToken: string;
-        user: {
-          email: string;
-          name: string;
-          role: string;
-        };
-      };
-
-      localStorage.setItem("kommuneflow.accessToken", result.accessToken);
-      localStorage.setItem("kommuneflow.user", JSON.stringify(result.user));
       router.push("/internal/cases");
     } catch {
       setError("Invalid email or password.");

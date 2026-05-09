@@ -1,10 +1,10 @@
 "use client";
 
-export function getAccessToken() {
-  return localStorage.getItem("kommuneflow.accessToken");
-}
+import { getApiBaseUrl } from "./api";
 
-export function clearSession() {
-  localStorage.removeItem("kommuneflow.accessToken");
-  localStorage.removeItem("kommuneflow.user");
+export async function clearSession() {
+  await fetch(`${getApiBaseUrl()}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  }).catch(() => undefined);
 }

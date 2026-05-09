@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
-import { clearSession, getAccessToken } from "@/lib/auth";
+import { clearSession } from "@/lib/auth";
 
 type CaseDetailResponse = {
   id: string;
@@ -49,19 +49,12 @@ export function CaseDetail({ caseId }: { caseId: string }) {
   const [status, setStatus] = useState("new");
 
   async function loadCase() {
-    const token = getAccessToken();
-
-    if (!token) {
-      router.push("/internal/login");
-      return;
-    }
-
     const response = await fetch(`${getApiBaseUrl()}/cases/${caseId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
     });
 
     if (response.status === 401) {
-      clearSession();
+      await clearSession();
       router.push("/internal/login");
       return;
     }
@@ -84,12 +77,11 @@ export function CaseDetail({ caseId }: { caseId: string }) {
   async function updateStatus(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    const token = getAccessToken();
 
     const response = await fetch(`${getApiBaseUrl()}/cases/${caseId}/status`, {
       method: "PATCH",
+      credentials: "include",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ status }),
@@ -108,14 +100,13 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     setError(null);
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const token = getAccessToken();
 
     const response = await fetch(
       `${getApiBaseUrl()}/cases/${caseId}/internal-notes`,
       {
         method: "POST",
+        credentials: "include",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ body: String(formData.get("body") ?? "") }),

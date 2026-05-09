@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ZodError } from 'zod';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUserParam } from '../auth/current-user.decorator';
@@ -28,6 +29,7 @@ export class PublicCasesController {
   constructor(private readonly casesService: CasesService) {}
 
   @Post()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async createPublicCase(
     @Param('tenantSlug') tenantSlug: string,
     @Body() body: unknown,

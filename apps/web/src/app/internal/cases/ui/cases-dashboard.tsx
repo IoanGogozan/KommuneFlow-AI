@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
-import { clearSession, getAccessToken } from "@/lib/auth";
+import { clearSession } from "@/lib/auth";
 
 type CaseListItem = {
   id: string;
@@ -44,21 +44,14 @@ export function CasesDashboard() {
   }, [status]);
 
   useEffect(() => {
-    const token = getAccessToken();
-
-    if (!token) {
-      router.push("/internal/login");
-      return;
-    }
-
     async function loadCases() {
       try {
         const response = await fetch(`${getApiBaseUrl()}/cases${query}`, {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
         });
 
         if (response.status === 401) {
-          clearSession();
+          await clearSession();
           router.push("/internal/login");
           return;
         }
@@ -89,7 +82,7 @@ export function CasesDashboard() {
           <button
             type="button"
             onClick={() => {
-              clearSession();
+              void clearSession();
               router.push("/internal/login");
             }}
             className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"

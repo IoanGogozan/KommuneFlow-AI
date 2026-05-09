@@ -3,13 +3,14 @@ import { JwtModule } from '@nestjs/jwt';
 import '../../config/env';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AUTH_TOKEN_TTL_SECONDS, getJwtSecret } from './auth.constants';
 
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET ?? 'development-only-jwt-secret',
+      secret: getJwtSecret(),
       signOptions: {
-        expiresIn: '1h',
+        expiresIn: AUTH_TOKEN_TTL_SECONDS,
       },
     }),
   ],
