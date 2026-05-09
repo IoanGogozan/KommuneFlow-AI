@@ -7,8 +7,8 @@ KommuneFlow AI is a multi-tenant SaaS platform for municipal citizen case intake
 Project planning documents are stored in [docs](./docs). Start with:
 
 - [Documentation Index](./docs/00_DOCUMENTATION_INDEX.md)
-- [Development Plan](./docs/10_DEVELOPMENT_PLAN.md)
-- [Implementation Checklist](./docs/11_IMPLEMENTATION_CHECKLIST.md)
+- [Development Plan](./docs/13_DEVELOPMENT_PLAN.md)
+- [Implementation Checklist](./docs/14_IMPLEMENTATION_CHECKLIST.md)
 
 ## Requirements
 

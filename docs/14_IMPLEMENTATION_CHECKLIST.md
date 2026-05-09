@@ -220,7 +220,39 @@ Phase completion criteria:
 - [ ] Privacy actions are audited
 - [ ] Analytics avoids personal identifiers where possible
 
-## Phase 8: Analytics
+## Phase 8: Observability And Operations
+
+Goal: make the application observable and operable in a production-like environment.
+
+- [x] Add request ID middleware
+- [x] Accept safe `X-Request-Id` values
+- [x] Return request ID in response headers
+- [x] Include request ID in structured error responses
+- [x] Add structured JSON logging
+- [x] Add safe request logging
+- [x] Add safe error logging
+- [x] Add `/api/v1/health`
+- [x] Add `/api/v1/readiness`
+- [x] Verify database dependency in readiness check
+- [x] Verify upload storage path in readiness check
+- [ ] Add metrics-friendly tracking for key operations
+- [ ] Add operations dashboard basics
+- [ ] Add backup logs or documented backup logging behavior
+- [x] Create `docs/RUNBOOK.md`
+- [x] Add tests for health endpoint
+- [x] Add tests for readiness endpoint
+- [x] Add tests for request ID propagation
+- [x] Add tests proving secrets are not exposed in health/readiness responses
+
+Phase completion criteria:
+
+- [x] `/api/v1/health` works
+- [x] `/api/v1/readiness` verifies required dependencies
+- [x] Request IDs exist in responses, logs, and error responses
+- [x] Logs avoid secrets and unnecessary personal data
+- [x] Runbook documents core operational actions
+
+## Phase 9: Analytics
 
 Goal: provide operational insight without exposing unnecessary personal data.
 
@@ -242,7 +274,45 @@ Phase completion criteria:
 - [ ] Aggregation can be rerun safely
 - [ ] Analytics does not expose unnecessary personal data
 
-## Phase 9: Hetzner Deployment
+## Phase 10: Security Hardening And Release Gate
+
+Goal: expand negative testing and make security release criteria explicit.
+
+- [ ] Add login wrong-password test
+- [ ] Add unknown-email generic-message test
+- [ ] Add disabled-user login test
+- [ ] Add malformed token test
+- [ ] Add expired token/session test if token expiry can be tested deterministically
+- [ ] Add auditor mutation tests for notes, status, and AI review
+- [ ] Add cross-tenant update-by-guessed-ID tests
+- [ ] Add cross-tenant document storage key access test
+- [ ] Add invalid JSON body test
+- [ ] Add oversized body test
+- [ ] Add unsupported HTTP method safe-error test
+- [ ] Add CORS production configuration test or documented manual check
+- [ ] Add executable upload rejection test
+- [ ] Add fake extension/MIME upload rejection test
+- [ ] Add empty file upload rejection test
+- [ ] Add path traversal filename test
+- [ ] Add malformed AI JSON test
+- [ ] Add missing AI fields test
+- [ ] Add invalid AI enum test
+- [ ] Add AI confidence range test
+- [ ] Add AI output safe-rendering test
+- [ ] Add privacy workflow tests after privacy module exists
+- [ ] Add dependency audit command to CI or release checklist
+
+Phase completion criteria:
+
+- [ ] Tenant isolation tests pass
+- [ ] RBAC tests pass
+- [ ] Auth negative tests pass
+- [ ] File upload abuse tests pass
+- [ ] AI safety tests pass
+- [ ] Privacy workflow tests pass
+- [ ] Production build passes
+
+## Phase 11: Hetzner Deployment
 
 Goal: deploy the application in a production-like environment.
 
@@ -272,7 +342,7 @@ Phase completion criteria:
 - [ ] Backup procedure is documented
 - [ ] No database port is publicly exposed
 
-## Phase 10: Portfolio Polish
+## Phase 12: Portfolio Polish
 
 Goal: make the project easy to understand and show in interviews.
 
@@ -283,6 +353,15 @@ Goal: make the project easy to understand and show in interviews.
 - [ ] Add demo video script
 - [ ] Add deployment notes
 - [ ] Add security and privacy highlights
+- [ ] Add API documentation
+- [ ] Add ADR for tenant ID filtering
+- [ ] Add ADR for human-reviewed AI suggestions
+- [ ] Add ADR for `AIProvider`
+- [ ] Add ADR for Docker Compose on Hetzner
+- [ ] Add ADR for PostgreSQL
+- [ ] Add ADR for i18n strategy
+- [ ] Add known limitations section
+- [ ] Add future improvements section
 - [ ] Add English job application project description
 - [ ] Add Norwegian job application project description
 
@@ -291,15 +370,16 @@ Phase completion criteria:
 - [ ] A recruiter or technical interviewer can understand the project in under 5 minutes
 - [ ] A developer can run the project locally from README
 - [ ] The deployed demo is stable enough to show
+- [ ] Repository satisfies `docs/12_PROFESSIONAL_QUALITY_BAR.md`
 
 ## Current Focus
 
 Update this section manually whenever work starts on a new task.
 
 ```txt
-Current phase: Phase 6: AI Triage
-Current task: Phase 6 implementation completed
-Next task: Verify full workspace and begin Phase 7 privacy features
+Current phase: Phase 8: Observability And Operations
+Current task: Request IDs, health/readiness, structured logging, safe error logging, and initial runbook completed
+Next task: Decide between metrics-friendly tracking, operations dashboard basics, or Phase 7 privacy features
 Blocked by: None
 Last updated: 2026-05-09
 ```
@@ -320,3 +400,9 @@ Use this section for short implementation notes. Longer architectural decisions 
 - Phase 6 provider foundation added with `AIProvider`, deterministic `MockAIProvider`, OpenAI Responses API provider using Structured Outputs, `case_triage_v1` prompt helpers, and Zod validation for AI triage output.
 - Phase 6 backend workflow added with tenant-scoped AI triage endpoints, safe failed-result storage on provider errors, raw response storage, short reasoning summaries, human review API, official case updates only after review, and audit events for triage creation/failure and review.
 - Phase 6 UI completed on case detail with AI suggestion generation, visible suggested classification, confidence, missing information, reasoning summary, and human accept/correct review controls.
+- Documentation aligned with the updated blueprint by adding observability and operations, security test plan, and professional quality bar source-of-truth documents.
+- Request ID middleware added with safe `X-Request-Id` reuse, generated fallback IDs, response header propagation, and structured error response reuse.
+- Operations endpoints added for `/api/v1/health` and `/api/v1/readiness`, with readiness checks for PostgreSQL through Prisma and upload storage availability.
+- Pino structured request logging added with method, path, status code, duration, request ID, and safe optional actor metadata.
+- Safe error logging added in the global exception filter with request ID, error code, path, status, and safe actor metadata.
+- Initial runbook added with restart, logs, migrations, backup, restore, AI provider failure, and database failure procedures.

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -8,6 +8,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CasesModule } from './modules/cases/cases.module';
 import { DatabaseModule } from './database/database.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { OperationsModule } from './modules/operations/operations.module';
+import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 
 @Module({
   imports: [
@@ -22,10 +24,15 @@ import { DocumentsModule } from './modules/documents/documents.module';
     CasesModule,
     DocumentsModule,
     AIModule,
+    OperationsModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

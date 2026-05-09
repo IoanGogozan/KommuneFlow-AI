@@ -134,7 +134,29 @@ Acceptance criteria:
 - privacy actions are audited
 - personal data is not used in analytics where avoidable
 
-## Phase 8: Analytics
+## Phase 8: Observability And Operations
+
+Deliverables:
+
+- request ID middleware
+- structured JSON logging
+- safe error logging
+- health endpoint
+- readiness endpoint
+- metrics-friendly tracking
+- operational dashboard basics
+- backup logs
+- runbook
+
+Acceptance criteria:
+
+- `/api/v1/health` works
+- `/api/v1/readiness` verifies required dependencies
+- request IDs are returned and included in errors/logs
+- logs do not expose secrets or unnecessary personal data
+- key operational failure scenarios are documented
+
+## Phase 9: Analytics
 
 Deliverables:
 
@@ -150,7 +172,31 @@ Acceptance criteria:
 - aggregation can be rerun safely
 - analytics does not expose unnecessary personal data
 
-## Phase 9: Hetzner Deployment
+## Phase 10: Security Hardening And Release Gate
+
+Deliverables:
+
+- authentication negative tests
+- authorization negative tests
+- tenant isolation tests
+- file upload abuse tests
+- API abuse tests
+- AI safety negative tests
+- privacy workflow tests
+- audit logging tests
+- dependency audit command in CI or release checklist
+
+Acceptance criteria:
+
+- tenant isolation tests pass
+- RBAC tests pass
+- auth negative tests pass
+- file upload abuse tests pass
+- AI safety tests pass
+- privacy workflow tests pass
+- production build passes
+
+## Phase 11: Hetzner Deployment
 
 Deliverables:
 
@@ -170,7 +216,7 @@ Acceptance criteria:
 - backup procedure is documented
 - no database port is publicly exposed
 
-## Phase 10: Portfolio Polish
+## Phase 12: Portfolio Polish
 
 Deliverables:
 
@@ -180,9 +226,13 @@ Deliverables:
 - demo users
 - demo video script
 - job application project description
+- API documentation
+- ADRs for important architecture decisions
+- known limitations and future improvements
 
 Acceptance criteria:
 
 - a recruiter or technical interviewer can understand the project in under 5 minutes
 - a developer can run the project locally from README
 - the deployed demo is stable enough to show
+- the repository satisfies `12_PROFESSIONAL_QUALITY_BAR.md`

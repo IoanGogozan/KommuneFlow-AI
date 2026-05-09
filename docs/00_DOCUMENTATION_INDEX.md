@@ -22,8 +22,12 @@ The application UI must support:
 | [07_DEPLOYMENT_HETZNER.md](./07_DEPLOYMENT_HETZNER.md) | Defines the production-like Hetzner deployment, Docker Compose runtime, HTTPS, firewall, backups, and restore expectations. |
 | [08_IMPLEMENTATION_ROADMAP.md](./08_IMPLEMENTATION_ROADMAP.md) | Defines the implementation phases and acceptance criteria in recommended delivery order. |
 | [09_DEFINITION_OF_DONE.md](./09_DEFINITION_OF_DONE.md) | Defines what must be true before a feature is considered complete. |
-| [10_DEVELOPMENT_PLAN.md](./10_DEVELOPMENT_PLAN.md) | Adds practical execution guidance, first milestones, planning rules, and recommended initial backlog. |
-| [11_IMPLEMENTATION_CHECKLIST.md](./11_IMPLEMENTATION_CHECKLIST.md) | Tracks implementation progress across all roadmap phases with clear checkboxes and current focus. |
+| [10_OBSERVABILITY_AND_OPERATIONS.md](./10_OBSERVABILITY_AND_OPERATIONS.md) | Defines logging, request IDs, health checks, readiness checks, metrics, backups, restore verification, and runbook requirements. |
+| [11_SECURITY_TEST_PLAN.md](./11_SECURITY_TEST_PLAN.md) | Defines concrete security, abuse-case, tenant isolation, RBAC, AI safety, privacy, audit, and rate limiting tests. |
+| [12_PROFESSIONAL_QUALITY_BAR.md](./12_PROFESSIONAL_QUALITY_BAR.md) | Defines the final portfolio quality bar for repository polish, demo quality, documentation, deployment, and interview readiness. |
+| [13_DEVELOPMENT_PLAN.md](./13_DEVELOPMENT_PLAN.md) | Adds practical execution guidance, first milestones, planning rules, and recommended initial backlog. |
+| [14_IMPLEMENTATION_CHECKLIST.md](./14_IMPLEMENTATION_CHECKLIST.md) | Tracks implementation progress across all roadmap phases with clear checkboxes and current focus. |
+| [RUNBOOK.md](./RUNBOOK.md) | Documents operational procedures for restart, logs, migrations, backup, restore, AI provider failure, and database failure. |
 
 ## How To Use These Documents
 
@@ -36,7 +40,8 @@ Before implementing a feature:
 5. Implement in a small, reviewable step.
 6. Add tests for security, authorization, tenant isolation, and important workflows.
 7. Update documentation when architecture, commands, environment variables, or behavior changes.
-8. Mark completed checklist items after verification.
+8. Check observability, security release-gate, and professional quality requirements before marking a phase complete.
+9. Mark completed checklist items after verification.
 
 ## Product Positioning
 

@@ -7,28 +7,79 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
+import {
+  REQUEST_ID_HEADER,
+  RequestWithId,
+} from '../middleware/request-id.middleware';
+import { appLogger } from '../logging/app-logger';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const context = host.switchToHttp();
     const response = context.getResponse<Response>();
-    const request = context.getRequest<Request>();
-    const requestId = randomUUID();
+    const request = context.getRequest<Request & RequestWithId>();
+    const requestId = request.requestId ?? randomUUID();
     const status =
       exception instanceof HttpException
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
+    const errorCode = statusToCode(status);
+    const safeMessage = getErrorMessage(exception);
+
+    if (!response.headersSent) {
+      response.setHeader(REQUEST_ID_HEADER, requestId);
+    }
+
+    logException({
+      exception,
+      request,
+      requestId,
+      status,
+      errorCode,
+      safeMessage,
+    });
 
     response.status(status).json({
       error: {
-        code: statusToCode(status),
-        message: getErrorMessage(exception),
+        code: errorCode,
+        message: safeMessage,
         requestId,
         path: request.url,
       },
     });
   }
+}
+
+type ExceptionLogInput = {
+  exception: unknown;
+  request: Request & RequestWithId;
+  requestId: string;
+  status: number;
+  errorCode: string;
+  safeMessage: string;
+};
+
+function logException(input: ExceptionLogInput) {
+  const logPayload = {
+    event: 'http_error',
+    requestId: input.requestId,
+    errorCode: input.errorCode,
+    safeMessage: input.safeMessage,
+    method: input.request.method,
+    path: input.request.originalUrl ?? input.request.url,
+    statusCode: input.status,
+    userId: input.request.user?.id,
+    tenantId: input.request.user?.tenantId,
+    stack: shouldLogStack(input.exception) ? input.exception.stack : undefined,
+  };
+
+  if (input.status >= 500) {
+    appLogger.error(logPayload);
+    return;
+  }
+
+  appLogger.warn(logPayload);
 }
 
 function getErrorMessage(exception: unknown) {
@@ -48,6 +99,10 @@ function getErrorMessage(exception: unknown) {
   }
 
   return 'Internal server error.';
+}
+
+function shouldLogStack(exception: unknown): exception is Error {
+  return process.env.NODE_ENV === 'development' && exception instanceof Error;
 }
 
 function statusToCode(status: number) {
