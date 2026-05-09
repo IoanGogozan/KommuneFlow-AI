@@ -6,6 +6,89 @@ import { AuditService } from '../audit/audit.service';
 import { CasesService } from './cases.service';
 
 describe('CasesService', () => {
+  it('creates a public case with tenant association and audit event', async () => {
+    const auditRecordMock = jest.fn().mockResolvedValue(undefined);
+    const service = createService(
+      {
+        tenant: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'tenant_1',
+            slug: 'arendal',
+          }),
+        },
+        citizenProfile: {
+          create: jest.fn().mockResolvedValue({
+            id: 'citizen_1',
+          }),
+        },
+        case: {
+          create: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            title: 'Road damage report',
+            status: CaseStatus.new,
+            createdAt: new Date('2026-05-09T07:00:00.000Z'),
+          }),
+        },
+      },
+      {
+        record: auditRecordMock,
+      } as unknown as AuditService,
+    );
+
+    await expect(
+      service.createPublicCase('arendal', {
+        citizen: {
+          name: 'Demo Citizen',
+          email: 'Citizen@Example.Local',
+          phone: '',
+          address: '',
+        },
+        case: {
+          title: 'Road damage report',
+          description:
+            'There is a damaged road surface near the school entrance.',
+          sourceLanguage: 'en',
+        },
+        privacyAccepted: true,
+      }),
+    ).resolves.toMatchObject({
+      caseId: 'case_1',
+      status: CaseStatus.new,
+    });
+    expect(auditRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant_1',
+        action: 'case.created_by_citizen',
+        entityType: 'case',
+        entityId: 'case_1',
+      }),
+    );
+  });
+
+  it('returns not found when creating a public case for an unknown tenant', async () => {
+    const service = createService({
+      tenant: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+    });
+
+    await expect(
+      service.createPublicCase('unknown', {
+        citizen: {
+          name: 'Demo Citizen',
+          email: 'citizen@example.local',
+        },
+        case: {
+          title: 'Road damage report',
+          description:
+            'There is a damaged road surface near the school entrance.',
+          sourceLanguage: 'en',
+        },
+        privacyAccepted: true,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
   it('blocks cross-tenant case reads by requiring tenant filtering', async () => {
     const service = createService({
       case: {

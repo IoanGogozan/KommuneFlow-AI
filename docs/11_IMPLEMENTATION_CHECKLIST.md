@@ -86,27 +86,27 @@ Phase completion criteria:
 
 Goal: complete the first public citizen workflow.
 
-- [ ] Add public intake page
-- [ ] Add language switcher
-- [ ] Add Norwegian translations
-- [ ] Add English translations
-- [ ] Add create case API endpoint
-- [ ] Add request validation
-- [ ] Create citizen profile during intake
-- [ ] Create case during intake
-- [ ] Create audit event during intake
-- [ ] Add confirmation page
-- [ ] Add test for successful case submission
-- [ ] Add test for invalid input returning 400
-- [ ] Add test for correct tenant association
-- [ ] Add test for audit event creation
+- [x] Add public intake page
+- [x] Add language switcher
+- [x] Add Norwegian translations
+- [x] Add English translations
+- [x] Add create case API endpoint
+- [x] Add request validation
+- [x] Create citizen profile during intake
+- [x] Create case during intake
+- [x] Create audit event during intake
+- [x] Add confirmation page
+- [x] Add test for successful case submission
+- [x] Add test for invalid input returning 400
+- [x] Add test for correct tenant association
+- [x] Add test for audit event creation
 
 Phase completion criteria:
 
-- [ ] Citizen can submit a case
-- [ ] Case is stored with correct tenant
-- [ ] Audit event is created
-- [ ] UI works in Norwegian and English
+- [x] Citizen can submit a case
+- [x] Case is stored with correct tenant
+- [x] Audit event is created
+- [x] UI works in Norwegian and English
 
 ## Phase 4: Internal Case Dashboard
 
@@ -297,9 +297,9 @@ Phase completion criteria:
 Update this section manually whenever work starts on a new task.
 
 ```txt
-Current phase: Phase 3: Citizen Case Intake
+Current phase: Phase 4: Internal Case Dashboard
 Current task: Not started
-Next task: Add public intake page and create case API endpoint
+Next task: Add internal login UI and authenticated case dashboard
 Blocked by: None
 Last updated: 2026-05-09
 ```
@@ -312,3 +312,4 @@ Use this section for short implementation notes. Longer architectural decisions 
 - Phase 1 foundation completed with pnpm monorepo, NestJS API, Next.js web app, shared package, Docker PostgreSQL, Prisma baseline, CI, and README setup.
 - Prisma is the selected database ORM and migration tool.
 - Phase 2 completed with Prisma core schema, initial migration, seed data, JWT login, password hashing, explicit permission map, authorization guard, tenant-filtered case access, audit service, and security-focused tests.
+- Phase 3 completed with public citizen intake API, tenant lookup, citizen profile creation, case creation, intake audit event, Norwegian and English intake UI, language switcher, confirmation state, and validation tests.

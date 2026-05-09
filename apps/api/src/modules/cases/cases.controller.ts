@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { ZodError } from 'zod';
@@ -14,7 +15,34 @@ import type { CurrentUser } from '../auth/current-user';
 import { RequirePermissions } from '../auth/permissions.decorator';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { CasesService } from './cases.service';
-import { updateCaseStatusSchema } from './cases.schemas';
+import {
+  createPublicCaseSchema,
+  updateCaseStatusSchema,
+} from './cases.schemas';
+
+@Controller('public/tenants/:tenantSlug/cases')
+export class PublicCasesController {
+  constructor(private readonly casesService: CasesService) {}
+
+  @Post()
+  async createPublicCase(
+    @Param('tenantSlug') tenantSlug: string,
+    @Body() body: unknown,
+  ) {
+    try {
+      return await this.casesService.createPublicCase(
+        tenantSlug,
+        createPublicCaseSchema.parse(body),
+      );
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new BadRequestException('Invalid case intake payload.');
+      }
+
+      throw error;
+    }
+  }
+}
 
 @Controller('cases')
 @UseGuards(AuthGuard, PermissionsGuard)

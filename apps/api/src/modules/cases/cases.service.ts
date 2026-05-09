@@ -8,7 +8,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { CurrentUser } from '../auth/current-user';
 import { roleHasPermission } from '../auth/permissions';
 import { AuditService } from '../audit/audit.service';
-import { UpdateCaseStatusInput } from './cases.schemas';
+import { CreatePublicCaseInput, UpdateCaseStatusInput } from './cases.schemas';
 
 @Injectable()
 export class CasesService {
@@ -16,6 +16,64 @@ export class CasesService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
   ) {}
+
+  async createPublicCase(tenantSlug: string, input: CreatePublicCaseInput) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug: tenantSlug },
+      select: { id: true, slug: true },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found.');
+    }
+
+    const citizenProfile = await this.prisma.citizenProfile.create({
+      data: {
+        tenantId: tenant.id,
+        name: input.citizen.name,
+        email: input.citizen.email.toLowerCase(),
+        phone: emptyToNull(input.citizen.phone),
+        address: emptyToNull(input.citizen.address),
+      },
+    });
+
+    const caseRecord = await this.prisma.case.create({
+      data: {
+        tenantId: tenant.id,
+        citizenProfileId: citizenProfile.id,
+        title: input.case.title,
+        description: input.case.description,
+        sourceLanguage: input.case.sourceLanguage,
+        status: 'new',
+        category: 'unknown',
+        urgency: 'normal',
+      },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    await this.auditService.record({
+      tenantId: tenant.id,
+      action: 'case.created_by_citizen',
+      entityType: 'case',
+      entityId: caseRecord.id,
+      metadata: {
+        tenantSlug: tenant.slug,
+        citizenProfileId: citizenProfile.id,
+        sourceLanguage: input.case.sourceLanguage,
+      },
+    });
+
+    return {
+      caseId: caseRecord.id,
+      status: caseRecord.status,
+      createdAt: caseRecord.createdAt,
+    };
+  }
 
   async findById(caseId: string, user: CurrentUser) {
     const caseRecord = await this.prisma.case.findFirst({
@@ -143,4 +201,8 @@ export class CasesService {
       'You do not have permission to update this case.',
     );
   }
+}
+
+function emptyToNull(value: string | undefined): string | null {
+  return value && value.length > 0 ? value : null;
 }
