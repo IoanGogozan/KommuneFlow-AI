@@ -178,9 +178,9 @@ Goal: add AI-assisted triage without allowing AI to make final decisions.
 - [x] Store raw AI response safely
 - [x] Store short reasoning summary only
 - [x] Add AI triage API endpoint or worker
-- [ ] Add AI suggestion UI on case detail
+- [x] Add AI suggestion UI on case detail
 - [x] Add human review API
-- [ ] Add human review UI
+- [x] Add human review UI
 - [x] Audit AI triage result creation
 - [x] Audit human review
 - [x] Add test for valid AI response parsing
@@ -191,10 +191,10 @@ Goal: add AI-assisted triage without allowing AI to make final decisions.
 
 Phase completion criteria:
 
-- [ ] AI suggestion is generated
-- [ ] Invalid AI output is rejected safely
-- [ ] Human can approve or correct suggestion
-- [ ] Official case data changes only after human review
+- [x] AI suggestion is generated
+- [x] Invalid AI output is rejected safely
+- [x] Human can approve or correct suggestion
+- [x] Official case data changes only after human review
 
 ## Phase 7: Privacy And GDPR Features
 
@@ -298,8 +298,8 @@ Update this section manually whenever work starts on a new task.
 
 ```txt
 Current phase: Phase 6: AI Triage
-Current task: AI triage service, API endpoint, result storage, and human review API completed
-Next task: Add AI suggestion and human review UI on case detail
+Current task: Phase 6 implementation completed
+Next task: Verify full workspace and begin Phase 7 privacy features
 Blocked by: None
 Last updated: 2026-05-09
 ```
@@ -319,3 +319,4 @@ Use this section for short implementation notes. Longer architectural decisions 
 - Phase 6 database foundation started with `AITriageResult`, `AIReview`, and `AITriageStatus` models plus tenant-scoped indexes and relations to cases, departments, users, and reviews.
 - Phase 6 provider foundation added with `AIProvider`, deterministic `MockAIProvider`, OpenAI Responses API provider using Structured Outputs, `case_triage_v1` prompt helpers, and Zod validation for AI triage output.
 - Phase 6 backend workflow added with tenant-scoped AI triage endpoints, safe failed-result storage on provider errors, raw response storage, short reasoning summaries, human review API, official case updates only after review, and audit events for triage creation/failure and review.
+- Phase 6 UI completed on case detail with AI suggestion generation, visible suggested classification, confidence, missing information, reasoning summary, and human accept/correct review controls.
