@@ -212,13 +212,13 @@ Goal: demonstrate privacy-by-design behavior.
 - [x] Add tests for citizen data export
 - [x] Add tests for anonymization
 - [ ] Add tests for document soft-delete
-- [ ] Add tests for privacy audit events
+- [x] Add tests for privacy audit events
 
 Phase completion criteria:
 
 - [x] Export works
 - [x] Anonymization works
-- [ ] Privacy actions are audited
+- [x] Privacy actions are audited
 - [ ] Analytics avoids personal identifiers where possible
 
 ## Phase 8: Observability And Operations
@@ -378,9 +378,9 @@ Phase completion criteria:
 Update this section manually whenever work starts on a new task.
 
 ```txt
-Current phase: Phase 8: Observability And Operations
-Current task: Request IDs, health/readiness, structured logging, safe error logging, and initial runbook completed
-Next task: Decide between metrics-friendly tracking, operations dashboard basics, or Phase 7 privacy features
+Current phase: Phase 7: Privacy And GDPR Features
+Current task: Privacy backend module, citizen data export, and citizen anonymization completed
+Next task: Add document soft-delete behavior and tests
 Blocked by: None
 Last updated: 2026-05-09
 ```
@@ -408,3 +408,4 @@ Use this section for short implementation notes. Longer architectural decisions 
 - Safe error logging added in the global exception filter with request ID, error code, path, status, and safe actor metadata.
 - Initial runbook added with restart, logs, migrations, backup, restore, AI provider failure, and database failure procedures.
 - Privacy backend module added with super-admin-only citizen data export, tenant-scoped lookup by citizen profile ID or email, safe document metadata export, relevant audit event export, and privacy export audit event.
+- Citizen anonymization added with super-admin-only access, tenant-scoped profile lookup, personal identifier masking, and privacy anonymization audit event.
