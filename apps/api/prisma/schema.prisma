@@ -63,6 +63,7 @@ model Tenant {
   citizenProfiles CitizenProfile[]
   cases           Case[]
   auditEvents     AuditEvent[]
+  internalNotes   InternalNote[]
 
   @@map("tenants")
 }
@@ -99,6 +100,7 @@ model User {
   department          Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   assignedCases       Case[]       @relation("AssignedCases")
   actorAuditEvents    AuditEvent[] @relation("ActorUserAuditEvents")
+  internalNotes        InternalNote[]
 
   @@index([tenantId])
   @@index([tenantId, departmentId])
@@ -142,11 +144,28 @@ model Case {
   citizenProfile       CitizenProfile  @relation(fields: [citizenProfileId], references: [id], onDelete: Restrict)
   assignedDepartment   Department?     @relation(fields: [assignedDepartmentId], references: [id], onDelete: SetNull)
   assignedUser         User?           @relation("AssignedCases", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  internalNotes        InternalNote[]
 
   @@index([tenantId])
   @@index([tenantId, assignedDepartmentId])
   @@index([tenantId, status])
   @@map("cases")
+}
+
+model InternalNote {
+  id        String   @id @default(cuid())
+  tenantId  String
+  caseId    String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, caseId])
+  @@map("internal_notes")
 }
 
 model AuditEvent {

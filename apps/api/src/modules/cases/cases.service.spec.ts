@@ -117,6 +117,49 @@ describe('CasesService', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
+  it('lists only department cases for case workers', async () => {
+    let capturedFindManyInput: unknown;
+    const findManyMock = jest.fn((input: unknown) => {
+      capturedFindManyInput = input;
+      return Promise.resolve([]);
+    });
+    const service = createService({
+      case: {
+        findMany: findManyMock,
+      },
+    });
+
+    await service.list(caseWorker(), {});
+
+    const findManyInput = capturedFindManyInput as {
+      where: { tenantId: string; assignedDepartmentId?: string };
+    };
+    expect(findManyInput.where).toMatchObject({
+      tenantId: 'tenant_1',
+      assignedDepartmentId: 'department_1',
+    });
+  });
+
+  it('lets auditors list all tenant cases without department filtering', async () => {
+    let capturedFindManyInput: unknown;
+    const findManyMock = jest.fn((input: unknown) => {
+      capturedFindManyInput = input;
+      return Promise.resolve([]);
+    });
+    const service = createService({
+      case: {
+        findMany: findManyMock,
+      },
+    });
+
+    await service.list(auditor(), {});
+
+    const findManyInput = capturedFindManyInput as {
+      where: { assignedDepartmentId?: string };
+    };
+    expect(findManyInput.where.assignedDepartmentId).toBeUndefined();
+  });
+
   it('blocks auditor mutation attempts', async () => {
     const service = createService({
       case: {
@@ -171,6 +214,50 @@ describe('CasesService', () => {
       expect.objectContaining({
         action: 'case.status_updated',
         tenantId: 'tenant_1',
+      }),
+    );
+  });
+
+  it('adds an internal note and records an audit event', async () => {
+    const recordMock = jest.fn().mockResolvedValue(undefined);
+    const service = createService(
+      {
+        case: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            assignedDepartmentId: 'department_1',
+          }),
+        },
+        internalNote: {
+          create: jest.fn().mockResolvedValue({
+            id: 'note_1',
+            body: 'Reviewed by department.',
+            createdAt: new Date('2026-05-09T07:00:00.000Z'),
+            author: {
+              id: 'user_1',
+              name: 'Arendal Case Worker',
+              role: UserRole.case_worker,
+            },
+          }),
+        },
+      },
+      {
+        record: recordMock,
+      } as unknown as AuditService,
+    );
+
+    await expect(
+      service.addInternalNote('case_1', caseWorker(), {
+        body: 'Reviewed by department.',
+      }),
+    ).resolves.toMatchObject({
+      id: 'note_1',
+      body: 'Reviewed by department.',
+    });
+    expect(recordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'case.internal_note_created',
+        entityId: 'case_1',
       }),
     );
   });

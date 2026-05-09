@@ -112,27 +112,27 @@ Phase completion criteria:
 
 Goal: make the application useful for municipal employees.
 
-- [ ] Add internal login UI
-- [ ] Add authenticated app layout
-- [ ] Add case list API
-- [ ] Add case list UI
-- [ ] Add case filters
-- [ ] Add case detail API
-- [ ] Add case detail UI
-- [ ] Add department-scoped case access
-- [ ] Add status transition logic
-- [ ] Add internal notes
-- [ ] Audit status changes
-- [ ] Audit internal note creation
-- [ ] Add test for department case scoping
-- [ ] Add test for auditor read-only access
-- [ ] Add test for audited status transitions
+- [x] Add internal login UI
+- [x] Add authenticated app layout
+- [x] Add case list API
+- [x] Add case list UI
+- [x] Add case filters
+- [x] Add case detail API
+- [x] Add case detail UI
+- [x] Add department-scoped case access
+- [x] Add status transition logic
+- [x] Add internal notes
+- [x] Audit status changes
+- [x] Audit internal note creation
+- [x] Add test for department case scoping
+- [x] Add test for auditor read-only access
+- [x] Add test for audited status transitions
 
 Phase completion criteria:
 
-- [ ] Case worker sees only allowed cases
-- [ ] Auditor can read but not modify
-- [ ] Status changes are audited
+- [x] Case worker sees only allowed cases
+- [x] Auditor can read but not modify
+- [x] Status changes are audited
 
 ## Phase 5: Document Handling
 
@@ -297,9 +297,9 @@ Phase completion criteria:
 Update this section manually whenever work starts on a new task.
 
 ```txt
-Current phase: Phase 4: Internal Case Dashboard
+Current phase: Phase 5: Document Handling
 Current task: Not started
-Next task: Add internal login UI and authenticated case dashboard
+Next task: Add document database table and upload endpoint
 Blocked by: None
 Last updated: 2026-05-09
 ```
@@ -313,3 +313,4 @@ Use this section for short implementation notes. Longer architectural decisions 
 - Prisma is the selected database ORM and migration tool.
 - Phase 2 completed with Prisma core schema, initial migration, seed data, JWT login, password hashing, explicit permission map, authorization guard, tenant-filtered case access, audit service, and security-focused tests.
 - Phase 3 completed with public citizen intake API, tenant lookup, citizen profile creation, case creation, intake audit event, Norwegian and English intake UI, language switcher, confirmation state, and validation tests.
+- Phase 4 completed with internal login UI, authenticated case dashboard, case filters, case detail view, department-scoped case list, status updates, internal notes, audit events for status/note changes, and backend tests for scoping and read-only auditor behavior.

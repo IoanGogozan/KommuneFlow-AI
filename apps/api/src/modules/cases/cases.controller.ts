@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ZodError } from 'zod';
@@ -16,7 +17,9 @@ import { RequirePermissions } from '../auth/permissions.decorator';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { CasesService } from './cases.service';
 import {
+  createInternalNoteSchema,
   createPublicCaseSchema,
+  listCasesQuerySchema,
   updateCaseStatusSchema,
 } from './cases.schemas';
 
@@ -49,6 +52,22 @@ export class PublicCasesController {
 export class CasesController {
   constructor(private readonly casesService: CasesService) {}
 
+  @Get()
+  async list(@CurrentUserParam() user: CurrentUser, @Query() query: unknown) {
+    try {
+      return await this.casesService.list(
+        user,
+        listCasesQuerySchema.parse(query),
+      );
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new BadRequestException('Invalid case list query.');
+      }
+
+      throw error;
+    }
+  }
+
   @Get(':id')
   async findById(
     @Param('id') id: string,
@@ -73,6 +92,28 @@ export class CasesController {
     } catch (error) {
       if (error instanceof ZodError) {
         throw new BadRequestException('Invalid case status payload.');
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':id/internal-notes')
+  @RequirePermissions('case:update:department')
+  async addInternalNote(
+    @Param('id') id: string,
+    @CurrentUserParam() user: CurrentUser,
+    @Body() body: unknown,
+  ) {
+    try {
+      return await this.casesService.addInternalNote(
+        id,
+        user,
+        createInternalNoteSchema.parse(body),
+      );
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new BadRequestException('Invalid internal note payload.');
       }
 
       throw error;

@@ -63,11 +63,20 @@ Default local URLs:
 - API: `http://localhost:3101/api/v1`
 - Citizen intake in Norwegian: `http://localhost:3000/nb`
 - Citizen intake in English: `http://localhost:3000/en`
+- Internal login: `http://localhost:3000/internal/login`
+- Internal case dashboard: `http://localhost:3000/internal/cases`
 
 Public citizen intake API:
 
 ```txt
 POST /api/v1/public/tenants/:tenantSlug/cases
+```
+
+Demo internal user:
+
+```txt
+case.worker@arendal.local
+DemoPassword123!
 ```
 
 ## Useful Commands

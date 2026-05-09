@@ -85,7 +85,7 @@ async function main() {
     },
   });
 
-  await createUser({
+  const arendalCaseWorker = await createUser({
     email: 'super.admin@kommuneflow.local',
     name: 'Super Admin',
     role: 'super_admin',
@@ -145,7 +145,7 @@ async function main() {
     },
   });
 
-  await prisma.case.upsert({
+  const seedCase = await prisma.case.upsert({
     where: {
       id: 'seed_arendal_case_technical',
     },
@@ -161,6 +161,20 @@ async function main() {
       status: 'new',
       urgency: 'normal',
       sourceLanguage: 'en',
+    },
+  });
+
+  await prisma.internalNote.upsert({
+    where: {
+      id: 'seed_arendal_internal_note',
+    },
+    update: {},
+    create: {
+      id: 'seed_arendal_internal_note',
+      tenantId: arendal.id,
+      caseId: seedCase.id,
+      authorId: arendalCaseWorker.id,
+      body: 'Initial review needed before AI triage is enabled.',
     },
   });
 
@@ -194,7 +208,7 @@ async function createUser(input: {
   departmentId: string | null;
   passwordHash: string;
 }) {
-  await prisma.user.upsert({
+  return prisma.user.upsert({
     where: { email: input.email },
     update: {
       name: input.name,

@@ -3,12 +3,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CaseStatus, UserRole } from '@prisma/client';
+import { CaseStatus, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CurrentUser } from '../auth/current-user';
 import { roleHasPermission } from '../auth/permissions';
 import { AuditService } from '../audit/audit.service';
-import { CreatePublicCaseInput, UpdateCaseStatusInput } from './cases.schemas';
+import {
+  CreateInternalNoteInput,
+  CreatePublicCaseInput,
+  ListCasesQuery,
+  UpdateCaseStatusInput,
+} from './cases.schemas';
 
 @Injectable()
 export class CasesService {
@@ -96,6 +101,21 @@ export class CasesService {
             slug: true,
           },
         },
+        internalNotes: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            body: true,
+            createdAt: true,
+            author: {
+              select: {
+                id: true,
+                name: true,
+                role: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -106,6 +126,54 @@ export class CasesService {
     this.assertCanReadCase(user, caseRecord.assignedDepartmentId);
 
     return caseRecord;
+  }
+
+  async list(user: CurrentUser, query: ListCasesQuery) {
+    const where: Prisma.CaseWhereInput = {
+      tenantId: user.tenantId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.category ? { category: query.category } : {}),
+    };
+
+    if (!roleHasPermission(user.role, 'case:read:all_tenant')) {
+      if (
+        !user.departmentId ||
+        !roleHasPermission(user.role, 'case:read:department')
+      ) {
+        throw new ForbiddenException('You do not have access to cases.');
+      }
+
+      where.assignedDepartmentId = user.departmentId;
+    }
+
+    return this.prisma.case.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        status: true,
+        urgency: true,
+        sourceLanguage: true,
+        createdAt: true,
+        assignedDepartment: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        citizenProfile: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
   }
 
   async updateStatus(
@@ -153,6 +221,63 @@ export class CasesService {
     });
 
     return updatedCase;
+  }
+
+  async addInternalNote(
+    caseId: string,
+    user: CurrentUser,
+    input: CreateInternalNoteInput,
+  ) {
+    const caseRecord = await this.prisma.case.findFirst({
+      where: {
+        id: caseId,
+        tenantId: user.tenantId,
+      },
+      select: {
+        id: true,
+        assignedDepartmentId: true,
+      },
+    });
+
+    if (!caseRecord) {
+      throw new NotFoundException('Case not found.');
+    }
+
+    this.assertCanUpdateCase(user, caseRecord.assignedDepartmentId);
+
+    const note = await this.prisma.internalNote.create({
+      data: {
+        tenantId: user.tenantId,
+        caseId: caseRecord.id,
+        authorId: user.id,
+        body: input.body,
+      },
+      select: {
+        id: true,
+        body: true,
+        createdAt: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    await this.auditService.record({
+      tenantId: user.tenantId,
+      actor: user,
+      action: 'case.internal_note_created',
+      entityType: 'case',
+      entityId: caseRecord.id,
+      metadata: {
+        noteId: note.id,
+      },
+    });
+
+    return note;
   }
 
   private assertCanReadCase(
