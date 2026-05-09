@@ -1,4 +1,12 @@
-import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  ServiceUnavailableException,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '../auth/auth.guard';
+import { RequirePermissions } from '../auth/permissions.decorator';
+import { PermissionsGuard } from '../auth/permissions.guard';
 import { OperationsService } from './operations.service';
 
 @Controller()
@@ -18,7 +26,7 @@ export class OperationsController {
   async readiness() {
     const checks = await this.operationsService.getReadinessChecks();
     const isReady = Object.values(checks).every(
-      (check) => check.status === 'ok',
+      (check) => check.status !== 'error',
     );
 
     if (!isReady) {
@@ -33,5 +41,12 @@ export class OperationsController {
       checks,
       timestamp: new Date().toISOString(),
     };
+  }
+
+  @Get('operations/metrics-summary')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('operations:read')
+  metricsSummary() {
+    return this.operationsService.getMetricsSummary();
   }
 }

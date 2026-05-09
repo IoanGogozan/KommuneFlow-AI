@@ -59,6 +59,14 @@ Supports JSON body or multipart form data:
 | `GET` | `/analytics/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` | `analytics:read` | Read aggregated analytics |
 | `POST` | `/analytics/aggregate` | `analytics:read` | Rerun aggregation for date range |
 
+## Public API Integrations
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/integrations/kartverket/address-search?q=address` | internal | Search Kartverket Adresse-API through authenticated internal endpoint |
+| `GET` | `/public/tenants/:tenantSlug/integrations/kartverket/address-search?q=address` | public, rate-limited | Search Kartverket Adresse-API during citizen intake |
+| `POST` | `/integrations/ssb/imports/municipality-population` | `tenant:manage` | Import municipality population statistics from SSB table `07459` |
+
 ## Privacy
 
 | Method | Path | Auth | Purpose |

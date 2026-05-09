@@ -9,6 +9,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CasesModule } from './modules/cases/cases.module';
 import { DatabaseModule } from './database/database.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { KartverketAddressModule } from './modules/integrations/kartverket-address/kartverket-address.module';
+import { SsbModule } from './modules/integrations/ssb/ssb.module';
 import { OperationsModule } from './modules/operations/operations.module';
 import { PrivacyModule } from './modules/privacy/privacy.module';
 import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
@@ -25,6 +27,8 @@ import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
     AuthModule,
     CasesModule,
     DocumentsModule,
+    KartverketAddressModule,
+    SsbModule,
     AIModule,
     AnalyticsModule,
     OperationsModule,

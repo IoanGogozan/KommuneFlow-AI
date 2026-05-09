@@ -17,11 +17,40 @@ type AnalyticsSummary = {
     aiReviewsTotal: number;
     aiCorrectionsTotal: number;
     aiCorrectionRate: number;
+    averageTimeToTriageMinutes: number | null;
+    medianTimeToTriageMinutes: number | null;
+    averageTimeToCloseHours: number | null;
+    medianTimeToCloseHours: number | null;
+    casesWaitingForCitizen: number;
+    aiTriageSuccessCount: number;
+    aiTriageFailureCount: number;
+    aiTriageFailureRate: number;
+    aiSuggestionsAccepted: number;
+    aiSuggestionAcceptanceRate: number;
+    estimatedManualMinutesSaved: number;
+    casesPer1000Inhabitants: number | null;
+  };
+  assumptions: {
+    acceptedAiSuggestionMinutesSaved: number;
+    correctedAiSuggestionMinutesSaved: number;
+    estimatedManualMinutesSavedLabel: string;
+  };
+  analyticsLastRebuiltAt: string | null;
+  ssbEnrichment: {
+    status: string;
+    populationUsed: number | null;
+    populationYear: number | null;
+    casesPer1000Inhabitants: number | null;
+    lastImportedAt: string | null;
   };
   daily: Array<{
     date: string;
     totalCases: number;
     aiCorrectionRate: number;
+    aiTriageFailureRate: number;
+    estimatedManualMinutesSaved: number;
+    casesPer1000Inhabitants: number | null;
+    ssbDataStatus: string;
   }>;
 };
 
@@ -141,6 +170,125 @@ export function AnalyticsDashboard() {
             label="AI correction rate"
             value={formatPercent(summary?.totals.aiCorrectionRate ?? 0)}
           />
+          <Metric
+            label="AI acceptance rate"
+            value={formatPercent(summary?.totals.aiSuggestionAcceptanceRate ?? 0)}
+          />
+          <Metric
+            label="AI triage failures"
+            value={`${summary?.totals.aiTriageFailureCount ?? 0} (${formatPercent(
+              summary?.totals.aiTriageFailureRate ?? 0,
+            )})`}
+          />
+          <Metric
+            label="Waiting for citizen"
+            value={summary?.totals.casesWaitingForCitizen ?? 0}
+          />
+          <Metric
+            label="Estimated minutes saved"
+            value={summary?.totals.estimatedManualMinutesSaved ?? 0}
+          />
+          <Metric
+            label="Avg. time to triage"
+            value={`${formatNullableNumber(
+              summary?.totals.averageTimeToTriageMinutes,
+            )} min`}
+          />
+          <Metric
+            label="Median time to triage"
+            value={`${formatNullableNumber(
+              summary?.totals.medianTimeToTriageMinutes,
+            )} min`}
+          />
+          <Metric
+            label="Avg. time to close"
+            value={`${formatNullableNumber(
+              summary?.totals.averageTimeToCloseHours,
+            )} h`}
+          />
+          <Metric
+            label="Median time to close"
+            value={`${formatNullableNumber(
+              summary?.totals.medianTimeToCloseHours,
+            )} h`}
+          />
+          <Metric
+            label="Cases per 1,000 inhabitants"
+            value={formatNullableNumber(summary?.totals.casesPer1000Inhabitants)}
+          />
+          <Metric
+            label="Population basis"
+            value={summary?.ssbEnrichment.populationUsed?.toLocaleString() ?? "Missing"}
+          />
+          <Metric
+            label="SSB year"
+            value={summary?.ssbEnrichment.populationYear ?? "Missing"}
+          />
+          <Metric
+            label="SSB status"
+            value={summary?.ssbEnrichment.status ?? "missing"}
+          />
+        </section>
+
+        <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">
+                Effect measurement
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Estimated manual time saved is a documented estimate, not an exact
+                measurement.
+              </p>
+            </div>
+            <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
+              Last rebuild:{" "}
+              {summary?.analyticsLastRebuiltAt
+                ? new Date(summary.analyticsLastRebuiltAt).toLocaleString()
+                : "Missing"}
+            </span>
+          </div>
+          <p className="mt-4 text-sm text-slate-600">
+            Assumption: accepted AI suggestions save{" "}
+            {summary?.assumptions.acceptedAiSuggestionMinutesSaved ?? 5} minutes;
+            corrected AI suggestions save{" "}
+            {summary?.assumptions.correctedAiSuggestionMinutesSaved ?? 2} minutes.
+          </p>
+        </section>
+
+        <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">
+                SSB enrichment
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Population data from Statistics Norway table 07459 is used to
+                calculate cases per 1,000 inhabitants.
+              </p>
+            </div>
+            <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
+              Source: SSB
+            </span>
+          </div>
+          {summary?.ssbEnrichment.status === "missing" ? (
+            <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
+              SSB population data is missing for this range. Import municipality
+              statistics and rebuild analytics to enable normalized metrics.
+            </p>
+          ) : null}
+          {summary?.ssbEnrichment.status === "stale" ? (
+            <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
+              SSB population data is stale. Re-import municipality statistics and
+              rebuild analytics before using normalized metrics in decisions.
+            </p>
+          ) : null}
+          {summary?.ssbEnrichment.lastImportedAt ? (
+            <p className="mt-4 text-sm text-slate-600">
+              Last imported:{" "}
+              {new Date(summary.ssbEnrichment.lastImportedAt).toLocaleString()}
+            </p>
+          ) : null}
         </section>
 
         <section className="mt-5 grid gap-5 lg:grid-cols-3">
@@ -164,12 +312,21 @@ export function AnalyticsDashboard() {
             {(summary?.daily ?? []).map((day) => (
               <div
                 key={day.date}
-                className="grid grid-cols-[1fr_auto_auto] gap-4 rounded-md bg-slate-50 px-3 py-2 text-sm"
+                className="grid gap-2 rounded-md bg-slate-50 px-3 py-2 text-sm md:grid-cols-[1fr_auto_auto_auto_auto_auto]"
               >
                 <span className="font-medium text-slate-700">{day.date}</span>
                 <span className="text-slate-700">{day.totalCases} cases</span>
                 <span className="text-slate-500">
                   {formatPercent(day.aiCorrectionRate)} AI correction
+                </span>
+                <span className="text-slate-500">
+                  {formatPercent(day.aiTriageFailureRate)} AI failure
+                </span>
+                <span className="text-slate-500">
+                  {day.estimatedManualMinutesSaved} min saved
+                </span>
+                <span className="text-slate-500">
+                  {formatNullableNumber(day.casesPer1000Inhabitants)} per 1,000
                 </span>
               </div>
             ))}
@@ -263,4 +420,12 @@ function toDateInputValue(date: Date) {
 
 function formatPercent(value: number) {
   return `${Math.round(value * 100)}%`;
+}
+
+function formatNullableNumber(value: number | null | undefined) {
+  if (value === null || value === undefined) {
+    return "Missing";
+  }
+
+  return value.toFixed(2);
 }

@@ -17,6 +17,7 @@ export type Permission =
   | 'privacy:export'
   | 'privacy:anonymize'
   | 'analytics:read'
+  | 'operations:read'
   | 'tenant:manage'
   | 'user:manage'
   | 'routing_rules:manage';
@@ -41,6 +42,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'ai:triage:run',
     'ai:triage:review',
     'analytics:read',
+    'operations:read',
     'user:manage',
     'routing_rules:manage',
   ],
@@ -50,6 +52,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'document:read:sensitive',
     'audit:read',
     'analytics:read',
+    'operations:read',
   ],
   super_admin: [
     'case:create',
@@ -68,6 +71,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'privacy:export',
     'privacy:anonymize',
     'analytics:read',
+    'operations:read',
     'tenant:manage',
     'user:manage',
     'routing_rules:manage',

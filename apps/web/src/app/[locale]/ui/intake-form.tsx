@@ -15,10 +15,73 @@ type SubmissionResult = {
   createdAt: string;
 };
 
+type AddressSearchResult = {
+  results: Array<{
+    normalizedAddress: string;
+    municipalityCode: string | null;
+    municipalityName: string | null;
+    postalCode: string | null;
+    latitude: number | null;
+    longitude: number | null;
+  }>;
+};
+
 export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [address, setAddress] = useState("");
+  const [addressSuggestion, setAddressSuggestion] =
+    useState<AddressSearchResult["results"][number] | null>(null);
+  const [addressSearchMessage, setAddressSearchMessage] = useState<string | null>(
+    null,
+  );
+  const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [result, setResult] = useState<SubmissionResult | null>(null);
+
+  async function searchAddress() {
+    const query = address.trim();
+    setAddressSearchMessage(null);
+    setAddressSuggestion(null);
+    setIsAddressConfirmed(false);
+
+    if (query.length < 3) {
+      setAddressSearchMessage(dictionary.addressNoResults);
+      return;
+    }
+
+    setIsSearchingAddress(true);
+
+    try {
+      const response = await fetch(
+        `${getApiBaseUrl()}/public/tenants/arendal/integrations/kartverket/address-search?q=${encodeURIComponent(query)}`,
+      );
+
+      if (!response.ok) {
+        throw new Error("Address search failed");
+      }
+
+      const result = (await response.json()) as AddressSearchResult;
+      const firstSuggestion = result.results[0] ?? null;
+      setAddressSuggestion(firstSuggestion);
+      setAddressSearchMessage(
+        firstSuggestion ? null : dictionary.addressNoResults,
+      );
+    } catch {
+      setAddressSearchMessage(dictionary.addressError);
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  }
+
+  function confirmAddress() {
+    if (!addressSuggestion) {
+      return;
+    }
+
+    setAddress(addressSuggestion.normalizedAddress);
+    setIsAddressConfirmed(true);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,7 +95,7 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
         name: String(formData.get("name") ?? ""),
         email: String(formData.get("email") ?? ""),
         phone: String(formData.get("phone") ?? ""),
-        address: String(formData.get("address") ?? ""),
+        address,
       },
       case: {
         title: String(formData.get("title") ?? ""),
@@ -65,6 +128,10 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
 
       setResult((await response.json()) as SubmissionResult);
       form.reset();
+      setAddress("");
+      setAddressSuggestion(null);
+      setAddressSearchMessage(null);
+      setIsAddressConfirmed(false);
     } catch {
       setError(dictionary.error);
     } finally {
@@ -117,8 +184,57 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
         <Field label={dictionary.nameLabel} name="name" required />
         <Field label={dictionary.emailLabel} name="email" type="email" required />
         <Field label={dictionary.phoneLabel} name="phone" />
-        <Field label={dictionary.addressLabel} name="address" />
+        <label className="grid gap-2">
+          <span className="text-sm font-medium text-slate-700">
+            {dictionary.addressLabel}
+          </span>
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+            <input
+              name="address"
+              value={address}
+              onChange={(event) => {
+                setAddress(event.target.value);
+                setIsAddressConfirmed(false);
+              }}
+              className="rounded-md border border-slate-300 px-3 py-2 text-slate-950 outline-none focus:border-slate-600"
+            />
+            <button
+              type="button"
+              onClick={searchAddress}
+              disabled={isSearchingAddress}
+              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+            >
+              {isSearchingAddress
+                ? dictionary.addressSearching
+                : dictionary.addressSearch}
+            </button>
+          </div>
+        </label>
       </div>
+
+      {addressSuggestion ? (
+        <section className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4">
+          <p className="text-sm font-medium text-emerald-950">
+            {dictionary.addressSuggestionLabel}
+          </p>
+          <p className="mt-1 text-sm text-emerald-900">
+            {addressSuggestion.normalizedAddress}
+          </p>
+          <button
+            type="button"
+            onClick={confirmAddress}
+            className="mt-3 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
+          >
+            {isAddressConfirmed
+              ? dictionary.addressConfirmed
+              : dictionary.addressConfirm}
+          </button>
+        </section>
+      ) : null}
+
+      {addressSearchMessage ? (
+        <p className="mt-3 text-sm text-slate-600">{addressSearchMessage}</p>
+      ) : null}
 
       <div className="mt-4 grid gap-4">
         <Field label={dictionary.caseTitleLabel} name="title" required />

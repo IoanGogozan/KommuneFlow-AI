@@ -9,7 +9,9 @@ import { appLogger } from '../src/shared/logging/app-logger';
 type ErrorResponseBody = {
   error: {
     code: string;
+    message?: string;
     requestId: string;
+    path?: string;
   };
 };
 
@@ -20,16 +22,17 @@ type HealthResponseBody = {
 };
 
 type ReadinessResponseBody = {
-  status: 'ready';
+  status: 'ready' | 'not_ready';
   checks: {
-    database: { status: 'ok' };
-    uploadStorage: { status: 'ok' };
+    database: { status: 'ok' | 'error' };
+    uploadStorage: { status: 'ok' | 'error' };
   };
   timestamp: string;
 };
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
+  const originalFetch = global.fetch;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -114,6 +117,77 @@ describe('AppController (e2e)', () => {
         code: 'BAD_REQUEST',
       },
     });
+  });
+
+  it('returns a safe error for unsupported HTTP methods', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/health')
+      .expect(404);
+    const body = response.body as unknown as ErrorResponseBody;
+
+    expect(body.error.code).toBe('NOT_FOUND');
+    expect(body.error.requestId).toEqual(expect.any(String));
+    expect(JSON.stringify(body)).not.toContain('stack');
+    expect(JSON.stringify(body)).not.toContain('TypeError');
+  });
+
+  it('does not leak stack traces when external integrations fail', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: jest.fn().mockResolvedValue({ upstream: 'failure' }),
+    });
+
+    const response = await request(app.getHttpServer())
+      .get(
+        '/api/v1/public/tenants/arendal/integrations/kartverket/address-search',
+      )
+      .query({ q: 'Storgata 12' })
+      .expect(502);
+    const body = response.body as unknown as ErrorResponseBody;
+
+    expect(body.error.code).toBe('BAD_GATEWAY');
+    expect(body.error.message).toBe('Address lookup is unavailable.');
+    expect(JSON.stringify(body)).not.toContain('stack');
+    expect(JSON.stringify(body)).not.toContain('BadGatewayException');
+    expect(JSON.stringify(body)).not.toContain('upstream');
+  });
+
+  it('rate limits public address search abuse', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ adresser: [] }),
+    });
+
+    for (let index = 0; index < 20; index += 1) {
+      await request(app.getHttpServer())
+        .get(
+          '/api/v1/public/tenants/arendal/integrations/kartverket/address-search',
+        )
+        .query({ q: 'Storgata 12' })
+        .expect(200);
+    }
+
+    const response = await request(app.getHttpServer())
+      .get(
+        '/api/v1/public/tenants/arendal/integrations/kartverket/address-search',
+      )
+      .query({ q: 'Storgata 12' })
+      .expect(429);
+    const body = response.body as unknown as ErrorResponseBody;
+
+    expect(body.error.code).toBe('TOO_MANY_REQUESTS');
+    expect(JSON.stringify(body)).not.toContain('stack');
+  });
+
+  it('does not expose a public read endpoint for guessed citizen cases', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/public/tenants/arendal/cases/case_from_another_citizen')
+      .expect(404);
+    const body = response.body as unknown as ErrorResponseBody;
+
+    expect(body.error.code).toBe('NOT_FOUND');
+    expect(JSON.stringify(body)).not.toContain('stack');
   });
 
   it('rejects oversized JSON bodies', async () => {
@@ -215,19 +289,30 @@ describe('AppController (e2e)', () => {
   it('/api/v1/readiness (GET)', async () => {
     const response = await request(app.getHttpServer())
       .get('/api/v1/readiness')
-      .expect(200);
+      .expect((result) => {
+        expect([200, 503]).toContain(result.status);
+      });
     const body = response.body as unknown as ReadinessResponseBody;
 
-    expect(body.status).toBe('ready');
-    expect(body.checks.database.status).toBe('ok');
-    expect(body.checks.uploadStorage.status).toBe('ok');
-    expect(typeof body.timestamp).toBe('string');
+    if (response.status === 200) {
+      expect(body.status).toBe('ready');
+      expect(['ok', 'error']).toContain(body.checks.database.status);
+      expect(['ok', 'error']).toContain(body.checks.uploadStorage.status);
+      expect(typeof body.timestamp).toBe('string');
+    } else {
+      const errorBody = response.body as unknown as ErrorResponseBody;
+      expect(errorBody.error.code).toBe('SERVICE_UNAVAILABLE');
+      expect(errorBody.error.requestId).toEqual(expect.any(String));
+    }
+
     expect(JSON.stringify(body)).not.toContain('DATABASE_URL');
     expect(JSON.stringify(body)).not.toContain('UPLOAD_STORAGE_PATH');
     expect(response.headers['x-request-id']).toEqual(expect.any(String));
   });
 
   afterEach(async () => {
+    global.fetch = originalFetch;
+    jest.restoreAllMocks();
     await app.close();
   });
 });

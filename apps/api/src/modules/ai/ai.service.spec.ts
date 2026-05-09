@@ -4,6 +4,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUser } from '../auth/current-user';
 import { AIProvider } from './ai-provider';
+import { AIProviderError } from './ai-provider-errors';
 import { AIService } from './ai.service';
 
 describe('AIService', () => {
@@ -93,8 +94,114 @@ describe('AIService', () => {
     };
     expect(failedCreateInput.data).toMatchObject({
       status: 'failed',
-      failureReason: 'Provider unavailable',
+      failureReason: 'AI provider is temporarily unavailable.',
     });
+  });
+
+  it('records AI observability events for success and failure', async () => {
+    const observabilityCreateMock = jest
+      .fn<Promise<{ id: string }>, [ObservabilityCreateInput]>()
+      .mockResolvedValue({ id: 'event_1' });
+    const successService = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue(caseRecord()),
+      },
+      department: {
+        findMany: jest.fn().mockResolvedValue([department()]),
+      },
+      aITriageResult: {
+        create: jest.fn().mockResolvedValue({
+          id: 'ai_result_1',
+          status: 'completed',
+        }),
+      },
+      aIObservabilityEvent: {
+        create: observabilityCreateMock,
+      },
+    });
+
+    await successService.runCaseTriage('case_1', caseWorker());
+    const successObservabilityInput = observabilityCreateMock.mock.calls[0][0];
+    expect(successObservabilityInput.data.status).toBe('success');
+    expect(successObservabilityInput.data.tenantId).toBe('tenant_1');
+    expect(successObservabilityInput.data.caseId).toBe('case_1');
+    expect(successObservabilityInput.data.aiTriageResultId).toBe('ai_result_1');
+    expect(successObservabilityInput.data.durationMs).toEqual(
+      expect.any(Number),
+    );
+
+    const failureObservabilityCreateMock = jest
+      .fn<Promise<{ id: string }>, [ObservabilityCreateInput]>()
+      .mockResolvedValue({ id: 'event_2' });
+    const failureService = createService(
+      {
+        case: {
+          findFirst: jest.fn().mockResolvedValue(caseRecord()),
+        },
+        department: {
+          findMany: jest.fn().mockResolvedValue([department()]),
+        },
+        aITriageResult: {
+          create: jest.fn().mockResolvedValue({
+            id: 'ai_result_failed',
+            status: 'failed',
+            failureReason: 'AI provider timed out.',
+          }),
+        },
+        aIObservabilityEvent: {
+          create: failureObservabilityCreateMock,
+        },
+      },
+      timeoutProvider(),
+    );
+
+    await failureService.runCaseTriage('case_1', caseWorker());
+    const failureObservabilityInput =
+      failureObservabilityCreateMock.mock.calls[0][0];
+    expect(failureObservabilityInput.data.status).toBe('failed');
+    expect(failureObservabilityInput.data.failureClassification).toBe(
+      'timeout',
+    );
+    expect(failureObservabilityInput.data.failureReason).toBe(
+      'AI provider timed out.',
+    );
+  });
+
+  it('minimizes and redacts case input before sending it to the AI provider', async () => {
+    const generateCaseTriageMock: jest.MockedFunction<
+      AIProvider['generateCaseTriage']
+    > = jest.fn().mockResolvedValue(successfulProviderResult());
+    const provider: AIProvider = {
+      generateCaseTriage: generateCaseTriageMock,
+    };
+    const service = createService(
+      {
+        case: {
+          findFirst: jest.fn().mockResolvedValue({
+            ...caseRecord(),
+            description: `Contact me at test@example.no or +47 99999999. ${'A'.repeat(3000)}`,
+          }),
+        },
+        department: {
+          findMany: jest.fn().mockResolvedValue([department()]),
+        },
+        aITriageResult: {
+          create: jest.fn().mockResolvedValue({
+            id: 'ai_result_1',
+            status: 'completed',
+          }),
+        },
+      },
+      provider,
+    );
+
+    await service.runCaseTriage('case_1', caseWorker());
+    expect(generateCaseTriageMock).toHaveBeenCalledTimes(1);
+    const input = generateCaseTriageMock.mock.calls[0][0];
+    expect(input.description).not.toContain('test@example.no');
+    expect(input.description).toContain('[redacted-email]');
+    expect(input.description).toContain('[redacted-phone]');
+    expect(input.description.length).toBeLessThanOrEqual(2400);
   });
 
   it('blocks cross-tenant AI triage by requiring tenant-filtered cases', async () => {
@@ -207,8 +314,15 @@ function createService(
   aiProvider: AIProvider = successfulProvider(),
   auditService?: AuditService,
 ) {
+  const prisma = {
+    aIObservabilityEvent: {
+      create: jest.fn().mockResolvedValue({ id: 'ai_event_1' }),
+    },
+    ...prismaShape,
+  };
+
   return new AIService(
-    prismaShape as unknown as PrismaService,
+    prisma as unknown as PrismaService,
     auditService ??
       ({
         record: jest.fn().mockResolvedValue(undefined),
@@ -219,20 +333,24 @@ function createService(
 
 function successfulProvider(): AIProvider {
   return {
-    generateCaseTriage: jest.fn().mockResolvedValue({
-      model: 'mock-ai-provider',
-      promptVersion: 'case_triage_v1',
-      output: {
-        category: CaseCategory.building_case,
-        suggestedDepartmentSlug: 'technical_department',
-        urgency: CaseUrgency.normal,
-        summary: 'The citizen asks about a building permit.',
-        missingInformation: ['property number'],
-        confidence: 0.82,
-        reasoningSummary: 'The request mentions permit documentation.',
-      },
-      rawResponse: { provider: 'mock' },
-    }),
+    generateCaseTriage: jest.fn().mockResolvedValue(successfulProviderResult()),
+  };
+}
+
+function successfulProviderResult() {
+  return {
+    model: 'mock-ai-provider',
+    promptVersion: 'case_triage_v1',
+    output: {
+      category: CaseCategory.building_case,
+      suggestedDepartmentSlug: 'technical_department',
+      urgency: CaseUrgency.normal,
+      summary: 'The citizen asks about a building permit.',
+      missingInformation: ['property number'],
+      confidence: 0.82,
+      reasoningSummary: 'The request mentions permit documentation.',
+    },
+    rawResponse: { provider: 'mock' },
   };
 }
 
@@ -240,7 +358,27 @@ function failingProvider(): AIProvider {
   return {
     generateCaseTriage: jest
       .fn()
-      .mockRejectedValue(new Error('Provider unavailable')),
+      .mockRejectedValue(
+        new AIProviderError(
+          'Provider unavailable',
+          'provider_error',
+          'AI provider is temporarily unavailable.',
+        ),
+      ),
+  };
+}
+
+function timeoutProvider(): AIProvider {
+  return {
+    generateCaseTriage: jest
+      .fn()
+      .mockRejectedValue(
+        new AIProviderError(
+          'Provider timed out',
+          'timeout',
+          'AI provider timed out.',
+        ),
+      ),
   };
 }
 
@@ -282,3 +420,15 @@ function department() {
     description: 'Building cases and technical services.',
   };
 }
+
+type ObservabilityCreateInput = {
+  data: {
+    status: string;
+    tenantId?: string;
+    caseId?: string;
+    aiTriageResultId?: string;
+    durationMs?: number;
+    failureClassification?: string;
+    failureReason?: string;
+  };
+};

@@ -24,4 +24,4 @@ AI output is validated with Zod before storage.
 - Tests do not call external AI services.
 - Provider failures can be handled consistently.
 - Future providers can be added without changing case workflow code.
-- Production hardening should still add timeout/retry policy, redaction/minimization, and cost/latency metrics.
+- The OpenAI provider uses bounded timeout handling, limited retry for temporary failures, schema validation, safe failure classification, input minimization, and observability events for latency/failure metrics.

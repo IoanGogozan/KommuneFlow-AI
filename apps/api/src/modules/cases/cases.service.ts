@@ -15,6 +15,7 @@ import {
   resolveDocumentStoragePath,
   validateDocumentFile,
 } from '../documents/documents.service';
+import { KartverketAddressService } from '../integrations/kartverket-address/kartverket-address.service';
 import {
   CreateInternalNoteInput,
   CreatePublicCaseInput,
@@ -27,6 +28,7 @@ export class CasesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly kartverketAddressService: KartverketAddressService,
   ) {}
 
   async createPublicCase(
@@ -87,6 +89,13 @@ export class CasesService {
       },
     });
 
+    await this.storeValidatedAddress({
+      tenantId: tenant.id,
+      caseId: caseRecord.id,
+      citizenProfileId: citizenProfile.id,
+      originalInput: input.citizen.address,
+    });
+
     for (const file of files) {
       await this.storeCitizenUploadedDocument({
         tenantId: tenant.id,
@@ -116,6 +125,26 @@ export class CasesService {
             id: true,
             name: true,
             email: true,
+            address: true,
+          },
+        },
+        addresses: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            originalInput: true,
+            normalizedAddress: true,
+            municipalityCode: true,
+            municipalityName: true,
+            postalCode: true,
+            latitude: true,
+            longitude: true,
+            source: true,
+            sourceReferenceId: true,
+            validationStatus: true,
+            validatedAt: true,
+            createdAt: true,
           },
         },
         assignedDepartment: {
@@ -370,6 +399,61 @@ export class CasesService {
         mimeType: document.mimeType,
         sizeBytes: document.sizeBytes,
         checksumSha256: document.checksumSha256,
+      },
+    });
+  }
+
+  private async storeValidatedAddress(input: {
+    tenantId: string;
+    caseId: string;
+    citizenProfileId: string;
+    originalInput?: string;
+  }) {
+    const originalInput = input.originalInput?.trim();
+
+    if (!originalInput) {
+      return;
+    }
+
+    const validation =
+      await this.kartverketAddressService.validateAddress(originalInput);
+    const address = validation.address;
+    const createdAddress = await this.prisma.caseAddress.create({
+      data: {
+        tenantId: input.tenantId,
+        caseId: input.caseId,
+        originalInput,
+        normalizedAddress: address?.normalizedAddress,
+        municipalityCode: address?.municipalityCode,
+        municipalityName: address?.municipalityName,
+        postalCode: address?.postalCode,
+        latitude: address?.latitude,
+        longitude: address?.longitude,
+        source: 'kartverket',
+        sourceReferenceId: address?.sourceReferenceId,
+        validationStatus: validation.status,
+        validatedAt: validation.status === 'validated' ? new Date() : undefined,
+      },
+      select: {
+        id: true,
+        validationStatus: true,
+        municipalityCode: true,
+      },
+    });
+
+    await this.auditService.record({
+      tenantId: input.tenantId,
+      actorCitizenProfileId: input.citizenProfileId,
+      action:
+        validation.status === 'validated'
+          ? 'integration.kartverket.address_validated'
+          : 'integration.kartverket.address_validation_failed',
+      entityType: 'case_address',
+      entityId: createdAddress.id,
+      metadata: {
+        caseId: input.caseId,
+        validationStatus: createdAddress.validationStatus,
+        hasMunicipalityCode: Boolean(createdAddress.municipalityCode),
       },
     });
   }

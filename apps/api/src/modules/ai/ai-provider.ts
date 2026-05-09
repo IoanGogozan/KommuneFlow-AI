@@ -16,6 +16,8 @@ export type AITriageProviderResult = {
   promptVersion: string;
   output: AITriageOutput;
   rawResponse: Record<string, unknown>;
+  tokenEstimate?: number;
+  costEstimateCents?: number;
 };
 
 export const AI_PROVIDER = Symbol('AI_PROVIDER');

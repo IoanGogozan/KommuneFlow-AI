@@ -58,24 +58,57 @@ enum AITriageStatus {
   reviewed
 }
 
+enum AddressValidationSource {
+  kartverket
+}
+
+enum AddressValidationStatus {
+  validated
+  not_found
+  failed
+  skipped
+}
+
+enum ExternalDataImportStatus {
+  started
+  completed
+  failed
+}
+
+enum AIObservabilityStatus {
+  success
+  failed
+}
+
+enum AIProviderFailureClassification {
+  timeout
+  provider_error
+  invalid_response
+  validation_failed
+}
+
 model Tenant {
-  id                      String                   @id @default(cuid())
-  name                    String
-  slug                    String                   @unique
-  primaryLanguage         TenantLanguage           @default(nb)
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
-  departments             Department[]
-  users                   User[]
-  citizenProfiles         CitizenProfile[]
-  cases                   Case[]
-  auditEvents             AuditEvent[]
-  internalNotes           InternalNote[]
-  documents               CaseDocument[]
-  aiTriageResults         AITriageResult[]
-  aiReviews               AIReview[]
-  analyticsDailySnapshots AnalyticsDailySnapshot[]
-  retentionPolicy         RetentionPolicy?
+  id                         String                       @id @default(cuid())
+  name                       String
+  slug                       String                       @unique
+  primaryLanguage            TenantLanguage               @default(nb)
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @updatedAt
+  departments                Department[]
+  users                      User[]
+  citizenProfiles            CitizenProfile[]
+  cases                      Case[]
+  auditEvents                AuditEvent[]
+  internalNotes              InternalNote[]
+  documents                  CaseDocument[]
+  caseAddresses              CaseAddress[]
+  aiTriageResults            AITriageResult[]
+  aiReviews                  AIReview[]
+  analyticsDailySnapshots    AnalyticsDailySnapshot[]
+  analyticsDepartmentDaily   AnalyticsDepartmentDaily[]
+  analyticsAiQualityDaily    AnalyticsAiQualityDaily[]
+  analyticsMunicipalityDaily AnalyticsMunicipalityDaily[]
+  retentionPolicy            RetentionPolicy?
 
   @@map("tenants")
 }
@@ -165,11 +198,131 @@ model Case {
   documents            CaseDocument[]
   aiTriageResults      AITriageResult[]
   aiReviews            AIReview[]
+  addresses            CaseAddress[]
 
   @@index([tenantId])
   @@index([tenantId, assignedDepartmentId])
   @@index([tenantId, status])
   @@map("cases")
+}
+
+model CaseAddress {
+  id                String                  @id @default(cuid())
+  tenantId          String
+  caseId            String
+  originalInput     String
+  normalizedAddress String?
+  municipalityCode  String?
+  municipalityName  String?
+  postalCode        String?
+  latitude          Float?
+  longitude         Float?
+  source            AddressValidationSource @default(kartverket)
+  sourceReferenceId String?
+  validationStatus  AddressValidationStatus
+  validatedAt       DateTime?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  tenant            Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  case              Case                    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, caseId])
+  @@map("case_addresses")
+}
+
+model IntegrationHealthEvent {
+  id              String   @id @default(cuid())
+  integrationName String
+  eventType       String
+  status          String
+  latencyMs       Int?
+  errorCode       String?
+  safeMessage     String?
+  metadataJson    Json
+  createdAt       DateTime @default(now())
+
+  @@index([integrationName, createdAt])
+  @@index([eventType, status])
+  @@map("integration_health_events")
+}
+
+model ExternalMunicipalityStatistic {
+  id               String   @id @default(cuid())
+  municipalityCode String
+  municipalityName String?
+  statisticKey     String
+  statisticLabel   String
+  year             Int
+  value            Int
+  unit             String
+  source           String
+  sourceDataset    String
+  importedAt       DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([municipalityCode, statisticKey, year, sourceDataset])
+  @@index([municipalityCode, year])
+  @@index([statisticKey, year])
+  @@map("external_municipality_statistics")
+}
+
+model ExternalDataImportRun {
+  id              String                   @id @default(cuid())
+  source          String
+  dataset         String
+  status          ExternalDataImportStatus
+  startedAt       DateTime                 @default(now())
+  completedAt     DateTime?
+  recordsImported Int                      @default(0)
+  errorMessage    String?
+  metadataJson    Json
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([source, dataset, startedAt])
+  @@index([status])
+  @@map("external_data_import_runs")
+}
+
+model MaintenanceRun {
+  id           String    @id @default(cuid())
+  type         String
+  status       String
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+  safeMessage  String?
+  metadataJson Json
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([type, startedAt])
+  @@index([status])
+  @@map("maintenance_runs")
+}
+
+model AIObservabilityEvent {
+  id                    String                           @id @default(cuid())
+  tenantId              String
+  caseId                String
+  aiTriageResultId      String?
+  model                 String
+  promptVersion         String
+  durationMs            Int
+  status                AIObservabilityStatus
+  failureClassification AIProviderFailureClassification?
+  failureReason         String?
+  tokenEstimate         Int?
+  costEstimateCents     Float?
+  metadataJson          Json
+  createdAt             DateTime                         @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([caseId])
+  @@index([status, createdAt])
+  @@index([failureClassification])
+  @@map("ai_observability_events")
 }
 
 model CaseDocument {
@@ -289,23 +442,100 @@ model AuditEvent {
 }
 
 model AnalyticsDailySnapshot {
+  id                          String    @id @default(cuid())
+  tenantId                    String
+  date                        DateTime
+  totalCases                  Int
+  casesByStatusJson           Json
+  casesByCategoryJson         Json
+  casesByDepartmentJson       Json
+  aiReviewsTotal              Int
+  aiCorrectionsTotal          Int
+  aiCorrectionRate            Float
+  averageTimeToTriageMinutes  Float?
+  medianTimeToTriageMinutes   Float?
+  averageTimeToCloseHours     Float?
+  medianTimeToCloseHours      Float?
+  casesWaitingForCitizen      Int       @default(0)
+  aiTriageSuccessCount        Int       @default(0)
+  aiTriageFailureCount        Int       @default(0)
+  aiTriageFailureRate         Float     @default(0)
+  aiSuggestionsAccepted       Int       @default(0)
+  aiSuggestionAcceptanceRate  Float     @default(0)
+  estimatedManualMinutesSaved Int       @default(0)
+  municipalityPopulation      Int?
+  municipalityPopulationYear  Int?
+  casesPer1000Inhabitants     Float?
+  ssbDataStatus               String    @default("missing")
+  ssbImportedAt               DateTime?
+  analyticsRebuiltAt          DateTime?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+  tenant                      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, date])
+  @@index([tenantId, date])
+  @@map("analytics_daily_snapshots")
+}
+
+model AnalyticsDepartmentDaily {
+  id                         String   @id @default(cuid())
+  tenantId                   String
+  date                       DateTime
+  departmentId               String?
+  departmentName             String
+  caseCount                  Int
+  averageTimeToTriageMinutes Float?
+  averageTimeToCloseHours    Float?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+  tenant                     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, date, departmentName])
+  @@index([tenantId, date])
+  @@map("analytics_department_daily")
+}
+
+model AnalyticsAiQualityDaily {
   id                    String   @id @default(cuid())
   tenantId              String
   date                  DateTime
-  totalCases            Int
-  casesByStatusJson     Json
-  casesByCategoryJson   Json
-  casesByDepartmentJson Json
   aiReviewsTotal        Int
+  aiSuggestionsAccepted Int
   aiCorrectionsTotal    Int
+  aiAcceptanceRate      Float
   aiCorrectionRate      Float
+  aiTriageSuccessCount  Int
+  aiTriageFailureCount  Int
+  aiTriageFailureRate   Float
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, date])
   @@index([tenantId, date])
-  @@map("analytics_daily_snapshots")
+  @@map("analytics_ai_quality_daily")
+}
+
+model AnalyticsMunicipalityDaily {
+  id                      String    @id @default(cuid())
+  tenantId                String
+  date                    DateTime
+  municipalityCode        String
+  municipalityName        String?
+  caseCount               Int
+  population              Int?
+  populationYear          Int?
+  casesPer1000Inhabitants Float?
+  ssbImportedAt           DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  tenant                  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, date, municipalityCode])
+  @@index([tenantId, date])
+  @@index([municipalityCode, date])
+  @@map("analytics_municipality_daily")
 }
 
 model RetentionPolicy {

@@ -136,6 +136,8 @@ function statusToCode(status: number) {
     [HttpStatus.NOT_FOUND]: 'NOT_FOUND',
     [HttpStatus.PAYLOAD_TOO_LARGE]: 'PAYLOAD_TOO_LARGE',
     [HttpStatus.TOO_MANY_REQUESTS]: 'TOO_MANY_REQUESTS',
+    [HttpStatus.BAD_GATEWAY]: 'BAD_GATEWAY',
+    [HttpStatus.SERVICE_UNAVAILABLE]: 'SERVICE_UNAVAILABLE',
   };
 
   return codes[status] ?? 'INTERNAL_SERVER_ERROR';

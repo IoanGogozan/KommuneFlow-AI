@@ -86,6 +86,12 @@ export function CasesDashboard() {
             >
               Analytics
             </Link>
+            <Link
+              href="/internal/operations"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
+            >
+              Operations
+            </Link>
             <button
               type="button"
               onClick={() => {

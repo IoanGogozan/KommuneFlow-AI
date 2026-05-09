@@ -5,12 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, UserRole } from '@prisma/client';
+import { appLogger } from '../../shared/logging/app-logger';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUser } from '../auth/current-user';
 import { roleHasPermission } from '../auth/permissions';
 import { AI_PROVIDER } from './ai-provider';
 import type { AIProvider } from './ai-provider';
+import {
+  classifyAIProviderError,
+  safeAIProviderFailureReason,
+} from './ai-provider-errors';
 import { caseTriagePromptVersion } from './ai-prompts';
 import { ReviewAITriageInput } from './ai.schemas';
 
@@ -34,14 +39,20 @@ export class AIService {
         description: true,
       },
     });
+    const startedAt = Date.now();
 
     try {
-      const providerResult = await this.aiProvider.generateCaseTriage({
+      const minimizedCase = minimizeCaseForAI({
         title: caseRecord.title,
         description: caseRecord.description,
+      });
+      const providerResult = await this.aiProvider.generateCaseTriage({
+        title: minimizedCase.title,
+        description: minimizedCase.description,
         sourceLanguage: caseRecord.sourceLanguage,
         departments,
       });
+      const durationMs = Date.now() - startedAt;
       const suggestedDepartment = departments.find(
         (department) =>
           department.slug === providerResult.output.suggestedDepartmentSlug,
@@ -78,8 +89,29 @@ export class AIService {
         },
       });
 
+      await this.recordAIObservabilityEvent({
+        tenantId: user.tenantId,
+        caseId: caseRecord.id,
+        aiTriageResultId: result.id,
+        model: providerResult.model,
+        promptVersion: providerResult.promptVersion,
+        durationMs,
+        status: 'success',
+        tokenEstimate: providerResult.tokenEstimate,
+        costEstimateCents: providerResult.costEstimateCents,
+        metadata: {
+          titleLength: minimizedCase.title.length,
+          descriptionLength: minimizedCase.description.length,
+          departmentCount: departments.length,
+          inputWasTruncated: minimizedCase.inputWasTruncated,
+        },
+      });
+
       return result;
     } catch (error) {
+      const durationMs = Date.now() - startedAt;
+      const failureClassification = classifyAIProviderError(error);
+      const failureReason = safeAIProviderFailureReason(error);
       const result = await this.prisma.aITriageResult.create({
         data: {
           tenantId: user.tenantId,
@@ -89,7 +121,7 @@ export class AIService {
           missingInformationJson: [],
           rawResponseJson: {},
           status: 'failed',
-          failureReason: errorToMessage(error),
+          failureReason,
         },
         include: aiTriageResultInclude,
       });
@@ -102,7 +134,23 @@ export class AIService {
         entityId: result.id,
         metadata: {
           caseId: caseRecord.id,
-          reason: result.failureReason ?? 'unknown',
+          reason: failureReason,
+          classification: failureClassification,
+        },
+      });
+
+      await this.recordAIObservabilityEvent({
+        tenantId: user.tenantId,
+        caseId: caseRecord.id,
+        aiTriageResultId: result.id,
+        model: process.env.AI_PROVIDER ?? 'unknown',
+        promptVersion: caseTriagePromptVersion,
+        durationMs,
+        status: 'failed',
+        failureClassification,
+        failureReason,
+        metadata: {
+          departmentCount: departments.length,
         },
       });
 
@@ -282,6 +330,54 @@ export class AIService {
       'You do not have permission to review this case.',
     );
   }
+
+  private async recordAIObservabilityEvent(input: {
+    tenantId: string;
+    caseId: string;
+    aiTriageResultId: string;
+    model: string;
+    promptVersion: string;
+    durationMs: number;
+    status: 'success' | 'failed';
+    failureClassification?:
+      | 'timeout'
+      | 'provider_error'
+      | 'invalid_response'
+      | 'validation_failed';
+    failureReason?: string;
+    tokenEstimate?: number;
+    costEstimateCents?: number;
+    metadata: Prisma.InputJsonObject;
+  }) {
+    try {
+      await this.prisma.aIObservabilityEvent.create({
+        data: {
+          tenantId: input.tenantId,
+          caseId: input.caseId,
+          aiTriageResultId: input.aiTriageResultId,
+          model: input.model,
+          promptVersion: input.promptVersion,
+          durationMs: input.durationMs,
+          status: input.status,
+          failureClassification: input.failureClassification,
+          failureReason: input.failureReason,
+          tokenEstimate: input.tokenEstimate,
+          costEstimateCents: input.costEstimateCents,
+          metadataJson: input.metadata,
+        },
+      });
+    } catch {
+      appLogger.warn(
+        {
+          event: 'ai_observability_record_failed',
+          tenantId: input.tenantId,
+          caseId: input.caseId,
+          status: input.status,
+        },
+        'Could not record AI observability event.',
+      );
+    }
+  }
 }
 
 const aiTriageResultInclude = {
@@ -294,10 +390,40 @@ const aiTriageResultInclude = {
   },
 } satisfies Prisma.AITriageResultInclude;
 
-function errorToMessage(error: unknown) {
-  return error instanceof Error ? error.message : 'AI provider failed.';
-}
-
 function emptyToNull(value: string | undefined): string | null {
   return value && value.length > 0 ? value : null;
+}
+
+function minimizeCaseForAI(input: { title: string; description: string }) {
+  const title = truncate(
+    redactPersonalIdentifiers(normalizeText(input.title)),
+    180,
+  );
+  const description = truncate(
+    redactPersonalIdentifiers(normalizeText(input.description)),
+    2_400,
+  );
+
+  return {
+    title,
+    description,
+    inputWasTruncated:
+      title.length < normalizeText(input.title).length ||
+      description.length < normalizeText(input.description).length,
+  };
+}
+
+function normalizeText(value: string) {
+  return value.trim().replace(/\s+/g, ' ');
+}
+
+function redactPersonalIdentifiers(value: string) {
+  return value
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[redacted-email]')
+    .replace(/\b\d{11}\b/g, '[redacted-national-id]')
+    .replace(/\b(?:\+47\s?)?(?:\d\s?){8}\b/g, '[redacted-phone]');
+}
+
+function truncate(value: string, maxLength: number) {
+  return value.length <= maxLength ? value : value.slice(0, maxLength);
 }

@@ -14,6 +14,13 @@ export type IntakeDictionary = {
   emailLabel: string;
   phoneLabel: string;
   addressLabel: string;
+  addressSearch: string;
+  addressSearching: string;
+  addressSuggestionLabel: string;
+  addressConfirm: string;
+  addressConfirmed: string;
+  addressNoResults: string;
+  addressError: string;
   caseTitleLabel: string;
   descriptionLabel: string;
   documentsLabel: string;
@@ -43,6 +50,13 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     emailLabel: "E-post",
     phoneLabel: "Telefon",
     addressLabel: "Adresse",
+    addressSearch: "Sok adresse",
+    addressSearching: "Soker...",
+    addressSuggestionLabel: "Foreslatt adresse",
+    addressConfirm: "Bekreft adresse",
+    addressConfirmed: "Adresse bekreftet",
+    addressNoResults: "Fant ingen adresseforslag.",
+    addressError: "Kunne ikke validere adressen na.",
     caseTitleLabel: "Tittel",
     descriptionLabel: "Beskrivelse",
     documentsLabel: "Dokumenter",
@@ -71,6 +85,13 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     emailLabel: "Email",
     phoneLabel: "Phone",
     addressLabel: "Address",
+    addressSearch: "Search address",
+    addressSearching: "Searching...",
+    addressSuggestionLabel: "Suggested address",
+    addressConfirm: "Confirm address",
+    addressConfirmed: "Address confirmed",
+    addressNoResults: "No address suggestions found.",
+    addressError: "Could not validate the address right now.",
     caseTitleLabel: "Title",
     descriptionLabel: "Description",
     documentsLabel: "Documents",

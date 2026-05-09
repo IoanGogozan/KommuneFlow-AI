@@ -17,7 +17,22 @@ type CaseDetailResponse = {
   citizenProfile: {
     name: string;
     email: string;
+    address: string | null;
   };
+  addresses: Array<{
+    id: string;
+    originalInput: string;
+    normalizedAddress: string | null;
+    municipalityCode: string | null;
+    municipalityName: string | null;
+    postalCode: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    source: string;
+    sourceReferenceId: string | null;
+    validationStatus: string;
+    validatedAt: string | null;
+  }>;
   assignedDepartment: {
     name: string;
   } | null;
@@ -133,9 +148,12 @@ export function CaseDetail({ caseId }: { caseId: string }) {
   }
 
   async function loadDocuments() {
-    const response = await fetch(`${getApiBaseUrl()}/cases/${caseId}/documents`, {
-      credentials: "include",
-    });
+    const response = await fetch(
+      `${getApiBaseUrl()}/cases/${caseId}/documents`,
+      {
+        credentials: "include",
+      },
+    );
 
     if (response.status === 401) {
       await clearSession();
@@ -208,11 +226,14 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     const form = event.currentTarget;
     const formData = new FormData(form);
 
-    const response = await fetch(`${getApiBaseUrl()}/cases/${caseId}/documents`, {
-      method: "POST",
-      credentials: "include",
-      body: formData,
-    });
+    const response = await fetch(
+      `${getApiBaseUrl()}/cases/${caseId}/documents`,
+      {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      },
+    );
 
     if (!response.ok) {
       setError("Could not upload document.");
@@ -226,10 +247,13 @@ export function CaseDetail({ caseId }: { caseId: string }) {
   async function runAITriage() {
     setError(null);
 
-    const response = await fetch(`${getApiBaseUrl()}/cases/${caseId}/ai-triage`, {
-      method: "POST",
-      credentials: "include",
-    });
+    const response = await fetch(
+      `${getApiBaseUrl()}/cases/${caseId}/ai-triage`,
+      {
+        method: "POST",
+        credentials: "include",
+      },
+    );
 
     if (!response.ok) {
       setError("Could not run AI triage.");
@@ -323,10 +347,15 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     );
   }
 
+  const caseAddress = caseRecord.addresses[0] ?? null;
+
   return (
     <main className="min-h-screen bg-slate-100">
       <div className="mx-auto max-w-5xl px-5 py-6">
-        <Link href="/internal/cases" className="text-sm font-medium text-slate-600">
+        <Link
+          href="/internal/cases"
+          className="text-sm font-medium text-slate-600"
+        >
           Back to cases
         </Link>
 
@@ -345,13 +374,63 @@ export function CaseDetail({ caseId }: { caseId: string }) {
 
           <dl className="mt-6 grid gap-4 sm:grid-cols-3">
             <Info label="Citizen" value={caseRecord.citizenProfile.name} />
-            <Info label="Department" value={caseRecord.assignedDepartment?.name ?? "Unassigned"} />
+            <Info
+              label="Department"
+              value={caseRecord.assignedDepartment?.name ?? "Unassigned"}
+            />
             <Info label="Urgency" value={caseRecord.urgency} />
           </dl>
 
           <p className="mt-6 whitespace-pre-wrap leading-7 text-slate-700">
             {caseRecord.description}
           </p>
+        </section>
+
+        <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-950">
+            Address enrichment
+          </h2>
+          {caseAddress ? (
+            <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <Info
+                label="Original address"
+                value={caseAddress.originalInput}
+              />
+              <Info
+                label="Normalized address"
+                value={caseAddress.normalizedAddress ?? "Not available"}
+              />
+              <Info
+                label="Municipality"
+                value={
+                  caseAddress.municipalityName && caseAddress.municipalityCode
+                    ? `${caseAddress.municipalityName} (${caseAddress.municipalityCode})`
+                    : "Not available"
+                }
+              />
+              <Info
+                label="Postal code"
+                value={caseAddress.postalCode ?? "Not available"}
+              />
+              <Info
+                label="Coordinates"
+                value={
+                  caseAddress.latitude !== null &&
+                  caseAddress.longitude !== null
+                    ? `${caseAddress.latitude}, ${caseAddress.longitude}`
+                    : "Not available"
+                }
+              />
+              <Info
+                label="Validation"
+                value={`${caseAddress.validationStatus} via ${caseAddress.source}`}
+              />
+            </dl>
+          ) : (
+            <p className="mt-3 text-sm text-slate-500">
+              No address was submitted with this case.
+            </p>
+          )}
         </section>
 
         <section className="mt-5 grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
@@ -380,7 +459,9 @@ export function CaseDetail({ caseId }: { caseId: string }) {
           </form>
 
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-950">Internal notes</h2>
+            <h2 className="text-lg font-semibold text-slate-950">
+              Internal notes
+            </h2>
             <form onSubmit={addNote} className="mt-4 grid gap-3">
               <textarea
                 name="body"
@@ -396,14 +477,19 @@ export function CaseDetail({ caseId }: { caseId: string }) {
               </button>
             </form>
 
-            {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
+            {error ? (
+              <p className="mt-4 text-sm text-red-700">{error}</p>
+            ) : null}
 
             <div className="mt-5 grid gap-3">
               {caseRecord.internalNotes.map((note) => (
                 <article key={note.id} className="rounded-md bg-slate-50 p-4">
-                  <p className="text-sm leading-6 text-slate-700">{note.body}</p>
+                  <p className="text-sm leading-6 text-slate-700">
+                    {note.body}
+                  </p>
                   <p className="mt-2 text-xs text-slate-500">
-                    {note.author.name} · {new Date(note.createdAt).toLocaleString()}
+                    {note.author.name} ·{" "}
+                    {new Date(note.createdAt).toLocaleString()}
                   </p>
                 </article>
               ))}
@@ -422,6 +508,10 @@ export function CaseDetail({ caseId }: { caseId: string }) {
               Generate suggestion
             </button>
           </div>
+          <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+            AI suggestions are decision support only. A human case worker must
+            review and approve any category, department, or urgency change.
+          </p>
 
           {!aiResult ? (
             <p className="mt-4 text-sm text-slate-500">
@@ -438,12 +528,18 @@ export function CaseDetail({ caseId }: { caseId: string }) {
           {aiResult && aiResult.status !== "failed" ? (
             <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_0.9fr]">
               <div className="grid gap-3">
-                <Info label="Category" value={aiResult.suggestedCategory ?? "unknown"} />
+                <Info
+                  label="Category"
+                  value={aiResult.suggestedCategory ?? "unknown"}
+                />
                 <Info
                   label="Department"
                   value={aiResult.suggestedDepartment?.name ?? "Unassigned"}
                 />
-                <Info label="Urgency" value={aiResult.suggestedUrgency ?? "normal"} />
+                <Info
+                  label="Urgency"
+                  value={aiResult.suggestedUrgency ?? "normal"}
+                />
                 <Info
                   label="Confidence"
                   value={
@@ -453,7 +549,9 @@ export function CaseDetail({ caseId }: { caseId: string }) {
                   }
                 />
                 <div className="rounded-md bg-slate-50 p-4">
-                  <h3 className="text-sm font-medium text-slate-500">Summary</h3>
+                  <h3 className="text-sm font-medium text-slate-500">
+                    Summary
+                  </h3>
                   <p className="mt-2 text-sm leading-6 text-slate-700">
                     {aiResult.summary}
                   </p>
@@ -480,7 +578,9 @@ export function CaseDetail({ caseId }: { caseId: string }) {
                 onSubmit={reviewAITriage}
                 className="grid content-start gap-3 rounded-md bg-slate-50 p-4"
               >
-                <h3 className="text-sm font-semibold text-slate-950">Human review</h3>
+                <h3 className="text-sm font-semibold text-slate-950">
+                  Human review
+                </h3>
                 <label className="grid gap-1 text-sm text-slate-700">
                   Category
                   <select
@@ -499,7 +599,9 @@ export function CaseDetail({ caseId }: { caseId: string }) {
                   Department slug
                   <input
                     value={reviewDepartmentSlug}
-                    onChange={(event) => setReviewDepartmentSlug(event.target.value)}
+                    onChange={(event) =>
+                      setReviewDepartmentSlug(event.target.value)
+                    }
                     className="rounded-md border border-slate-300 bg-white px-3 py-2"
                   />
                 </label>
@@ -543,7 +645,10 @@ export function CaseDetail({ caseId }: { caseId: string }) {
             <p className="text-sm text-slate-500">PDF, PNG, JPG up to 10 MB</p>
           </div>
 
-          <form onSubmit={uploadDocument} className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+          <form
+            onSubmit={uploadDocument}
+            className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]"
+          >
             <input
               name="file"
               type="file"
@@ -575,8 +680,8 @@ export function CaseDetail({ caseId }: { caseId: string }) {
                       {document.originalFileName}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {document.mimeType} | {formatFileSize(document.sizeBytes)} |{" "}
-                      {new Date(document.createdAt).toLocaleString()}
+                      {document.mimeType} | {formatFileSize(document.sizeBytes)}{" "}
+                      | {new Date(document.createdAt).toLocaleString()}
                     </p>
                   </div>
                   {document.isSensitive ? (

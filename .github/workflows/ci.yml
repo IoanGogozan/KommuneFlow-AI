@@ -10,6 +10,20 @@ jobs:
   checks:
     name: Checks
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: kommuneflow_ai_test
+          POSTGRES_USER: kommuneflow
+          POSTGRES_PASSWORD: kommuneflow_test_password
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U kommuneflow -d kommuneflow_ai_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
@@ -31,6 +45,8 @@ jobs:
 
       - name: Generate Prisma client
         run: pnpm --filter @kommuneflow/api prisma:generate
+        env:
+          DATABASE_URL: postgresql://kommuneflow:kommuneflow_test_password@localhost:5433/kommuneflow_ai_test
 
       - name: Lint
         run: pnpm lint
@@ -40,6 +56,23 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Prepare e2e database
+        run: pnpm --filter @kommuneflow/api prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://kommuneflow:kommuneflow_test_password@localhost:5433/kommuneflow_ai_test
+
+      - name: E2E tests
+        run: pnpm --filter @kommuneflow/api test:e2e
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://kommuneflow:kommuneflow_test_password@localhost:5433/kommuneflow_ai_test
+          JWT_SECRET: ci-test-jwt-secret
+          SESSION_SECRET: ci-test-session-secret
+          AI_PROVIDER: mock
+          UPLOAD_STORAGE_PATH: ./storage/ci-uploads
+          APP_BASE_URL: http://localhost:3000
+          CORS_ALLOWED_ORIGINS: http://localhost:3000
 
       - name: Dependency audit
         run: pnpm audit:deps

@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { PrismaService } from '../../database/prisma.service';
 import { CurrentUser } from '../auth/current-user';
 import { AuditService } from '../audit/audit.service';
+import { KartverketAddressService } from '../integrations/kartverket-address/kartverket-address.service';
 import { CasesService } from './cases.service';
 
 describe('CasesService', () => {
@@ -169,6 +170,167 @@ describe('CasesService', () => {
         actorCitizenProfileId: 'citizen_1',
       }),
     );
+  });
+
+  it('stores a validated address for citizen intake when Kartverket matches', async () => {
+    const recordMock = jest.fn().mockResolvedValue(undefined);
+    const validateAddressMock = jest.fn().mockResolvedValue({
+      status: 'validated',
+      address: {
+        sourceReferenceId: '4203-1001-12',
+        normalizedAddress: 'Storgata 12, 4836 Arendal',
+        municipalityCode: '4203',
+        municipalityName: 'Arendal',
+        postalCode: '4836',
+        latitude: 58.461,
+        longitude: 8.772,
+      },
+    });
+    let capturedAddressCreateInput: unknown;
+    const service = createService(
+      {
+        tenant: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'tenant_1',
+            slug: 'arendal',
+          }),
+        },
+        citizenProfile: {
+          create: jest.fn().mockResolvedValue({
+            id: 'citizen_1',
+          }),
+        },
+        case: {
+          create: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            title: 'Road damage report',
+            status: CaseStatus.new,
+            createdAt: new Date('2026-05-09T07:00:00.000Z'),
+          }),
+        },
+        caseAddress: {
+          create: jest.fn((input: unknown) => {
+            capturedAddressCreateInput = input;
+            return Promise.resolve({
+              id: 'address_1',
+              validationStatus: 'validated',
+              municipalityCode: '4203',
+            });
+          }),
+        },
+      },
+      {
+        record: recordMock,
+      } as unknown as AuditService,
+      {
+        validateAddress: validateAddressMock,
+      } as unknown as KartverketAddressService,
+    );
+
+    await service.createPublicCase('arendal', {
+      citizen: {
+        name: 'Demo Citizen',
+        email: 'citizen@example.local',
+        phone: '',
+        address: 'Storgata 12',
+      },
+      case: {
+        title: 'Road damage report',
+        description:
+          'There is a damaged road surface near the school entrance.',
+        sourceLanguage: 'en',
+      },
+      privacyAccepted: true,
+    });
+
+    expect(validateAddressMock).toHaveBeenCalledWith('Storgata 12');
+    expect(capturedAddressCreateInput).toMatchObject({
+      data: {
+        tenantId: 'tenant_1',
+        caseId: 'case_1',
+        originalInput: 'Storgata 12',
+        normalizedAddress: 'Storgata 12, 4836 Arendal',
+        municipalityCode: '4203',
+        validationStatus: 'validated',
+        source: 'kartverket',
+      },
+    });
+    expect(recordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'integration.kartverket.address_validated',
+        entityType: 'case_address',
+      }),
+    );
+  });
+
+  it('stores failed address validation and continues public intake', async () => {
+    const validateAddressMock = jest.fn().mockResolvedValue({
+      status: 'failed',
+      address: null,
+    });
+    let capturedAddressCreateInput: unknown;
+    const service = createService(
+      {
+        tenant: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'tenant_1',
+            slug: 'arendal',
+          }),
+        },
+        citizenProfile: {
+          create: jest.fn().mockResolvedValue({
+            id: 'citizen_1',
+          }),
+        },
+        case: {
+          create: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            title: 'Road damage report',
+            status: CaseStatus.new,
+            createdAt: new Date('2026-05-09T07:00:00.000Z'),
+          }),
+        },
+        caseAddress: {
+          create: jest.fn((input: unknown) => {
+            capturedAddressCreateInput = input;
+            return Promise.resolve({
+              id: 'address_1',
+              validationStatus: 'failed',
+              municipalityCode: null,
+            });
+          }),
+        },
+      },
+      undefined,
+      {
+        validateAddress: validateAddressMock,
+      } as unknown as KartverketAddressService,
+    );
+
+    await expect(
+      service.createPublicCase('arendal', {
+        citizen: {
+          name: 'Demo Citizen',
+          email: 'citizen@example.local',
+          phone: '',
+          address: 'Unknown road 1',
+        },
+        case: {
+          title: 'Road damage report',
+          description:
+            'There is a damaged road surface near the school entrance.',
+          sourceLanguage: 'en',
+        },
+        privacyAccepted: true,
+      }),
+    ).resolves.toMatchObject({ caseId: 'case_1' });
+
+    expect(capturedAddressCreateInput).toMatchObject({
+      data: {
+        validationStatus: 'failed',
+        normalizedAddress: undefined,
+      },
+    });
   });
 
   it('returns not found when creating a public case for an unknown tenant', async () => {
@@ -440,6 +602,7 @@ describe('CasesService', () => {
 function createService(
   prismaShape: Record<string, unknown>,
   auditService?: AuditService,
+  kartverketAddressService?: KartverketAddressService,
 ) {
   return new CasesService(
     prismaShape as unknown as PrismaService,
@@ -447,6 +610,13 @@ function createService(
       ({
         record: jest.fn().mockResolvedValue(undefined),
       } as unknown as AuditService),
+    kartverketAddressService ??
+      ({
+        validateAddress: jest.fn().mockResolvedValue({
+          status: 'skipped',
+          address: null,
+        }),
+      } as unknown as KartverketAddressService),
   );
 }
 
