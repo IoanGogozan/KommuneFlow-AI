@@ -32,6 +32,20 @@ type CaseDetailResponse = {
   }>;
 };
 
+type CaseDocumentResponse = {
+  id: string;
+  originalFileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  checksumSha256: string;
+  isSensitive: boolean;
+  createdAt: string;
+  uploadedBy: {
+    name: string;
+    role: string;
+  };
+};
+
 const caseStatuses = [
   "new",
   "triage_pending",
@@ -45,6 +59,7 @@ const caseStatuses = [
 export function CaseDetail({ caseId }: { caseId: string }) {
   const router = useRouter();
   const [caseRecord, setCaseRecord] = useState<CaseDetailResponse | null>(null);
+  const [documents, setDocuments] = useState<CaseDocumentResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState("new");
 
@@ -68,9 +83,28 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     setStatus(result.status);
   }
 
+  async function loadDocuments() {
+    const response = await fetch(`${getApiBaseUrl()}/cases/${caseId}/documents`, {
+      credentials: "include",
+    });
+
+    if (response.status === 401) {
+      await clearSession();
+      router.push("/internal/login");
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error("Failed to load documents");
+    }
+
+    setDocuments((await response.json()) as CaseDocumentResponse[]);
+  }
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadCase().catch(() => setError("Could not load case."));
+    loadDocuments().catch(() => setError("Could not load documents."));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caseId]);
 
@@ -93,6 +127,27 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     }
 
     await loadCase();
+  }
+
+  async function uploadDocument(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    const response = await fetch(`${getApiBaseUrl()}/cases/${caseId}/documents`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      setError("Could not upload document.");
+      return;
+    }
+
+    form.reset();
+    await loadDocuments();
   }
 
   async function addNote(event: FormEvent<HTMLFormElement>) {
@@ -217,6 +272,62 @@ export function CaseDetail({ caseId }: { caseId: string }) {
             </div>
           </section>
         </section>
+
+        <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-slate-950">Documents</h2>
+            <p className="text-sm text-slate-500">PDF, PNG, JPG up to 10 MB</p>
+          </div>
+
+          <form onSubmit={uploadDocument} className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+            <input
+              name="file"
+              type="file"
+              accept="application/pdf,image/png,image/jpeg"
+              required
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+            >
+              Upload
+            </button>
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input name="isSensitive" type="checkbox" value="true" />
+              Sensitive document
+            </label>
+          </form>
+
+          <div className="mt-5 grid gap-3">
+            {documents.length === 0 ? (
+              <p className="text-sm text-slate-500">No documents uploaded.</p>
+            ) : null}
+            {documents.map((document) => (
+              <article key={document.id} className="rounded-md bg-slate-50 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-950">
+                      {document.originalFileName}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {document.mimeType} | {formatFileSize(document.sizeBytes)} |{" "}
+                      {new Date(document.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  {document.isSensitive ? (
+                    <span className="rounded-md bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">
+                      Sensitive
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-2 text-xs text-slate-500">
+                  Uploaded by {document.uploadedBy.name}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
       </div>
     </main>
   );
@@ -229,4 +340,12 @@ function Info({ label, value }: { label: string; value: string }) {
       <dd className="mt-1 text-sm font-semibold text-slate-950">{value}</dd>
     </div>
   );
+}
+
+function formatFileSize(sizeBytes: number) {
+  if (sizeBytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
+  }
+
+  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }

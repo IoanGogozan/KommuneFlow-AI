@@ -138,37 +138,37 @@ Phase completion criteria:
 
 Goal: support safe upload and controlled document access.
 
-- [ ] Add document database table
-- [ ] Add upload endpoint
-- [ ] Validate file size
-- [ ] Validate MIME type
-- [ ] Validate file extension
-- [ ] Generate checksum
-- [ ] Store files outside public web directory
-- [ ] Store document metadata
-- [ ] Add document list to case detail
-- [ ] Add document access authorization
-- [ ] Add sensitive document flag
-- [ ] Audit document upload
-- [ ] Audit sensitive document access
-- [ ] Add tests for valid upload
-- [ ] Add tests for invalid file type rejection
-- [ ] Add tests for oversized file rejection
-- [ ] Add tests for document tenant isolation
+- [x] Add document database table
+- [x] Add upload endpoint
+- [x] Validate file size
+- [x] Validate MIME type
+- [x] Validate file extension
+- [x] Generate checksum
+- [x] Store files outside public web directory
+- [x] Store document metadata
+- [x] Add document list to case detail
+- [x] Add document access authorization
+- [x] Add sensitive document flag
+- [x] Audit document upload
+- [x] Audit sensitive document access
+- [x] Add tests for valid upload
+- [x] Add tests for invalid file type rejection
+- [x] Add tests for oversized file rejection
+- [x] Add tests for document tenant isolation
 
 Phase completion criteria:
 
-- [ ] Valid PDFs/images can be uploaded
-- [ ] Invalid files are rejected
-- [ ] Document access follows RBAC
-- [ ] Document actions are audited
+- [x] Valid PDFs/images can be uploaded
+- [x] Invalid files are rejected
+- [x] Document access follows RBAC
+- [x] Document actions are audited
 
 ## Phase 6: AI Triage
 
 Goal: add AI-assisted triage without allowing AI to make final decisions.
 
-- [ ] Add AI triage result database table
-- [ ] Add AI review database table
+- [x] Add AI triage result database table
+- [x] Add AI review database table
 - [ ] Add `AIProvider` interface
 - [ ] Add `MockAIProvider`
 - [ ] Add `OpenAIProvider`
@@ -297,9 +297,9 @@ Phase completion criteria:
 Update this section manually whenever work starts on a new task.
 
 ```txt
-Current phase: Phase 5: Document Handling
-Current task: Not started
-Next task: Add document database table and upload endpoint
+Current phase: Phase 6: AI Triage
+Current task: AI triage schema completed
+Next task: Add AI provider interface, mock provider, and OpenAI provider
 Blocked by: None
 Last updated: 2026-05-09
 ```
@@ -315,3 +315,5 @@ Use this section for short implementation notes. Longer architectural decisions 
 - Phase 3 completed with public citizen intake API, tenant lookup, citizen profile creation, case creation, intake audit event, Norwegian and English intake UI, language switcher, confirmation state, and validation tests.
 - Phase 4 completed with internal login UI, authenticated case dashboard, case filters, case detail view, department-scoped case list, status updates, internal notes, audit events for status/note changes, and backend tests for scoping and read-only auditor behavior.
 - Security hardening added after Phase 4: internal auth moved from browser token storage to `HttpOnly` cookie, login and public intake rate limiting added, production JWT secret enforcement added, and standardized API error shape introduced.
+- Phase 5 completed with case document metadata, safe local upload storage via `UPLOAD_STORAGE_PATH`, PDF/image validation, checksums, sensitive document filtering, upload and sensitive-access audit events, case detail document UI, and backend tests for upload validation and tenant isolation.
+- Phase 6 database foundation started with `AITriageResult`, `AIReview`, and `AITriageStatus` models plus tenant-scoped indexes and relations to cases, departments, users, and reviews.

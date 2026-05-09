@@ -51,6 +51,13 @@ enum CaseUrgency {
   urgent
 }
 
+enum AITriageStatus {
+  pending
+  completed
+  failed
+  reviewed
+}
+
 model Tenant {
   id              String           @id @default(cuid())
   name            String
@@ -64,6 +71,9 @@ model Tenant {
   cases           Case[]
   auditEvents     AuditEvent[]
   internalNotes   InternalNote[]
+  documents       CaseDocument[]
+  aiTriageResults AITriageResult[]
+  aiReviews       AIReview[]
 
   @@map("tenants")
 }
@@ -79,6 +89,8 @@ model Department {
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   users       User[]
   cases       Case[]
+  suggestedAITriageResults AITriageResult[]
+  approvedAIReviews        AIReview[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -101,6 +113,8 @@ model User {
   assignedCases       Case[]       @relation("AssignedCases")
   actorAuditEvents    AuditEvent[] @relation("ActorUserAuditEvents")
   internalNotes        InternalNote[]
+  uploadedDocuments    CaseDocument[]
+  aiReviews            AIReview[]
 
   @@index([tenantId])
   @@index([tenantId, departmentId])
@@ -145,11 +159,88 @@ model Case {
   assignedDepartment   Department?     @relation(fields: [assignedDepartmentId], references: [id], onDelete: SetNull)
   assignedUser         User?           @relation("AssignedCases", fields: [assignedUserId], references: [id], onDelete: SetNull)
   internalNotes        InternalNote[]
+  documents            CaseDocument[]
+  aiTriageResults      AITriageResult[]
+  aiReviews            AIReview[]
 
   @@index([tenantId])
   @@index([tenantId, assignedDepartmentId])
   @@index([tenantId, status])
   @@map("cases")
+}
+
+model CaseDocument {
+  id               String   @id @default(cuid())
+  tenantId         String
+  caseId           String
+  uploadedByUserId String
+  originalFileName String
+  storageKey       String   @unique
+  mimeType         String
+  sizeBytes        Int
+  checksumSha256   String
+  isSensitive      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  case             Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploadedBy       User     @relation(fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, caseId])
+  @@index([tenantId, checksumSha256])
+  @@map("case_documents")
+}
+
+model AITriageResult {
+  id                    String         @id @default(cuid())
+  tenantId              String
+  caseId                String
+  model                 String
+  promptVersion         String
+  suggestedCategory     CaseCategory?
+  suggestedDepartmentId String?
+  suggestedUrgency      CaseUrgency?
+  summary               String?
+  missingInformationJson Json
+  confidenceScore       Float?
+  reasoningSummary      String?
+  rawResponseJson       Json
+  status                AITriageStatus @default(pending)
+  failureReason         String?
+  createdAt             DateTime       @default(now())
+  tenant                Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  case                  Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  suggestedDepartment   Department?    @relation(fields: [suggestedDepartmentId], references: [id], onDelete: SetNull)
+  reviews               AIReview[]
+
+  @@index([tenantId])
+  @@index([tenantId, caseId])
+  @@index([tenantId, status])
+  @@map("ai_triage_results")
+}
+
+model AIReview {
+  id                      String         @id @default(cuid())
+  tenantId                String
+  caseId                  String
+  aiTriageResultId        String
+  reviewedByUserId        String
+  approvedCategory        CaseCategory
+  approvedDepartmentId    String?
+  approvedUrgency         CaseUrgency
+  reviewComment           String?
+  wasAiSuggestionAccepted Boolean
+  createdAt               DateTime       @default(now())
+  tenant                  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  case                    Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  aiTriageResult          AITriageResult @relation(fields: [aiTriageResultId], references: [id], onDelete: Cascade)
+  reviewedBy              User           @relation(fields: [reviewedByUserId], references: [id], onDelete: Restrict)
+  approvedDepartment      Department?    @relation(fields: [approvedDepartmentId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, caseId])
+  @@index([tenantId, aiTriageResultId])
+  @@map("ai_reviews")
 }
 
 model InternalNote {
