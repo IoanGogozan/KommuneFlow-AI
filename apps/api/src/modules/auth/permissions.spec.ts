@@ -17,4 +17,20 @@ describe('roleHasPermission', () => {
   it('allows super admins to manage tenants', () => {
     expect(roleHasPermission(UserRole.super_admin, 'tenant:manage')).toBe(true);
   });
+
+  it('allows only super admins to export citizen data', () => {
+    expect(roleHasPermission(UserRole.super_admin, 'privacy:export')).toBe(
+      true,
+    );
+    expect(roleHasPermission(UserRole.auditor, 'privacy:export')).toBe(false);
+  });
+
+  it('allows only super admins to anonymize citizen data', () => {
+    expect(roleHasPermission(UserRole.super_admin, 'privacy:anonymize')).toBe(
+      true,
+    );
+    expect(roleHasPermission(UserRole.auditor, 'privacy:anonymize')).toBe(
+      false,
+    );
+  });
 });

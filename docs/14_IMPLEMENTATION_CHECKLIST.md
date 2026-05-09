@@ -201,22 +201,23 @@ Phase completion criteria:
 Goal: demonstrate privacy-by-design behavior.
 
 - [ ] Add privacy notice to intake form
-- [ ] Add citizen data export service
-- [ ] Add citizen data export endpoint
-- [ ] Add citizen anonymization service
-- [ ] Add citizen anonymization endpoint
+- [x] Add privacy backend module
+- [x] Add citizen data export service
+- [x] Add citizen data export endpoint
+- [x] Add citizen anonymization service
+- [x] Add citizen anonymization endpoint
 - [ ] Add document soft-delete behavior
 - [ ] Add retention configuration
-- [ ] Add privacy audit events
-- [ ] Add tests for citizen data export
-- [ ] Add tests for anonymization
+- [x] Add privacy audit events
+- [x] Add tests for citizen data export
+- [x] Add tests for anonymization
 - [ ] Add tests for document soft-delete
 - [ ] Add tests for privacy audit events
 
 Phase completion criteria:
 
-- [ ] Export works
-- [ ] Anonymization works
+- [x] Export works
+- [x] Anonymization works
 - [ ] Privacy actions are audited
 - [ ] Analytics avoids personal identifiers where possible
 
@@ -406,3 +407,4 @@ Use this section for short implementation notes. Longer architectural decisions 
 - Pino structured request logging added with method, path, status code, duration, request ID, and safe optional actor metadata.
 - Safe error logging added in the global exception filter with request ID, error code, path, status, and safe actor metadata.
 - Initial runbook added with restart, logs, migrations, backup, restore, AI provider failure, and database failure procedures.
+- Privacy backend module added with super-admin-only citizen data export, tenant-scoped lookup by citizen profile ID or email, safe document metadata export, relevant audit event export, and privacy export audit event.

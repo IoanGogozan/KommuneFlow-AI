@@ -14,6 +14,8 @@ export type Permission =
   | 'ai:triage:run'
   | 'ai:triage:review'
   | 'audit:read'
+  | 'privacy:export'
+  | 'privacy:anonymize'
   | 'analytics:read'
   | 'tenant:manage'
   | 'user:manage'
@@ -63,6 +65,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'ai:triage:run',
     'ai:triage:review',
     'audit:read',
+    'privacy:export',
+    'privacy:anonymize',
     'analytics:read',
     'tenant:manage',
     'user:manage',

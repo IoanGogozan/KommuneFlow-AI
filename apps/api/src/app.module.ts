@@ -9,6 +9,7 @@ import { CasesModule } from './modules/cases/cases.module';
 import { DatabaseModule } from './database/database.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { OperationsModule } from './modules/operations/operations.module';
+import { PrivacyModule } from './modules/privacy/privacy.module';
 import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 
 @Module({
@@ -25,6 +26,7 @@ import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
     DocumentsModule,
     AIModule,
     OperationsModule,
+    PrivacyModule,
   ],
   controllers: [AppController],
   providers: [
