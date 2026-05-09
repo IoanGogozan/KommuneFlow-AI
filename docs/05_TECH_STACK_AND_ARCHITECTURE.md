@@ -26,7 +26,7 @@ Recommended stack:
 - TypeScript
 - NestJS
 - PostgreSQL
-- Prisma or Drizzle
+- Prisma
 - Zod for validation
 - Pino for structured logging
 - OpenAI API integration through an internal provider interface
@@ -36,6 +36,7 @@ NestJS is recommended because the goal is to look more enterprise and public-sec
 ### Database
 
 - PostgreSQL
+- Prisma as the selected ORM and migration tool
 - Migrations required
 - Seed data required
 - No manual schema changes outside migrations

@@ -18,7 +18,7 @@ Use:
 - Next.js for `apps/web`
 - NestJS for `apps/api`
 - PostgreSQL
-- Prisma
+- Prisma as the selected ORM and migration tool
 - Docker Compose
 - TypeScript strict mode
 - Zod for API and AI validation
@@ -187,7 +187,7 @@ Recommended roles:
 Create ADRs later when these decisions are implemented:
 
 - choice of NestJS for backend architecture
-- choice of Prisma for database access
+- choice of Prisma for database access and migrations
 - tenant isolation strategy
 - authentication/session strategy
 - file storage strategy

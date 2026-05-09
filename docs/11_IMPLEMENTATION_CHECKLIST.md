@@ -52,7 +52,7 @@ Phase completion criteria:
 
 Goal: implement the secure backend core.
 
-- [x] Add Prisma or selected database ORM
+- [x] Add Prisma as the selected database ORM and migration tool
 - [ ] Create initial database schema
 - [ ] Add migration for tenants
 - [ ] Add migration for departments
@@ -310,3 +310,4 @@ Use this section for short implementation notes. Longer architectural decisions 
 
 - Initial documentation created before implementation.
 - Phase 1 foundation completed with pnpm monorepo, NestJS API, Next.js web app, shared package, Docker PostgreSQL, Prisma baseline, CI, and README setup.
+- Prisma is the selected database ORM and migration tool.
