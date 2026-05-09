@@ -81,6 +81,7 @@ export class PrivacyService {
             checksumSha256: true,
             isSensitive: true,
             createdAt: true,
+            deletedAt: true,
           },
         },
         aiTriageResults: {

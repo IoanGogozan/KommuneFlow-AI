@@ -206,12 +206,12 @@ Goal: demonstrate privacy-by-design behavior.
 - [x] Add citizen data export endpoint
 - [x] Add citizen anonymization service
 - [x] Add citizen anonymization endpoint
-- [ ] Add document soft-delete behavior
+- [x] Add document soft-delete behavior
 - [ ] Add retention configuration
 - [x] Add privacy audit events
 - [x] Add tests for citizen data export
 - [x] Add tests for anonymization
-- [ ] Add tests for document soft-delete
+- [x] Add tests for document soft-delete
 - [x] Add tests for privacy audit events
 
 Phase completion criteria:
@@ -379,8 +379,8 @@ Update this section manually whenever work starts on a new task.
 
 ```txt
 Current phase: Phase 7: Privacy And GDPR Features
-Current task: Privacy backend module, citizen data export, and citizen anonymization completed
-Next task: Add document soft-delete behavior and tests
+Current task: Privacy backend module, citizen data export, citizen anonymization, and document soft-delete completed
+Next task: Add retention configuration
 Blocked by: None
 Last updated: 2026-05-09
 ```
@@ -409,3 +409,4 @@ Use this section for short implementation notes. Longer architectural decisions 
 - Initial runbook added with restart, logs, migrations, backup, restore, AI provider failure, and database failure procedures.
 - Privacy backend module added with super-admin-only citizen data export, tenant-scoped lookup by citizen profile ID or email, safe document metadata export, relevant audit event export, and privacy export audit event.
 - Citizen anonymization added with super-admin-only access, tenant-scoped profile lookup, personal identifier masking, and privacy anonymization audit event.
+- Document soft-delete added with `deletedAt`, tenant-scoped delete endpoint, operational list filtering, privacy export metadata, and `document.soft_deleted` audit event.

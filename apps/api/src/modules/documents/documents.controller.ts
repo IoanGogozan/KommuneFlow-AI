@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -55,5 +56,15 @@ export class DocumentsController {
 
       throw error;
     }
+  }
+
+  @Delete(':documentId')
+  @RequirePermissions('document:upload')
+  async softDeleteForCase(
+    @Param('caseId') caseId: string,
+    @Param('documentId') documentId: string,
+    @CurrentUserParam() user: CurrentUser,
+  ) {
+    return this.documentsService.softDeleteForCase(caseId, documentId, user);
   }
 }

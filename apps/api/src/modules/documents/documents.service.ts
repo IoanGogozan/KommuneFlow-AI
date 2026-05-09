@@ -40,6 +40,7 @@ export class DocumentsService {
       where: {
         tenantId: user.tenantId,
         caseId: caseRecord.id,
+        deletedAt: null,
         ...(canReadSensitive ? {} : { isSensitive: false }),
       },
       orderBy: { createdAt: 'desc' },
@@ -51,6 +52,7 @@ export class DocumentsService {
         checksumSha256: true,
         isSensitive: true,
         createdAt: true,
+        deletedAt: true,
         uploadedBy: {
           select: {
             id: true,
@@ -80,6 +82,65 @@ export class DocumentsService {
     }
 
     return documents;
+  }
+
+  async softDeleteForCase(
+    caseId: string,
+    documentId: string,
+    user: CurrentUser,
+  ) {
+    const caseRecord = await this.findAccessibleCase(caseId, user);
+    this.assertCanUploadToCase(user, caseRecord.assignedDepartmentId);
+
+    const document = await this.prisma.caseDocument.findFirst({
+      where: {
+        id: documentId,
+        tenantId: user.tenantId,
+        caseId: caseRecord.id,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        originalFileName: true,
+        mimeType: true,
+        sizeBytes: true,
+        isSensitive: true,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found.');
+    }
+
+    const deletedAt = new Date();
+    const updatedDocument = await this.prisma.caseDocument.update({
+      where: { id: document.id },
+      data: { deletedAt },
+      select: {
+        id: true,
+        originalFileName: true,
+        mimeType: true,
+        sizeBytes: true,
+        isSensitive: true,
+        deletedAt: true,
+      },
+    });
+
+    await this.auditService.record({
+      tenantId: user.tenantId,
+      actor: user,
+      action: 'document.soft_deleted',
+      entityType: 'case_document',
+      entityId: document.id,
+      metadata: {
+        caseId: caseRecord.id,
+        mimeType: document.mimeType,
+        sizeBytes: document.sizeBytes,
+        isSensitive: document.isSensitive,
+      },
+    });
+
+    return updatedDocument;
   }
 
   async uploadForCase(

@@ -167,9 +167,115 @@ describe('DocumentsService', () => {
     await service.listForCase('case_1', caseWorker());
 
     const findManyInput = capturedFindManyInput as {
-      where: { isSensitive?: boolean };
+      where: { isSensitive?: boolean; deletedAt?: null };
     };
     expect(findManyInput.where.isSensitive).toBe(false);
+    expect(findManyInput.where.deletedAt).toBeNull();
+  });
+
+  it('soft-deletes a document and records an audit event', async () => {
+    const recordMock = jest.fn().mockResolvedValue(undefined);
+    let capturedDocumentFindFirstInput: unknown;
+    let capturedDocumentUpdateInput: unknown;
+    const service = createService(
+      {
+        case: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            assignedDepartmentId: 'department_1',
+          }),
+        },
+        caseDocument: {
+          findFirst: jest.fn((input: unknown) => {
+            capturedDocumentFindFirstInput = input;
+            return Promise.resolve({
+              id: 'document_1',
+              originalFileName: 'permit.pdf',
+              mimeType: 'application/pdf',
+              sizeBytes: 12,
+              isSensitive: false,
+            });
+          }),
+          update: jest.fn((input: unknown) => {
+            capturedDocumentUpdateInput = input;
+            return Promise.resolve({
+              id: 'document_1',
+              originalFileName: 'permit.pdf',
+              mimeType: 'application/pdf',
+              sizeBytes: 12,
+              isSensitive: false,
+              deletedAt: new Date('2026-05-09T08:44:00.000Z'),
+            });
+          }),
+        },
+      },
+      { record: recordMock } as unknown as AuditService,
+    );
+
+    await expect(
+      service.softDeleteForCase('case_1', 'document_1', caseWorker()),
+    ).resolves.toMatchObject({
+      id: 'document_1',
+      deletedAt: new Date('2026-05-09T08:44:00.000Z'),
+    });
+    expect(capturedDocumentFindFirstInput).toMatchObject({
+      where: {
+        id: 'document_1',
+        tenantId: 'tenant_1',
+        caseId: 'case_1',
+        deletedAt: null,
+      },
+    });
+    expect(capturedDocumentUpdateInput).toMatchObject({
+      where: {
+        id: 'document_1',
+      },
+    });
+    const updateInput = capturedDocumentUpdateInput as {
+      data: { deletedAt: Date };
+    };
+    expect(updateInput.data.deletedAt).toBeInstanceOf(Date);
+    expect(recordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant_1',
+        action: 'document.soft_deleted',
+        entityType: 'case_document',
+        entityId: 'document_1',
+      }),
+    );
+  });
+
+  it('blocks auditors from soft-deleting documents', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          assignedDepartmentId: 'department_1',
+        }),
+      },
+    });
+
+    await expect(
+      service.softDeleteForCase('case_1', 'document_1', auditor()),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('returns not found for missing or already deleted documents', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          assignedDepartmentId: 'department_1',
+        }),
+      },
+      caseDocument: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+    });
+
+    await expect(
+      service.softDeleteForCase('case_1', 'document_1', caseWorker()),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
 
@@ -193,6 +299,16 @@ function caseWorker(): CurrentUser {
     departmentId: 'department_1',
     email: 'case.worker@arendal.local',
     role: UserRole.case_worker,
+  };
+}
+
+function auditor(): CurrentUser {
+  return {
+    id: 'user_2',
+    tenantId: 'tenant_1',
+    departmentId: null,
+    email: 'auditor@arendal.local',
+    role: UserRole.auditor,
   };
 }
 
