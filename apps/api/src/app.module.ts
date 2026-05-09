@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AIModule } from './modules/ai/ai.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CasesModule } from './modules/cases/cases.module';
 import { DatabaseModule } from './database/database.module';
@@ -20,6 +21,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
     AuthModule,
     CasesModule,
     DocumentsModule,
+    AIModule,
   ],
   controllers: [AppController],
   providers: [

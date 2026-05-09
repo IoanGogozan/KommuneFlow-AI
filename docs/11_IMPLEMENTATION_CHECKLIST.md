@@ -175,19 +175,19 @@ Goal: add AI-assisted triage without allowing AI to make final decisions.
 - [x] Add prompt template `case_triage_v1`
 - [x] Add structured output schema
 - [x] Validate AI output with Zod
-- [ ] Store raw AI response safely
-- [ ] Store short reasoning summary only
-- [ ] Add AI triage API endpoint or worker
+- [x] Store raw AI response safely
+- [x] Store short reasoning summary only
+- [x] Add AI triage API endpoint or worker
 - [ ] Add AI suggestion UI on case detail
-- [ ] Add human review API
+- [x] Add human review API
 - [ ] Add human review UI
-- [ ] Audit AI triage result creation
-- [ ] Audit human review
-- [ ] Add test for valid AI response parsing
-- [ ] Add test for invalid AI response rejection
-- [ ] Add test for AI provider failure
-- [ ] Add test proving AI does not mutate official case fields before review
-- [ ] Add test proving human review creates audit event
+- [x] Audit AI triage result creation
+- [x] Audit human review
+- [x] Add test for valid AI response parsing
+- [x] Add test for invalid AI response rejection
+- [x] Add test for AI provider failure
+- [x] Add test proving AI does not mutate official case fields before review
+- [x] Add test proving human review creates audit event
 
 Phase completion criteria:
 
@@ -298,8 +298,8 @@ Update this section manually whenever work starts on a new task.
 
 ```txt
 Current phase: Phase 6: AI Triage
-Current task: AI provider interface and providers completed
-Next task: Add AI triage service, API endpoint, and result storage
+Current task: AI triage service, API endpoint, result storage, and human review API completed
+Next task: Add AI suggestion and human review UI on case detail
 Blocked by: None
 Last updated: 2026-05-09
 ```
@@ -318,3 +318,4 @@ Use this section for short implementation notes. Longer architectural decisions 
 - Phase 5 completed with case document metadata, safe local upload storage via `UPLOAD_STORAGE_PATH`, PDF/image validation, checksums, sensitive document filtering, upload and sensitive-access audit events, case detail document UI, and backend tests for upload validation and tenant isolation.
 - Phase 6 database foundation started with `AITriageResult`, `AIReview`, and `AITriageStatus` models plus tenant-scoped indexes and relations to cases, departments, users, and reviews.
 - Phase 6 provider foundation added with `AIProvider`, deterministic `MockAIProvider`, OpenAI Responses API provider using Structured Outputs, `case_triage_v1` prompt helpers, and Zod validation for AI triage output.
+- Phase 6 backend workflow added with tenant-scoped AI triage endpoints, safe failed-result storage on provider errors, raw response storage, short reasoning summaries, human review API, official case updates only after review, and audit events for triage creation/failure and review.

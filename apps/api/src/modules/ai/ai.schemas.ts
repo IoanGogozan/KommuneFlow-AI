@@ -25,6 +25,16 @@ export const aiTriageOutputSchema = z.object({
 
 export type AITriageOutput = z.infer<typeof aiTriageOutputSchema>;
 
+export const reviewAITriageSchema = z.object({
+  approvedCategory: caseCategorySchema,
+  approvedDepartmentSlug: z.string().trim().min(1).max(120).nullable(),
+  approvedUrgency: caseUrgencySchema,
+  reviewComment: z.string().trim().max(1000).optional().or(z.literal('')),
+  wasAiSuggestionAccepted: z.boolean(),
+});
+
+export type ReviewAITriageInput = z.infer<typeof reviewAITriageSchema>;
+
 export const aiTriageJsonSchema = {
   type: 'object',
   additionalProperties: false,
