@@ -53,34 +53,34 @@ Phase completion criteria:
 Goal: implement the secure backend core.
 
 - [x] Add Prisma as the selected database ORM and migration tool
-- [ ] Create initial database schema
-- [ ] Add migration for tenants
-- [ ] Add migration for departments
-- [ ] Add migration for users
-- [ ] Add migration for citizen profiles
-- [ ] Add migration for cases
-- [ ] Add migration for audit events
-- [ ] Add seed data for demo tenants
-- [ ] Add seed data for departments
-- [ ] Add seed data for demo users
-- [ ] Add password hashing
-- [ ] Add authentication endpoint
-- [ ] Add role model
-- [ ] Add explicit permission map
-- [ ] Add authorization guard
-- [ ] Add tenant isolation helper
-- [ ] Add audit event service
-- [ ] Add tests for unauthenticated requests returning 401
-- [ ] Add tests for unauthorized requests returning 403
-- [ ] Add tests for cross-tenant access blocking
-- [ ] Add tests for auditor read-only behavior
+- [x] Create initial database schema
+- [x] Add migration for tenants
+- [x] Add migration for departments
+- [x] Add migration for users
+- [x] Add migration for citizen profiles
+- [x] Add migration for cases
+- [x] Add migration for audit events
+- [x] Add seed data for demo tenants
+- [x] Add seed data for departments
+- [x] Add seed data for demo users
+- [x] Add password hashing
+- [x] Add authentication endpoint
+- [x] Add role model
+- [x] Add explicit permission map
+- [x] Add authorization guard
+- [x] Add tenant isolation helper
+- [x] Add audit event service
+- [x] Add tests for unauthenticated requests returning 401
+- [x] Add tests for unauthorized requests returning 403
+- [x] Add tests for cross-tenant access blocking
+- [x] Add tests for auditor read-only behavior
 
 Phase completion criteria:
 
-- [ ] Login works
-- [ ] Seeded users can authenticate
-- [ ] Permissions are enforced server-side
-- [ ] Tenant isolation tests pass
+- [x] Login works
+- [x] Seeded users can authenticate
+- [x] Permissions are enforced server-side
+- [x] Tenant isolation tests pass
 
 ## Phase 3: Citizen Case Intake
 
@@ -297,9 +297,9 @@ Phase completion criteria:
 Update this section manually whenever work starts on a new task.
 
 ```txt
-Current phase: Phase 2: Database, Tenants, Users, RBAC
+Current phase: Phase 3: Citizen Case Intake
 Current task: Not started
-Next task: Create initial database schema
+Next task: Add public intake page and create case API endpoint
 Blocked by: None
 Last updated: 2026-05-09
 ```
@@ -311,3 +311,4 @@ Use this section for short implementation notes. Longer architectural decisions 
 - Initial documentation created before implementation.
 - Phase 1 foundation completed with pnpm monorepo, NestJS API, Next.js web app, shared package, Docker PostgreSQL, Prisma baseline, CI, and README setup.
 - Prisma is the selected database ORM and migration tool.
+- Phase 2 completed with Prisma core schema, initial migration, seed data, JWT login, password hashing, explicit permission map, authorization guard, tenant-filtered case access, audit service, and security-focused tests.

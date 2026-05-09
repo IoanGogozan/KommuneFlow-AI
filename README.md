@@ -44,6 +44,13 @@ Generate the Prisma client after schema changes:
 pnpm --filter @kommuneflow/api prisma:generate
 ```
 
+Run database migrations and seed demo data:
+
+```bash
+pnpm --filter @kommuneflow/api prisma:migrate
+pnpm --filter @kommuneflow/api prisma:seed
+```
+
 Start the API and web app:
 
 ```bash
@@ -64,6 +71,8 @@ pnpm test
 pnpm typecheck
 pnpm dev:api
 pnpm dev:web
+pnpm --filter @kommuneflow/api prisma:migrate
+pnpm --filter @kommuneflow/api prisma:seed
 ```
 
 ## Workspace Structure

@@ -1,13 +1,172 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum TenantLanguage {
+  nb
+  en
+}
+
+enum UserRole {
+  case_worker
+  department_admin
+  auditor
+  super_admin
+}
+
+enum UserStatus {
+  active
+  disabled
+}
+
+enum CaseStatus {
+  new
+  triage_pending
+  triaged
+  in_progress
+  waiting_for_citizen
+  closed
+  rejected
+}
+
+enum CaseCategory {
+  building_case
+  kindergarten_school
+  health_care
+  road_transport
+  tax_finance
+  water_waste
+  general_inquiry
+  unknown
+}
+
+enum CaseUrgency {
+  low
+  normal
+  high
+  urgent
+}
+
+model Tenant {
+  id              String           @id @default(cuid())
+  name            String
+  slug            String           @unique
+  primaryLanguage TenantLanguage   @default(nb)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  departments     Department[]
+  users           User[]
+  citizenProfiles CitizenProfile[]
+  cases           Case[]
+  auditEvents     AuditEvent[]
+
+  @@map("tenants")
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  slug        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users       User[]
+  cases       Case[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("departments")
+}
+
+model User {
+  id                  String       @id @default(cuid())
+  tenantId            String
+  departmentId        String?
+  email               String       @unique
+  passwordHash        String
+  name                String
+  role                UserRole
+  status              UserStatus   @default(active)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  tenant              Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  department          Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  assignedCases       Case[]       @relation("AssignedCases")
+  actorAuditEvents    AuditEvent[] @relation("ActorUserAuditEvents")
+
+  @@index([tenantId])
+  @@index([tenantId, departmentId])
+  @@map("users")
+}
+
+model CitizenProfile {
+  id               String       @id @default(cuid())
+  tenantId         String
+  name             String
+  email            String
+  phone            String?
+  address          String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  tenant           Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cases            Case[]
+  actorAuditEvents AuditEvent[] @relation("ActorCitizenAuditEvents")
+
+  @@index([tenantId])
+  @@index([tenantId, email])
+  @@map("citizen_profiles")
+}
+
+model Case {
+  id                   String          @id @default(cuid())
+  tenantId             String
+  citizenProfileId     String
+  assignedDepartmentId String?
+  assignedUserId       String?
+  title                String
+  description          String
+  category             CaseCategory    @default(unknown)
+  status               CaseStatus      @default(new)
+  urgency              CaseUrgency     @default(normal)
+  sourceLanguage       TenantLanguage
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  closedAt             DateTime?
+  tenant               Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  citizenProfile       CitizenProfile  @relation(fields: [citizenProfileId], references: [id], onDelete: Restrict)
+  assignedDepartment   Department?     @relation(fields: [assignedDepartmentId], references: [id], onDelete: SetNull)
+  assignedUser         User?           @relation("AssignedCases", fields: [assignedUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, assignedDepartmentId])
+  @@index([tenantId, status])
+  @@map("cases")
+}
+
+model AuditEvent {
+  id                    String          @id @default(cuid())
+  tenantId              String
+  actorUserId           String?
+  actorCitizenProfileId String?
+  actorRole             String?
+  action                String
+  entityType            String
+  entityId              String
+  ipAddress             String?
+  userAgent             String?
+  metadataJson          Json
+  createdAt             DateTime        @default(now())
+  tenant                Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actorUser             User?           @relation("ActorUserAuditEvents", fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorCitizenProfile   CitizenProfile? @relation("ActorCitizenAuditEvents", fields: [actorCitizenProfileId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, entityType, entityId])
+  @@map("audit_events")
 }
