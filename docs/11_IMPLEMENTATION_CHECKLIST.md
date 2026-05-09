@@ -169,12 +169,12 @@ Goal: add AI-assisted triage without allowing AI to make final decisions.
 
 - [x] Add AI triage result database table
 - [x] Add AI review database table
-- [ ] Add `AIProvider` interface
-- [ ] Add `MockAIProvider`
-- [ ] Add `OpenAIProvider`
-- [ ] Add prompt template `case_triage_v1`
-- [ ] Add structured output schema
-- [ ] Validate AI output with Zod
+- [x] Add `AIProvider` interface
+- [x] Add `MockAIProvider`
+- [x] Add `OpenAIProvider`
+- [x] Add prompt template `case_triage_v1`
+- [x] Add structured output schema
+- [x] Validate AI output with Zod
 - [ ] Store raw AI response safely
 - [ ] Store short reasoning summary only
 - [ ] Add AI triage API endpoint or worker
@@ -298,8 +298,8 @@ Update this section manually whenever work starts on a new task.
 
 ```txt
 Current phase: Phase 6: AI Triage
-Current task: AI triage schema completed
-Next task: Add AI provider interface, mock provider, and OpenAI provider
+Current task: AI provider interface and providers completed
+Next task: Add AI triage service, API endpoint, and result storage
 Blocked by: None
 Last updated: 2026-05-09
 ```
@@ -317,3 +317,4 @@ Use this section for short implementation notes. Longer architectural decisions 
 - Security hardening added after Phase 4: internal auth moved from browser token storage to `HttpOnly` cookie, login and public intake rate limiting added, production JWT secret enforcement added, and standardized API error shape introduced.
 - Phase 5 completed with case document metadata, safe local upload storage via `UPLOAD_STORAGE_PATH`, PDF/image validation, checksums, sensitive document filtering, upload and sensitive-access audit events, case detail document UI, and backend tests for upload validation and tenant isolation.
 - Phase 6 database foundation started with `AITriageResult`, `AIReview`, and `AITriageStatus` models plus tenant-scoped indexes and relations to cases, departments, users, and reviews.
+- Phase 6 provider foundation added with `AIProvider`, deterministic `MockAIProvider`, OpenAI Responses API provider using Structured Outputs, `case_triage_v1` prompt helpers, and Zod validation for AI triage output.
