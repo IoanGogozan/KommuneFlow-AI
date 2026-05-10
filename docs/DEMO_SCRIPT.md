@@ -28,7 +28,7 @@ department.admin@arendal.local
 DemoPassword123!
 ```
 
-The seed includes Arendal, Grimstad, and Kristiansand tenants, five departments per tenant, 18 realistic cases, documents, AI reviews, SSB population records, analytics snapshots, audit events, and operational events.
+The seed includes Arendal, Grimstad, and Kristiansand tenants, five departments per tenant, 20 realistic cases, documents, AI reviews, SSB population records, analytics snapshots, audit events, operational events, and email logs.
 
 ## Walkthrough
 

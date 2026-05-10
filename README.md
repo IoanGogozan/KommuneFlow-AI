@@ -111,7 +111,7 @@ Privacy docs:
 
 AI suggestions are stored separately from official case fields. The system validates AI output with Zod and records human review decisions. AI provider calls are abstracted behind `AIProvider`, so local tests and demos can use `MockAIProvider` without calling the OpenAI API.
 
-Current limitation: OpenAI retry/timeout policy, redaction/minimization, and cost/latency metrics should be expanded before real production use.
+Current limitation: AI calls are still synchronous in the request path. Before real production use, AI processing should move to a background worker, with stronger PII redaction, cost monitoring, and retry/backoff policies.
 
 ## Demo Users
 
@@ -137,11 +137,11 @@ The seed creates a realistic local portfolio dataset:
 
 - tenants: Arendal Kommune, Grimstad Kommune, Kristiansand Kommune
 - five departments per tenant
-- 18 realistic cases across statuses, categories, and urgencies
+- 20 realistic cases across statuses, categories, and urgencies
 - Norwegian and English case descriptions
 - validated address rows with municipality codes
 - demo documents
-- accepted, corrected, and failed AI triage examples
+- accepted, corrected, failed, and low-confidence AI triage examples
 - SSB municipality population records
 - analytics snapshots
 - audit and operational events
@@ -203,6 +203,7 @@ Local URLs:
 - Internal cases: `http://localhost:3000/internal/cases`
 - Internal analytics: `http://localhost:3000/internal/analytics`
 - Internal operations: `http://localhost:3000/internal/operations`
+- Internal privacy: `http://localhost:3000/internal/privacy`
 
 ## Useful Commands
 
@@ -302,27 +303,27 @@ The API test suite includes unit, service, controller, auth, RBAC, tenant isolat
 10. Update case status and add an internal note.
 11. Open analytics and run aggregation for the current date range.
 12. Open operations and review health, readiness, integration, AI, document, rate-limit, and operational event metrics.
+13. Open privacy and run a citizen data export or retention dry run.
 
 See [Demo Script](./docs/DEMO_SCRIPT.md) for an interview-ready walkthrough.
 
 ## Known Limitations
 
 - Public Hetzner HTTPS deployment has not been verified on a real host yet.
-- Citizen status lookup after submission is not implemented.
-- Email confirmation is not implemented.
+- Citizen status lookup is implemented with case reference and access code, but a richer citizen portal is still future work.
+- Email confirmation is logged through a mock provider; real SMTP/transactional email is future production work.
 - Document OCR/PDF text extraction is not implemented.
 - Malware scanning is represented as a future provider concern, not a real scanner.
 - AI calls are synchronous in the request path.
 - AI prompt redaction/minimization should be expanded before real production use.
-- Privacy actions exist in API, but there is no full internal privacy UI.
+- Privacy actions have a simple internal UI; a fuller workflow with approvals and scheduled retention jobs is future work.
 
 ## Future Improvements
 
 - Real Hetzner deployment and screenshots
 - Additional demo scenarios after screenshots and final README polish
-- Citizen status portal
-- Email confirmations
-- Background worker for AI and analytics aggregation
+- Background worker for AI triage, analytics rebuild, SSB import, and notification delivery
+- Real email provider integration
 - PDF text extraction and document summarization
 - Malware scanning provider
 - Route-level internal locale URLs if the demo needs shareable localized internal links
@@ -333,13 +334,7 @@ See [Demo Script](./docs/DEMO_SCRIPT.md) for an interview-ready walkthrough.
 
 ## Portfolio Description
 
-English:
-
 KommuneFlow AI is a portfolio project inspired by Norwegian municipal digital services. It is a multi-tenant platform for citizen case intake, Kartverket address validation, document workflows, human-reviewed AI triage, role-based access control, audit logging, privacy operations, retention, SSB-enriched analytics, and operations monitoring. AI is used as decision support, not as an automatic decision-maker.
-
-Norwegian:
-
-KommuneFlow AI er et portefoljeprosjekt inspirert av norsk kommunal tjenesteutvikling. Losningen er en multi-tenant plattform for innbyggerhenvendelser, Kartverket-adressevalidering, dokumentflyt, menneskelig kvalitetssikret KI-triage, rollebasert tilgangsstyring, audit-logg, personvernarbeid, retensjon, SSB-beriket analyse og driftsinnsikt. KI brukes som beslutningsstotte, ikke som automatisk beslutningstaker.
 
 ## Workspace Structure
 

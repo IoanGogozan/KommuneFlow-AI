@@ -82,11 +82,23 @@ function triageResultData(input: {
     missingInformationJson: demoCase.aiFailed
       ? []
       : ['case reference or additional documentation if relevant'],
-    confidenceScore: demoCase.aiFailed ? null : 0.82,
+    confidenceScore: demoCase.aiFailed
+      ? null
+      : demoCase.aiLowConfidence
+        ? 0.38
+        : 0.82,
     reasoningSummary: demoCase.aiFailed
       ? null
-      : 'Seeded mock AI triage based on case category and department.',
-    rawResponseJson: demoCase.aiFailed ? {} : { provider: 'mock', seed: true },
+      : demoCase.aiLowConfidence
+        ? 'Seeded low-confidence AI triage because the request spans multiple service areas.'
+        : 'Seeded mock AI triage based on case category and department.',
+    rawResponseJson: demoCase.aiFailed
+      ? {}
+      : {
+          provider: 'mock',
+          seed: true,
+          lowConfidence: Boolean(demoCase.aiLowConfidence),
+        },
     status: input.triageStatus,
     failureReason: demoCase.aiFailed ? 'Mock provider validation failed.' : null,
     createdAt: input.triageCreatedAt,

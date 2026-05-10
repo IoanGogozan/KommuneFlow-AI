@@ -31,6 +31,7 @@ export type DemoCase = {
   closeAfterHours?: number;
   aiReview?: 'accepted' | 'corrected';
   aiFailed?: boolean;
+  aiLowConfidence?: boolean;
   documentNames: string[];
 };
 

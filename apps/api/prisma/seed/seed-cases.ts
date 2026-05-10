@@ -1,10 +1,12 @@
 import { PrismaClient } from '@prisma/client';
+import { createHash } from 'node:crypto';
 import { tenants } from './data/tenants';
 import { DemoCase, SeedContext } from './types';
 import { addHours, addMinutes, daysAgo } from './time';
 import { seedAi } from './seed-ai';
 import { seedCaseAudit } from './seed-audit';
 import { seedDocuments } from './seed-documents';
+import { seedEmailLogs } from './seed-email-logs';
 
 export async function seedCases(
   prisma: PrismaClient,
@@ -64,6 +66,7 @@ async function seedCase(
   await seedAddress(prisma, demoCase, tenant.id, tenantSpec, createdAt);
   await seedDocuments(prisma, demoCase, tenant.id, citizen.id, admin.id, createdAt);
   await seedAi(prisma, demoCase, tenant.id, department.id, admin.id, createdAt);
+  await seedEmailLogs(prisma, demoCase, tenant.id, createdAt);
   await seedCaseAudit(prisma, demoCase, tenant.id, citizen.id, admin.id);
 }
 
@@ -78,6 +81,8 @@ function caseData(
   return {
     tenantId,
     citizenProfileId,
+    caseReference: caseReferenceForDemoCase(demoCase.id),
+    statusAccessCodeHash: statusAccessCodeHashForDemoCase(demoCase.id),
     assignedDepartmentId: departmentId,
     title: demoCase.title,
     description: demoCase.description,
@@ -88,6 +93,16 @@ function caseData(
     createdAt,
     closedAt,
   };
+}
+
+function caseReferenceForDemoCase(caseId: string) {
+  return `KF-DEMO-${caseId.replace(/[^a-z0-9]/gi, '').slice(-8).toUpperCase()}`;
+}
+
+function statusAccessCodeHashForDemoCase(caseId: string) {
+  return createHash('sha256')
+    .update(`DEMO-${caseId}`.toUpperCase())
+    .digest('hex');
 }
 
 async function seedAddress(
