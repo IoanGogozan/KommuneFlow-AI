@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUser } from '../auth/current-user';
+import { OperationalEventService } from '../operations/operational-event.service';
 import { DocumentsService } from './documents.service';
 
 describe('DocumentsService', () => {
@@ -93,13 +94,30 @@ describe('DocumentsService', () => {
   });
 
   it('rejects unsupported file types', async () => {
-    const service = createService({});
+    const operationalRecordMock = jest.fn().mockResolvedValue(undefined);
+    const service = createService({}, undefined, {
+      record: operationalRecordMock,
+    } as unknown as OperationalEventService);
 
     await expect(
       service.uploadForCase('case_1', caseWorker(), textFile(), {
         isSensitive: false,
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
+    expect(operationalRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'document.upload_failed',
+        severity: 'warning',
+        source: 'documents',
+        tenantId: 'tenant_1',
+        userId: 'user_1',
+        safeMessage: 'Document upload failed.',
+        metadata: {
+          caseId: 'case_1',
+          reason: 'Unsupported document MIME type.',
+        },
+      }),
+    );
   });
 
   it('rejects empty files', async () => {
@@ -143,7 +161,10 @@ describe('DocumentsService', () => {
   });
 
   it('rejects path traversal file names', async () => {
-    const service = createService({});
+    const operationalRecordMock = jest.fn().mockResolvedValue(undefined);
+    const service = createService({}, undefined, {
+      record: operationalRecordMock,
+    } as unknown as OperationalEventService);
 
     await expect(
       service.uploadForCase(
@@ -158,6 +179,9 @@ describe('DocumentsService', () => {
         },
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
+    expect(JSON.stringify(operationalRecordMock.mock.calls)).not.toContain(
+      '../permit.pdf',
+    );
   });
 
   it('rejects executable uploads', async () => {
@@ -498,6 +522,7 @@ describe('DocumentsService', () => {
 function createService(
   prismaShape: Record<string, unknown>,
   auditService?: AuditService,
+  operationalEventService?: OperationalEventService,
 ) {
   return new DocumentsService(
     prismaShape as unknown as PrismaService,
@@ -505,9 +530,10 @@ function createService(
       ({
         record: jest.fn().mockResolvedValue(undefined),
       } as unknown as AuditService),
-    {
-      record: jest.fn().mockResolvedValue(undefined),
-    } as never,
+    operationalEventService ??
+      ({
+        record: jest.fn().mockResolvedValue(undefined),
+      } as unknown as OperationalEventService),
   );
 }
 

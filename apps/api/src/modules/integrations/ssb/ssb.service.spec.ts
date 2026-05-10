@@ -1,5 +1,6 @@
 import { BadGatewayException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
+import { OperationalEventService } from '../../operations/operational-event.service';
 import { SsbService, parsePopulationDataset } from './ssb.service';
 
 describe('SsbService', () => {
@@ -64,6 +65,7 @@ describe('SsbService', () => {
   });
 
   it('creates failed import run when SSB returns an upstream error', async () => {
+    const operationalRecordMock = jest.fn().mockResolvedValue(undefined);
     global.fetch = jest.fn().mockResolvedValue({
       ok: false,
       status: 500,
@@ -71,15 +73,20 @@ describe('SsbService', () => {
     const importRunUpdateMock = jest
       .fn<Promise<Record<string, never>>, [ImportRunUpdateInput]>()
       .mockResolvedValue({});
-    const service = createService({
-      externalDataImportRun: {
-        create: jest.fn().mockResolvedValue({ id: 'import_1' }),
-        update: importRunUpdateMock,
+    const service = createService(
+      {
+        externalDataImportRun: {
+          create: jest.fn().mockResolvedValue({ id: 'import_1' }),
+          update: importRunUpdateMock,
+        },
+        integrationHealthEvent: {
+          create: jest.fn().mockResolvedValue({ id: 'event_1' }),
+        },
       },
-      integrationHealthEvent: {
-        create: jest.fn().mockResolvedValue({ id: 'event_1' }),
-      },
-    });
+      {
+        record: operationalRecordMock,
+      } as unknown as OperationalEventService,
+    );
 
     await expect(
       service.importMunicipalityPopulation({
@@ -94,22 +101,41 @@ describe('SsbService', () => {
     expect(importRunUpdateInput.data.errorMessage).toBe(
       'SSB returned HTTP 500.',
     );
+    expect(operationalRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'integration.ssb.failed',
+        severity: 'error',
+        source: 'ssb',
+        safeMessage: 'SSB returned HTTP 500.',
+        metadata: {
+          year: 2025,
+          municipalityCount: 1,
+          errorCode: 'import_failed',
+        },
+      }),
+    );
   });
 
   it('handles malformed SSB response safely', async () => {
+    const operationalRecordMock = jest.fn().mockResolvedValue(undefined);
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: jest.fn().mockResolvedValue({ unexpected: [] }),
     });
-    const service = createService({
-      externalDataImportRun: {
-        create: jest.fn().mockResolvedValue({ id: 'import_1' }),
-        update: jest.fn().mockResolvedValue({}),
+    const service = createService(
+      {
+        externalDataImportRun: {
+          create: jest.fn().mockResolvedValue({ id: 'import_1' }),
+          update: jest.fn().mockResolvedValue({}),
+        },
+        integrationHealthEvent: {
+          create: jest.fn().mockResolvedValue({ id: 'event_1' }),
+        },
       },
-      integrationHealthEvent: {
-        create: jest.fn().mockResolvedValue({ id: 'event_1' }),
-      },
-    });
+      {
+        record: operationalRecordMock,
+      } as unknown as OperationalEventService,
+    );
 
     await expect(
       service.importMunicipalityPopulation({
@@ -117,6 +143,9 @@ describe('SsbService', () => {
         municipalityCodes: ['4203'],
       }),
     ).rejects.toBeInstanceOf(BadGatewayException);
+    expect(JSON.stringify(operationalRecordMock.mock.calls)).not.toContain(
+      'http',
+    );
   });
 
   it('parses JSON-stat2 municipality population values', () => {
@@ -133,12 +162,16 @@ describe('SsbService', () => {
   });
 });
 
-function createService(prismaShape: Record<string, unknown>) {
+function createService(
+  prismaShape: Record<string, unknown>,
+  operationalEventService?: OperationalEventService,
+) {
   return new SsbService(
     prismaShape as unknown as PrismaService,
-    {
-      record: jest.fn().mockResolvedValue(undefined),
-    } as never,
+    operationalEventService ??
+      ({
+        record: jest.fn().mockResolvedValue(undefined),
+      } as unknown as OperationalEventService),
   );
 }
 

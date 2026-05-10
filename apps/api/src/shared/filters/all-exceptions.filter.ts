@@ -11,6 +11,7 @@ import {
   REQUEST_ID_HEADER,
   RequestWithId,
 } from '../middleware/request-id.middleware';
+import { safeRequestPath } from '../middleware/request-path';
 import { appLogger } from '../logging/app-logger';
 import { OperationalEventService } from '../../modules/operations/operational-event.service';
 
@@ -54,7 +55,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         code: errorCode,
         message: safeMessage,
         requestId,
-        path: request.url,
+        path: safeRequestPath(request),
       },
     });
   }
@@ -81,7 +82,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       metadata: {
         errorCode: input.errorCode,
         method: input.request.method,
-        path: input.request.originalUrl ?? input.request.url,
+        path: safeRequestPath(input.request),
         statusCode: input.status,
       },
     });
@@ -104,7 +105,7 @@ function logException(input: ExceptionLogInput) {
     errorCode: input.errorCode,
     safeMessage: input.safeMessage,
     method: input.request.method,
-    path: input.request.originalUrl ?? input.request.url,
+    path: safeRequestPath(input.request),
     statusCode: input.status,
     userId: input.request.user?.id,
     tenantId: input.request.user?.tenantId,

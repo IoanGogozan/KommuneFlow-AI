@@ -1,6 +1,7 @@
 import { BadGatewayException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { AuditService } from '../../audit/audit.service';
+import { OperationalEventService } from '../../operations/operational-event.service';
 import { KartverketAddressService } from './kartverket-address.service';
 
 describe('KartverketAddressService', () => {
@@ -67,28 +68,66 @@ describe('KartverketAddressService', () => {
   });
 
   it('handles Kartverket timeout safely', async () => {
+    const operationalRecordMock = jest.fn().mockResolvedValue(undefined);
     global.fetch = jest.fn().mockRejectedValue(
       Object.assign(new Error('Timeout'), {
         name: 'TimeoutError',
       }),
     );
-    const service = createService();
+    const service = createService({
+      operationalEventService: {
+        record: operationalRecordMock,
+      } as unknown as OperationalEventService,
+    });
 
     await expect(service.search('Storgata 12')).rejects.toBeInstanceOf(
       BadGatewayException,
+    );
+    expect(operationalRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'integration.kartverket.failed',
+        severity: 'error',
+        source: 'kartverket_address',
+        safeMessage: 'Kartverket address search timed out.',
+        metadata: {
+          queryLength: 11,
+          errorCode: 'timeout',
+        },
+      }),
+    );
+    expect(JSON.stringify(operationalRecordMock.mock.calls)).not.toContain(
+      'Storgata 12',
     );
   });
 
   it('handles Kartverket 500 safely', async () => {
+    const integrationHealthCreateMock = jest
+      .fn<Promise<{ id: string }>, [IntegrationHealthCreateInput]>()
+      .mockResolvedValue({ id: 'event_1' });
     global.fetch = jest.fn().mockResolvedValue({
       ok: false,
       status: 500,
     });
-    const service = createService();
+    const service = createService({
+      prismaShape: {
+        integrationHealthEvent: {
+          create: integrationHealthCreateMock,
+        },
+      },
+    });
 
     await expect(service.search('Storgata 12')).rejects.toBeInstanceOf(
       BadGatewayException,
     );
+    const integrationHealthCreateInput =
+      integrationHealthCreateMock.mock.calls[0][0];
+    expect(integrationHealthCreateInput.data).toMatchObject({
+      integrationName: 'kartverket_address',
+      eventType: 'address_search',
+      status: 'failed',
+      errorCode: 'http_500',
+      safeMessage: 'Kartverket address search returned an upstream error.',
+    });
   });
 
   it('handles malformed Kartverket response safely', async () => {
@@ -104,18 +143,32 @@ describe('KartverketAddressService', () => {
   });
 });
 
-function createService() {
+function createService(input?: {
+  prismaShape?: Record<string, unknown>;
+  operationalEventService?: OperationalEventService;
+}) {
   return new KartverketAddressService(
-    {
+    (input?.prismaShape ?? {
       integrationHealthEvent: {
         create: jest.fn().mockResolvedValue({ id: 'event_1' }),
       },
-    } as unknown as PrismaService,
+    }) as unknown as PrismaService,
     {
       record: jest.fn().mockResolvedValue(undefined),
     } as unknown as AuditService,
-    {
-      record: jest.fn().mockResolvedValue(undefined),
-    } as never,
+    input?.operationalEventService ??
+      ({
+        record: jest.fn().mockResolvedValue(undefined),
+      } as unknown as OperationalEventService),
   );
 }
+
+type IntegrationHealthCreateInput = {
+  data: {
+    integrationName: string;
+    eventType: string;
+    status: string;
+    errorCode?: string;
+    safeMessage?: string;
+  };
+};

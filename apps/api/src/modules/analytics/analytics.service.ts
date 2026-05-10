@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CurrentUser } from '../auth/current-user';
 import { SsbService } from '../integrations/ssb/ssb.service';
+import { OperationalEventService } from '../operations/operational-event.service';
 import { AnalyticsRange } from './analytics.schemas';
 
 type CountMap = Record<string, number>;
@@ -19,6 +20,7 @@ export class AnalyticsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ssbService: SsbService,
+    private readonly operationalEventService: OperationalEventService,
   ) {}
 
   async aggregateTenantRange(user: CurrentUser, range: AnalyticsRange) {
@@ -28,6 +30,20 @@ export class AnalyticsService {
     for (const date of days) {
       await this.aggregateTenantDay(user.tenantId, date);
     }
+
+    await this.operationalEventService.record({
+      eventType: 'analytics.rebuild_completed',
+      severity: 'info',
+      source: 'analytics',
+      tenantId: user.tenantId,
+      userId: user.id,
+      safeMessage: 'Analytics rebuild completed.',
+      metadata: {
+        from: toDateKey(range.from),
+        to: toDateKey(range.to),
+        daysAggregated: days.length,
+      },
+    });
 
     return {
       tenantId: user.tenantId,

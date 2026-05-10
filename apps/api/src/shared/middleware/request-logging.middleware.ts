@@ -1,6 +1,7 @@
 import { NextFunction, Response } from 'express';
 import { appLogger } from '../logging/app-logger';
 import { RequestWithId } from './request-id.middleware';
+import { safeRequestPath } from './request-path';
 
 export function requestLoggingMiddleware(
   request: RequestWithId,
@@ -16,7 +17,7 @@ export function requestLoggingMiddleware(
       event: 'http_request',
       requestId: request.requestId,
       method: request.method,
-      path: request.originalUrl ?? request.url,
+      path: safeRequestPath(request),
       statusCode: response.statusCode,
       durationMs: Math.round(durationMs * 100) / 100,
       userId: request.user?.id,

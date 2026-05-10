@@ -42,24 +42,42 @@ describe('AuthService', () => {
   });
 
   it('rejects wrong passwords with a generic credentials error', async () => {
+    const operationalRecordMock = jest.fn().mockResolvedValue(undefined);
     const passwordHash = await hash('DemoPassword123!', 4);
-    const service = createService({
-      id: 'user_1',
-      tenantId: 'tenant_1',
-      departmentId: 'department_1',
-      email: 'case.worker@arendal.local',
-      passwordHash,
-      name: 'Arendal Case Worker',
-      role: UserRole.case_worker,
-      status: UserStatus.active,
-    });
+    const service = createService(
+      {
+        id: 'user_1',
+        tenantId: 'tenant_1',
+        departmentId: 'department_1',
+        email: 'case.worker@arendal.local',
+        passwordHash,
+        name: 'Arendal Case Worker',
+        role: UserRole.case_worker,
+        status: UserStatus.active,
+      },
+      operationalRecordMock,
+    );
 
     await expect(
-      service.login({
-        email: 'case.worker@arendal.local',
-        password: 'WrongPassword123!',
-      }),
+      service.login(
+        {
+          email: 'case.worker@arendal.local',
+          password: 'WrongPassword123!',
+        },
+        { requestId: 'req_login_failed' },
+      ),
     ).rejects.toThrow(new UnauthorizedException('Invalid credentials.'));
+    expect(operationalRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'auth.login_failed',
+        requestId: 'req_login_failed',
+        safeMessage: 'Login failed.',
+        metadata: {
+          reason: 'invalid_password',
+          emailDomain: 'arendal.local',
+        },
+      }),
+    );
   });
 
   it('rejects unknown emails with the same generic credentials error', async () => {
@@ -95,7 +113,7 @@ describe('AuthService', () => {
   });
 });
 
-function createService(user: unknown) {
+function createService(user: unknown, operationalRecordMock?: jest.Mock) {
   const prisma = {
     user: {
       findUnique: jest.fn().mockResolvedValue(user),
@@ -105,11 +123,17 @@ function createService(user: unknown) {
     signAsync: jest.fn().mockResolvedValue('access-token'),
   } as unknown as JwtService;
 
-  return new AuthService(prisma, jwtService, operationalEvents());
+  return new AuthService(
+    prisma,
+    jwtService,
+    operationalEvents(operationalRecordMock),
+  );
 }
 
-function operationalEvents() {
+function operationalEvents(
+  recordMock = jest.fn().mockResolvedValue(undefined),
+) {
   return {
-    record: jest.fn().mockResolvedValue(undefined),
+    record: recordMock,
   } as never;
 }

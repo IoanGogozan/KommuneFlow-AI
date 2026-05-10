@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { OperationalEventService } from '../operations/operational-event.service';
+import { safeRequestPath } from '../../shared/middleware/request-path';
 import { AuthenticatedRequest } from './auth.guard';
 import { REQUIRED_PERMISSIONS_KEY } from './permissions.decorator';
 import { Permission, roleHasPermission } from './permissions';
@@ -62,7 +63,7 @@ export class PermissionsGuard implements CanActivate {
       safeMessage: 'Permission denied.',
       metadata: {
         method: request.method,
-        path: request.originalUrl ?? request.url,
+        path: safeRequestPath(request),
         requiredPermissions,
         role: request.user?.role ?? null,
       },

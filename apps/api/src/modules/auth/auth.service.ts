@@ -15,7 +15,7 @@ export class AuthService {
     private readonly operationalEventService: OperationalEventService,
   ) {}
 
-  async login(input: LoginInput) {
+  async login(input: LoginInput, context?: { requestId?: string }) {
     const user = await this.prisma.user.findUnique({
       where: { email: input.email.toLowerCase() },
       select: {
@@ -31,7 +31,9 @@ export class AuthService {
     });
 
     if (!user || user.status !== UserStatus.active) {
-      await this.recordFailedLogin(input.email, 'unknown_or_disabled_user');
+      await this.recordFailedLogin(input.email, 'unknown_or_disabled_user', {
+        requestId: context?.requestId,
+      });
       throw new UnauthorizedException('Invalid credentials.');
     }
 
@@ -41,6 +43,7 @@ export class AuthService {
       await this.recordFailedLogin(input.email, 'invalid_password', {
         tenantId: user.tenantId,
         userId: user.id,
+        requestId: context?.requestId,
       });
       throw new UnauthorizedException('Invalid credentials.');
     }
@@ -71,7 +74,7 @@ export class AuthService {
   private async recordFailedLogin(
     email: string,
     reason: string,
-    context?: { tenantId?: string; userId?: string },
+    context?: { tenantId?: string; userId?: string; requestId?: string },
   ) {
     await this.operationalEventService.record({
       eventType: 'auth.login_failed',
@@ -79,6 +82,7 @@ export class AuthService {
       source: 'auth',
       tenantId: context?.tenantId,
       userId: context?.userId,
+      requestId: context?.requestId,
       safeMessage: 'Login failed.',
       metadata: {
         reason,

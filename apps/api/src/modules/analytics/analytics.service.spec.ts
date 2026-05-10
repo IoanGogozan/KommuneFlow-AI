@@ -3,6 +3,7 @@ import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CurrentUser } from '../auth/current-user';
 import { SsbService } from '../integrations/ssb/ssb.service';
+import { OperationalEventService } from '../operations/operational-event.service';
 import { AnalyticsService } from './analytics.service';
 
 describe('AnalyticsService', () => {
@@ -145,6 +146,90 @@ describe('AnalyticsService', () => {
     });
 
     expect(upsertMock).toHaveBeenCalledTimes(4);
+  });
+
+  it('records an operational event after analytics rebuild', async () => {
+    const operationalRecordMock = jest.fn().mockResolvedValue(undefined);
+    const service = createService(
+      {
+        case: {
+          findMany: jest.fn().mockResolvedValue([]),
+        },
+        aIReview: {
+          findMany: jest.fn().mockResolvedValue([]),
+        },
+        analyticsDailySnapshot: {
+          upsert: jest.fn().mockResolvedValue({}),
+        },
+      },
+      undefined,
+      {
+        record: operationalRecordMock,
+      } as unknown as OperationalEventService,
+    );
+
+    await service.aggregateTenantRange(analyticsUser(), {
+      from: new Date('2026-05-01T00:00:00.000Z'),
+      to: new Date('2026-05-02T00:00:00.000Z'),
+    });
+
+    expect(operationalRecordMock).toHaveBeenCalledWith({
+      eventType: 'analytics.rebuild_completed',
+      severity: 'info',
+      source: 'analytics',
+      tenantId: 'tenant_1',
+      userId: 'user_1',
+      safeMessage: 'Analytics rebuild completed.',
+      metadata: {
+        from: '2026-05-01',
+        to: '2026-05-02',
+        daysAggregated: 2,
+      },
+    });
+  });
+
+  it('does not include personal identifiers in analytics rebuild operational metadata', async () => {
+    const operationalRecordMock = jest.fn().mockResolvedValue(undefined);
+    const service = createService(
+      {
+        case: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              id: 'case_1',
+              createdAt: new Date('2026-05-01T08:00:00.000Z'),
+              closedAt: null,
+              status: 'new',
+              category: 'building_case',
+              assignedDepartment: null,
+              addresses: [{ municipalityCode: '4203' }],
+              aiTriageResults: [],
+            },
+          ]),
+        },
+        aIReview: {
+          findMany: jest.fn().mockResolvedValue([]),
+        },
+        analyticsDailySnapshot: {
+          upsert: jest.fn().mockResolvedValue({}),
+        },
+      },
+      ssbServiceWithPopulation(),
+      {
+        record: operationalRecordMock,
+      } as unknown as OperationalEventService,
+    );
+
+    await service.aggregateTenantRange(analyticsUser(), {
+      from: new Date('2026-05-01T00:00:00.000Z'),
+      to: new Date('2026-05-01T00:00:00.000Z'),
+    });
+
+    expect(JSON.stringify(operationalRecordMock.mock.calls)).not.toContain(
+      'citizen@example.local',
+    );
+    expect(JSON.stringify(operationalRecordMock.mock.calls)).not.toContain(
+      'Demo Citizen',
+    );
   });
 
   it('returns summary totals from aggregated snapshots', async () => {
@@ -376,6 +461,7 @@ describe('AnalyticsService', () => {
 function createService(
   prismaShape: Record<string, unknown>,
   ssbService?: SsbService,
+  operationalEventService?: OperationalEventService,
 ) {
   const prisma = {
     aITriageResult: {
@@ -390,6 +476,10 @@ function createService(
       ({
         getLatestPopulationForMunicipalities: jest.fn().mockResolvedValue([]),
       } as unknown as SsbService),
+    operationalEventService ??
+      ({
+        record: jest.fn().mockResolvedValue(undefined),
+      } as unknown as OperationalEventService),
   );
 }
 
