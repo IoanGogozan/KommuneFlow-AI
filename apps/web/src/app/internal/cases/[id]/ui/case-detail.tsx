@@ -5,6 +5,10 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
+import {
+  InternalLanguageToggle,
+  useInternalI18n,
+} from "@/lib/internal-locale";
 
 type CaseDetailResponse = {
   id: string;
@@ -108,6 +112,7 @@ const caseUrgencies = ["low", "normal", "high", "urgent"];
 
 export function CaseDetail({ caseId }: { caseId: string }) {
   const router = useRouter();
+  const { locale, setLocale, t } = useInternalI18n();
   const [caseRecord, setCaseRecord] = useState<CaseDetailResponse | null>(null);
   const [documents, setDocuments] = useState<CaseDocumentResponse[]>([]);
   const [aiResult, setAiResult] = useState<AITriageResultResponse | null>(null);
@@ -193,9 +198,9 @@ export function CaseDetail({ caseId }: { caseId: string }) {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadCase().catch(() => setError("Could not load case."));
-    loadDocuments().catch(() => setError("Could not load documents."));
-    loadAITriage().catch(() => setError("Could not load AI triage."));
+    loadCase().catch(() => setError(t.cases.loadCaseError));
+    loadDocuments().catch(() => setError(t.cases.loadDocumentsError));
+    loadAITriage().catch(() => setError(t.cases.loadAiError));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caseId]);
 
@@ -213,7 +218,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     });
 
     if (!response.ok) {
-      setError("Could not update status.");
+      setError(t.cases.updateStatusError);
       return;
     }
 
@@ -236,7 +241,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     );
 
     if (!response.ok) {
-      setError("Could not upload document.");
+      setError(t.cases.uploadError);
       return;
     }
 
@@ -256,7 +261,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     );
 
     if (!response.ok) {
-      setError("Could not run AI triage.");
+      setError(t.cases.runAiError);
       return;
     }
 
@@ -299,7 +304,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     );
 
     if (!response.ok) {
-      setError("Could not review AI triage.");
+      setError(t.cases.reviewAiError);
       return;
     }
 
@@ -331,7 +336,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     );
 
     if (!response.ok) {
-      setError("Could not add internal note.");
+      setError(t.cases.reviewAiError);
       return;
     }
 
@@ -342,7 +347,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
   if (!caseRecord) {
     return (
       <main className="min-h-screen bg-slate-100 px-5 py-8">
-        <p className="text-sm text-slate-600">{error ?? "Loading case..."}</p>
+        <p className="text-sm text-slate-600">{error ?? t.cases.loading}</p>
       </main>
     );
   }
@@ -352,12 +357,15 @@ export function CaseDetail({ caseId }: { caseId: string }) {
   return (
     <main className="min-h-screen bg-slate-100">
       <div className="mx-auto max-w-5xl px-5 py-6">
-        <Link
-          href="/internal/cases"
-          className="text-sm font-medium text-slate-600"
-        >
-          Back to cases
-        </Link>
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href="/internal/cases"
+            className="text-sm font-medium text-slate-600"
+          >
+            {t.cases.back}
+          </Link>
+          <InternalLanguageToggle locale={locale} setLocale={setLocale} />
+        </div>
 
         <section className="mt-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -373,12 +381,12 @@ export function CaseDetail({ caseId }: { caseId: string }) {
           </div>
 
           <dl className="mt-6 grid gap-4 sm:grid-cols-3">
-            <Info label="Citizen" value={caseRecord.citizenProfile.name} />
+            <Info label={t.cases.citizen} value={caseRecord.citizenProfile.name} />
             <Info
-              label="Department"
-              value={caseRecord.assignedDepartment?.name ?? "Unassigned"}
+              label={t.cases.department}
+              value={caseRecord.assignedDepartment?.name ?? t.common.unassigned}
             />
-            <Info label="Urgency" value={caseRecord.urgency} />
+            <Info label={t.cases.urgency} value={caseRecord.urgency} />
           </dl>
 
           <p className="mt-6 whitespace-pre-wrap leading-7 text-slate-700">
@@ -388,47 +396,47 @@ export function CaseDetail({ caseId }: { caseId: string }) {
 
         <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-950">
-            Address enrichment
+            {t.cases.address}
           </h2>
           {caseAddress ? (
             <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Info
-                label="Original address"
+                label={t.cases.originalAddress}
                 value={caseAddress.originalInput}
               />
               <Info
-                label="Normalized address"
-                value={caseAddress.normalizedAddress ?? "Not available"}
+                label={t.cases.normalizedAddress}
+                value={caseAddress.normalizedAddress ?? t.cases.notAvailable}
               />
               <Info
-                label="Municipality"
+                label={t.cases.municipality}
                 value={
                   caseAddress.municipalityName && caseAddress.municipalityCode
                     ? `${caseAddress.municipalityName} (${caseAddress.municipalityCode})`
-                    : "Not available"
+                    : t.cases.notAvailable
                 }
               />
               <Info
-                label="Postal code"
-                value={caseAddress.postalCode ?? "Not available"}
+                label={t.cases.postalCode}
+                value={caseAddress.postalCode ?? t.cases.notAvailable}
               />
               <Info
-                label="Coordinates"
+                label={t.cases.coordinates}
                 value={
                   caseAddress.latitude !== null &&
                   caseAddress.longitude !== null
                     ? `${caseAddress.latitude}, ${caseAddress.longitude}`
-                    : "Not available"
+                    : t.cases.notAvailable
                 }
               />
               <Info
-                label="Validation"
+                label={t.cases.validation}
                 value={`${caseAddress.validationStatus} via ${caseAddress.source}`}
               />
             </dl>
           ) : (
             <p className="mt-3 text-sm text-slate-500">
-              No address was submitted with this case.
+              {t.cases.noAddress}
             </p>
           )}
         </section>
@@ -438,7 +446,9 @@ export function CaseDetail({ caseId }: { caseId: string }) {
             onSubmit={updateStatus}
             className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
           >
-            <h2 className="text-lg font-semibold text-slate-950">Status</h2>
+            <h2 className="text-lg font-semibold text-slate-950">
+              {t.cases.status}
+            </h2>
             <select
               value={status}
               onChange={(event) => setStatus(event.target.value)}
@@ -454,13 +464,13 @@ export function CaseDetail({ caseId }: { caseId: string }) {
               type="submit"
               className="mt-4 rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
             >
-              Update status
+              {t.cases.updateStatus}
             </button>
           </form>
 
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-950">
-              Internal notes
+              {t.cases.notes}
             </h2>
             <form onSubmit={addNote} className="mt-4 grid gap-3">
               <textarea
@@ -473,7 +483,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
                 type="submit"
                 className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
               >
-                Add note
+                {t.cases.addNote}
               </button>
             </form>
 
@@ -499,29 +509,30 @@ export function CaseDetail({ caseId }: { caseId: string }) {
 
         <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-slate-950">AI triage</h2>
+            <h2 className="text-lg font-semibold text-slate-950">
+              {t.ai.title}
+            </h2>
             <button
               type="button"
               onClick={runAITriage}
               className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
             >
-              Generate suggestion
+              {t.ai.generate}
             </button>
           </div>
           <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm leading-6 text-amber-900">
-            AI suggestions are decision support only. A human case worker must
-            review and approve any category, department, or urgency change.
+            {t.ai.notice}
           </p>
 
           {!aiResult ? (
             <p className="mt-4 text-sm text-slate-500">
-              No AI suggestion generated for this case.
+              {t.ai.empty}
             </p>
           ) : null}
 
           {aiResult?.status === "failed" ? (
             <p className="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-800">
-              AI triage failed: {aiResult.failureReason ?? "Unknown error"}
+              {t.ai.failed}: {aiResult.failureReason ?? t.common.unknown}
             </p>
           ) : null}
 
@@ -529,28 +540,28 @@ export function CaseDetail({ caseId }: { caseId: string }) {
             <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_0.9fr]">
               <div className="grid gap-3">
                 <Info
-                  label="Category"
-                  value={aiResult.suggestedCategory ?? "unknown"}
+                  label={t.ai.category}
+                  value={aiResult.suggestedCategory ?? t.common.unknown}
                 />
                 <Info
-                  label="Department"
-                  value={aiResult.suggestedDepartment?.name ?? "Unassigned"}
+                  label={t.ai.department}
+                  value={aiResult.suggestedDepartment?.name ?? t.common.unassigned}
                 />
                 <Info
-                  label="Urgency"
+                  label={t.ai.urgency}
                   value={aiResult.suggestedUrgency ?? "normal"}
                 />
                 <Info
-                  label="Confidence"
+                  label={t.ai.confidence}
                   value={
                     aiResult.confidenceScore === null
-                      ? "Unknown"
+                      ? t.common.unknown
                       : `${Math.round(aiResult.confidenceScore * 100)}%`
                   }
                 />
                 <div className="rounded-md bg-slate-50 p-4">
                   <h3 className="text-sm font-medium text-slate-500">
-                    Summary
+                    {t.ai.summary}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-slate-700">
                     {aiResult.summary}
@@ -558,16 +569,18 @@ export function CaseDetail({ caseId }: { caseId: string }) {
                 </div>
                 <div className="rounded-md bg-slate-50 p-4">
                   <h3 className="text-sm font-medium text-slate-500">
-                    Missing information
+                    {t.ai.missingInfo}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-slate-700">
                     {aiResult.missingInformationJson.length > 0
                       ? aiResult.missingInformationJson.join(", ")
-                      : "None"}
+                      : t.common.none}
                   </p>
                 </div>
                 <div className="rounded-md bg-slate-50 p-4">
-                  <h3 className="text-sm font-medium text-slate-500">Reason</h3>
+                  <h3 className="text-sm font-medium text-slate-500">
+                    {t.ai.reason}
+                  </h3>
                   <p className="mt-2 text-sm leading-6 text-slate-700">
                     {aiResult.reasoningSummary}
                   </p>
@@ -579,10 +592,10 @@ export function CaseDetail({ caseId }: { caseId: string }) {
                 className="grid content-start gap-3 rounded-md bg-slate-50 p-4"
               >
                 <h3 className="text-sm font-semibold text-slate-950">
-                  Human review
+                  {t.ai.humanReview}
                 </h3>
                 <label className="grid gap-1 text-sm text-slate-700">
-                  Category
+                  {t.ai.category}
                   <select
                     value={reviewCategory}
                     onChange={(event) => setReviewCategory(event.target.value)}
@@ -596,7 +609,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
                   </select>
                 </label>
                 <label className="grid gap-1 text-sm text-slate-700">
-                  Department slug
+                  {t.ai.departmentSlug}
                   <input
                     value={reviewDepartmentSlug}
                     onChange={(event) =>
@@ -606,7 +619,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
                   />
                 </label>
                 <label className="grid gap-1 text-sm text-slate-700">
-                  Urgency
+                  {t.ai.urgency}
                   <select
                     value={reviewUrgency}
                     onChange={(event) => setReviewUrgency(event.target.value)}
@@ -625,13 +638,13 @@ export function CaseDetail({ caseId }: { caseId: string }) {
                     onClick={() => submitAIReview(true)}
                     className="rounded-md bg-emerald-700 px-4 py-3 text-sm font-semibold text-white"
                   >
-                    Accept suggestion
+                    {t.ai.accept}
                   </button>
                   <button
                     type="submit"
                     className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
                   >
-                    Save correction
+                    {t.ai.saveCorrection}
                   </button>
                 </div>
               </form>
@@ -641,8 +654,10 @@ export function CaseDetail({ caseId }: { caseId: string }) {
 
         <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-slate-950">Documents</h2>
-            <p className="text-sm text-slate-500">PDF, PNG, JPG up to 10 MB</p>
+            <h2 className="text-lg font-semibold text-slate-950">
+              {t.documents.title}
+            </h2>
+            <p className="text-sm text-slate-500">{t.documents.help}</p>
           </div>
 
           <form
@@ -660,17 +675,17 @@ export function CaseDetail({ caseId }: { caseId: string }) {
               type="submit"
               className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
             >
-              Upload
+              {t.documents.upload}
             </button>
             <label className="flex items-center gap-2 text-sm text-slate-700">
               <input name="isSensitive" type="checkbox" value="true" />
-              Sensitive document
+              {t.documents.sensitiveDocument}
             </label>
           </form>
 
           <div className="mt-5 grid gap-3">
             {documents.length === 0 ? (
-              <p className="text-sm text-slate-500">No documents uploaded.</p>
+              <p className="text-sm text-slate-500">{t.documents.empty}</p>
             ) : null}
             {documents.map((document) => (
               <article key={document.id} className="rounded-md bg-slate-50 p-4">
@@ -686,21 +701,21 @@ export function CaseDetail({ caseId }: { caseId: string }) {
                   </div>
                   {document.isSensitive ? (
                     <span className="rounded-md bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">
-                      Sensitive
+                      {t.documents.sensitive}
                     </span>
                   ) : null}
                   <a
                     href={`${getApiBaseUrl()}/cases/${caseId}/documents/${document.id}/download`}
                     className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-800"
                   >
-                    Download
+                    {t.documents.download}
                   </a>
                 </div>
                 <p className="mt-2 text-xs text-slate-500">
-                  Uploaded by{" "}
+                  {t.documents.uploadedBy}{" "}
                   {document.uploadedBy?.name ??
                     document.uploadedByCitizenProfile?.name ??
-                    "Unknown"}
+                    t.common.unknown}
                 </p>
               </article>
             ))}

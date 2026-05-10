@@ -6,6 +6,10 @@ import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
+import {
+  InternalLanguageToggle,
+  useInternalI18n,
+} from "@/lib/internal-locale";
 
 type HealthResponse = {
   status: string;
@@ -42,6 +46,7 @@ type MetricsSummary = {
 
 export function OperationsDashboard() {
   const router = useRouter();
+  const { locale, setLocale, t } = useInternalI18n();
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [readiness, setReadiness] = useState<ReadinessResponse | null>(null);
   const [metrics, setMetrics] = useState<MetricsSummary | null>(null);
@@ -68,7 +73,7 @@ export function OperationsDashboard() {
         }
 
         if (!metricsResponse.ok) {
-          setError("Could not load operations metrics.");
+          setError(t.operations.loadMetricsError);
           return;
         }
 
@@ -76,35 +81,38 @@ export function OperationsDashboard() {
         setReadiness((await readinessResponse.json()) as ReadinessResponse);
         setMetrics((await metricsResponse.json()) as MetricsSummary);
       } catch {
-        setError("Could not load operations dashboard.");
+        setError(t.operations.loadDashboardError);
       }
     }
 
     void loadOperations();
-  }, [router]);
+  }, [router, t.operations.loadDashboardError, t.operations.loadMetricsError]);
 
   return (
     <main className="min-h-screen bg-slate-100">
       <div className="mx-auto max-w-6xl px-5 py-6">
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-300 pb-4">
           <div>
-            <p className="text-sm font-medium text-slate-500">KommuneFlow AI</p>
+            <p className="text-sm font-medium text-slate-500">
+              {t.common.app}
+            </p>
             <h1 className="text-3xl font-semibold text-slate-950">
-              Operations
+              {t.operations.title}
             </h1>
           </div>
           <div className="flex flex-wrap gap-2">
+            <InternalLanguageToggle locale={locale} setLocale={setLocale} />
             <Link
               href="/internal/analytics"
               className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
             >
-              Analytics
+              {t.nav.analytics}
             </Link>
             <Link
               href="/internal/cases"
               className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
             >
-              Cases
+              {t.nav.cases}
             </Link>
           </div>
         </header>
@@ -113,24 +121,24 @@ export function OperationsDashboard() {
 
         <section className="mt-5 grid gap-4 md:grid-cols-3">
           <StatusCard
-            title="API health"
-            status={health?.status ?? "unknown"}
+            title={t.operations.health}
+            status={health?.status ?? t.common.unknown}
             detail={health?.timestamp}
           />
           <StatusCard
-            title="Readiness"
-            status={readiness?.status ?? "unknown"}
+            title={t.operations.readiness}
+            status={readiness?.status ?? t.common.unknown}
             detail={readiness?.timestamp}
           />
           <StatusCard
-            title="Backup"
-            status={metrics?.backupLastRunStatus ?? "missing"}
-            detail={formatDate(metrics?.backupLastRunAt)}
+            title={t.operations.backup}
+            status={metrics?.backupLastRunStatus ?? t.common.missing}
+            detail={formatDate(metrics?.backupLastRunAt, t.common.missing)}
           />
         </section>
 
         <section className="mt-5 grid gap-4 md:grid-cols-2">
-          <Panel title="Readiness checks">
+          <Panel title={t.operations.readinessChecks}>
             {Object.entries(readiness?.checks ?? {}).map(([name, check]) => (
               <Row
                 key={name}
@@ -140,23 +148,27 @@ export function OperationsDashboard() {
             ))}
           </Panel>
 
-          <Panel title="Integrations">
+          <Panel title={t.operations.integrations}>
             <Row
-              label="Kartverket lookups"
-              value={`${metrics?.kartverketLookupCountLast24h ?? 0} last 24h`}
+              label={t.operations.kartverketLookups}
+              value={`${metrics?.kartverketLookupCountLast24h ?? 0} ${t.common.last24h}`}
             />
             <Row
-              label="Kartverket failures"
-              value={`${metrics?.kartverketFailureCountLast24h ?? 0} last 24h`}
+              label={t.operations.kartverketFailures}
+              value={`${metrics?.kartverketFailureCountLast24h ?? 0} ${t.common.last24h}`}
             />
             <Row
-              label="Kartverket avg latency"
-              value={formatMs(metrics?.kartverketAverageLatencyMsLast24h)}
+              label={t.operations.kartverketLatency}
+              value={formatMs(
+                metrics?.kartverketAverageLatencyMsLast24h,
+                t.common.missing,
+              )}
             />
             <Row
-              label="SSB import"
-              value={`${metrics?.ssbImportLastStatus ?? "missing"} / ${formatDate(
+              label={t.operations.ssbImport}
+              value={`${metrics?.ssbImportLastStatus ?? t.common.missing} / ${formatDate(
                 metrics?.ssbImportLastRunAt,
+                t.common.missing,
               )}`}
             />
           </Panel>
@@ -164,55 +176,55 @@ export function OperationsDashboard() {
 
         <section className="mt-5 grid gap-4 md:grid-cols-3">
           <Metric
-            label="Failed logins"
+            label={t.operations.failedLogins}
             value={metrics?.failedLoginsLast24h ?? 0}
           />
           <Metric
-            label="Permission denied"
+            label={t.operations.permissionDenied}
             value={metrics?.permissionDeniedLast24h ?? 0}
           />
           <Metric
-            label="Cross-tenant attempts"
+            label={t.operations.crossTenant}
             value={metrics?.crossTenantAccessAttemptsLast24h ?? 0}
           />
           <Metric
-            label="Rate limit blocks"
+            label={t.operations.rateLimit}
             value={metrics?.rateLimitBlocksLast24h ?? 0}
           />
           <Metric
-            label="AI triage requests"
+            label={t.operations.aiRequests}
             value={metrics?.aiTriageRequestsLast24h ?? 0}
           />
           <Metric
-            label="AI triage failures"
+            label={t.operations.aiFailures}
             value={metrics?.aiTriageFailuresLast24h ?? 0}
           />
           <Metric
-            label="Document upload failures"
+            label={t.operations.uploadFailures}
             value={metrics?.documentUploadFailuresLast24h ?? 0}
           />
         </section>
 
         <section className="mt-5 grid gap-4 md:grid-cols-2">
-          <Panel title="Background jobs">
+          <Panel title={t.operations.jobs}>
             <Row
-              label="Analytics rebuild"
-              value={formatDate(metrics?.analyticsLastRebuildAt)}
+              label={t.operations.analyticsRebuild}
+              value={formatDate(metrics?.analyticsLastRebuildAt, t.common.missing)}
             />
             <Row
-              label="Retention cleanup"
-              value={formatDate(metrics?.retentionCleanupLastRunAt)}
+              label={t.operations.retention}
+              value={formatDate(metrics?.retentionCleanupLastRunAt, t.common.missing)}
             />
           </Panel>
 
-          <Panel title="API errors">
+          <Panel title={t.operations.apiErrors}>
             <Row
-              label="API errors last 24h"
+              label={t.operations.apiErrors24h}
               value={String(metrics?.apiErrorsLast24h ?? 0)}
             />
             <Row
-              label="AI average latency"
-              value={formatMs(metrics?.averageAiLatencyMsLast24h)}
+              label={t.operations.aiLatency}
+              value={formatMs(metrics?.averageAiLatencyMsLast24h, t.common.missing)}
             />
           </Panel>
         </section>
@@ -272,10 +284,10 @@ function Metric({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function formatDate(value: string | null | undefined) {
-  return value ? new Date(value).toLocaleString() : "Missing";
+function formatDate(value: string | null | undefined, missingLabel: string) {
+  return value ? new Date(value).toLocaleString() : missingLabel;
 }
 
-function formatMs(value: number | null | undefined) {
-  return value === null || value === undefined ? "Missing" : `${value} ms`;
+function formatMs(value: number | null | undefined, missingLabel: string) {
+  return value === null || value === undefined ? missingLabel : `${value} ms`;
 }

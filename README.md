@@ -15,16 +15,20 @@ AI is decision support only. Official case category, department, urgency, and st
 - Multi-tenant PostgreSQL data model
 - Public citizen intake in Norwegian Bokmal and English
 - Citizen document upload during intake
+- Internal employee UI in Norwegian Bokmal and English
 - Internal case dashboard and case detail view
 - Secure document upload and download
+- Kartverket address search and validation during citizen intake
 - AI provider abstraction with mock and OpenAI providers
 - Human-in-the-loop AI triage review
 - Role-based access control and tenant isolation
 - `HttpOnly` cookie authentication for internal UI
 - Audit events for case, document, AI, privacy, and retention actions
+- Persisted operational events for metrics and incident-style visibility
 - Citizen data export and anonymization
 - Retention policy and dry-run/confirmed cleanup
-- Aggregated analytics dashboard
+- Aggregated analytics dashboard with SSB population enrichment
+- Python ELT package for analytics rebuilds and SSB import
 - Health/readiness endpoints and structured logging
 - Production Dockerfiles, Caddy reverse proxy, backup/restore scripts, and Hetzner deployment docs
 
@@ -86,6 +90,7 @@ Implemented controls include:
 - Strict CORS allowlist
 - Origin/Referer validation for cookie-authenticated mutations
 - Explicit JSON/form body limits
+- Public and internal rate-limit blocks persisted as operational events
 - Server-side permission guards
 - Tenant-scoped database queries
 - Negative auth/RBAC/tenant tests
@@ -125,6 +130,23 @@ DemoPassword123!
 | Grimstad case worker | `case.worker@grimstad.local` | Cross-tenant isolation demo |
 
 Demo credentials are for local/demo use only and must never be reused in production.
+
+## Demo Data
+
+The seed creates a realistic local portfolio dataset:
+
+- tenants: Arendal Kommune, Grimstad Kommune, Kristiansand Kommune
+- five departments per tenant
+- 18 realistic cases across statuses, categories, and urgencies
+- Norwegian and English case descriptions
+- validated address rows with municipality codes
+- demo documents
+- accepted, corrected, and failed AI triage examples
+- SSB municipality population records
+- analytics snapshots
+- audit and operational events
+
+The seed is idempotent and split into small modules under `apps/api/prisma/seed`.
 
 ## Local Setup
 
@@ -180,6 +202,7 @@ Local URLs:
 - Internal login: `http://localhost:3000/internal/login`
 - Internal cases: `http://localhost:3000/internal/cases`
 - Internal analytics: `http://localhost:3000/internal/analytics`
+- Internal operations: `http://localhost:3000/internal/operations`
 
 ## Useful Commands
 
@@ -192,7 +215,17 @@ pnpm audit:deps
 pnpm --filter @kommuneflow/api test:e2e
 pnpm --filter @kommuneflow/api prisma:migrate
 pnpm --filter @kommuneflow/api prisma:seed
+cd apps/etl && python -m pytest -q
 ```
+
+Manual SSB verification command:
+
+```bash
+cd apps/etl
+python -m kommuneflow_elt.cli import-ssb --year 2025 --municipality-code 4203
+```
+
+Do not run real Kartverket, SSB, or OpenAI calls in CI.
 
 ## API Overview
 
@@ -206,6 +239,9 @@ Main API groups:
 - `documents`
 - `ai-triage`
 - `analytics`
+- `integrations/kartverket`
+- `integrations/ssb`
+- `operations`
 - `privacy`
 - `health` and `readiness`
 
@@ -247,22 +283,25 @@ pnpm lint       PASS
 pnpm typecheck  PASS
 pnpm test       PASS
 pnpm build      PASS
+python -m pytest -q in apps/etl PASS
 ```
 
-The API test suite includes unit, service, controller, auth, RBAC, tenant isolation, file upload abuse, AI safety, analytics, privacy, and retention tests.
+The API test suite includes unit, service, controller, auth, RBAC, tenant isolation, file upload abuse, AI safety, analytics, privacy, operations, and retention tests. API e2e covers health/security checks and a full business flow from citizen intake to AI review, status update, analytics, operations metrics, and audit evidence.
 
 ## Demo Flow
 
-1. Open `http://localhost:3000/en`.
-2. Submit a citizen case with an optional PDF/PNG/JPG document.
+1. Open `http://localhost:3000/nb` or `http://localhost:3000/en`.
+2. Submit a citizen case with an address and optional PDF/PNG/JPG document.
 3. Log in at `http://localhost:3000/internal/login`.
-4. Open the case dashboard.
-5. Open the new case detail page.
-6. Review/download documents.
-7. Run AI triage.
-8. Accept or correct the AI suggestion.
-9. Update case status and add an internal note.
-10. Open analytics and run aggregation for the current date range.
+4. Switch the internal UI between Norwegian Bokmal and English.
+5. Open the case dashboard and inspect seeded cases.
+6. Open a case detail page.
+7. Review Kartverket address enrichment and download documents.
+8. Run AI triage.
+9. Accept or correct the AI suggestion.
+10. Update case status and add an internal note.
+11. Open analytics and run aggregation for the current date range.
+12. Open operations and review health, readiness, integration, AI, document, rate-limit, and operational event metrics.
 
 See [Demo Script](./docs/DEMO_SCRIPT.md) for an interview-ready walkthrough.
 
@@ -275,19 +314,18 @@ See [Demo Script](./docs/DEMO_SCRIPT.md) for an interview-ready walkthrough.
 - Malware scanning is represented as a future provider concern, not a real scanner.
 - AI calls are synchronous in the request path.
 - AI prompt redaction/minimization should be expanded before real production use.
-- Internal UI is still mostly English, while citizen intake is bilingual.
 - Privacy actions exist in API, but there is no full internal privacy UI.
 
 ## Future Improvements
 
 - Real Hetzner deployment and screenshots
-- Additional demo scenarios after internal UI localization
+- Additional demo scenarios after screenshots and final README polish
 - Citizen status portal
 - Email confirmations
 - Background worker for AI and analytics aggregation
 - PDF text extraction and document summarization
 - Malware scanning provider
-- Full internal i18n
+- Route-level internal locale URLs if the demo needs shareable localized internal links
 - API OpenAPI/Swagger generation
 - Object storage adapter
 - Advanced audit search UI
@@ -297,20 +335,19 @@ See [Demo Script](./docs/DEMO_SCRIPT.md) for an interview-ready walkthrough.
 
 English:
 
-KommuneFlow AI is a portfolio project inspired by Norwegian municipal digital services. It is a multi-tenant platform for citizen case intake, document workflows, AI-assisted triage, role-based access control, audit logging, privacy operations, retention, and aggregated analytics. AI is used as human-reviewed decision support, not as an automatic decision-maker.
+KommuneFlow AI is a portfolio project inspired by Norwegian municipal digital services. It is a multi-tenant platform for citizen case intake, Kartverket address validation, document workflows, human-reviewed AI triage, role-based access control, audit logging, privacy operations, retention, SSB-enriched analytics, and operations monitoring. AI is used as decision support, not as an automatic decision-maker.
 
 Norwegian:
 
-KommuneFlow AI er et portefoljeprosjekt inspirert av norsk kommunal tjenesteutvikling. Losningen er en multi-tenant plattform for innbyggerhenvendelser, dokumentflyt, KI-assistert saksruting, rollebasert tilgangsstyring, audit-logg, personvernarbeid, retensjon og aggregert analyse. KI brukes som beslutningsstotte med menneskelig kvalitetssikring, ikke som automatisk beslutningstaker.
+KommuneFlow AI er et portefoljeprosjekt inspirert av norsk kommunal tjenesteutvikling. Losningen er en multi-tenant plattform for innbyggerhenvendelser, Kartverket-adressevalidering, dokumentflyt, menneskelig kvalitetssikret KI-triage, rollebasert tilgangsstyring, audit-logg, personvernarbeid, retensjon, SSB-beriket analyse og driftsinnsikt. KI brukes som beslutningsstotte, ikke som automatisk beslutningstaker.
 
 ## Workspace Structure
 
 ```txt
 apps/
   api/
+  etl/
   web/
-packages/
-  shared/
 docs/
 ```
 

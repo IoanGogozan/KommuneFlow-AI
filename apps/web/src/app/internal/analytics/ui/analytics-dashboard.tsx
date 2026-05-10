@@ -5,6 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
+import {
+  InternalLanguageToggle,
+  useInternalI18n,
+} from "@/lib/internal-locale";
 
 type AnalyticsSummary = {
   from: string;
@@ -56,6 +60,7 @@ type AnalyticsSummary = {
 
 export function AnalyticsDashboard() {
   const router = useRouter();
+  const { locale, setLocale, t } = useInternalI18n();
   const defaultRange = useMemo(() => getDefaultRange(), []);
   const [from, setFrom] = useState(defaultRange.from);
   const [to, setTo] = useState(defaultRange.to);
@@ -79,7 +84,7 @@ export function AnalyticsDashboard() {
     }
 
     if (!response.ok) {
-      setError("Could not load analytics.");
+      setError(t.analytics.loadError);
       return;
     }
 
@@ -107,7 +112,7 @@ export function AnalyticsDashboard() {
       }
 
       if (!response.ok) {
-        setError("Could not aggregate analytics.");
+        setError(t.analytics.aggregateError);
         return;
       }
 
@@ -128,105 +133,114 @@ export function AnalyticsDashboard() {
       <div className="mx-auto max-w-6xl px-5 py-6">
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-300 pb-4">
           <div>
-            <p className="text-sm font-medium text-slate-500">KommuneFlow AI</p>
+            <p className="text-sm font-medium text-slate-500">
+              {t.common.app}
+            </p>
             <h1 className="text-3xl font-semibold text-slate-950">
-              Analytics
+              {t.analytics.title}
             </h1>
           </div>
-          <Link
-            href="/internal/cases"
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
-          >
-            Cases
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <InternalLanguageToggle locale={locale} setLocale={setLocale} />
+            <Link
+              href="/internal/cases"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
+            >
+              {t.nav.cases}
+            </Link>
+          </div>
         </header>
 
         <section className="mt-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[1fr_1fr_auto]">
-          <DateField label="From" value={from} onChange={setFrom} />
-          <DateField label="To" value={to} onChange={setTo} />
+          <DateField label={t.analytics.from} value={from} onChange={setFrom} />
+          <DateField label={t.analytics.to} value={to} onChange={setTo} />
           <button
             type="button"
             onClick={aggregate}
             disabled={isAggregating}
             className="self-end rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
           >
-            {isAggregating ? "Aggregating..." : "Aggregate"}
+            {isAggregating ? t.analytics.aggregating : t.analytics.aggregate}
           </button>
         </section>
 
         {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
 
         <section className="mt-5 grid gap-4 md:grid-cols-4">
-          <Metric label="Cases" value={summary?.totals.totalCases ?? 0} />
+          <Metric label={t.analytics.cases} value={summary?.totals.totalCases ?? 0} />
           <Metric
-            label="AI reviews"
+            label={t.analytics.aiReviews}
             value={summary?.totals.aiReviewsTotal ?? 0}
           />
           <Metric
-            label="AI corrections"
+            label={t.analytics.aiCorrections}
             value={summary?.totals.aiCorrectionsTotal ?? 0}
           />
           <Metric
-            label="AI correction rate"
+            label={t.analytics.aiCorrectionRate}
             value={formatPercent(summary?.totals.aiCorrectionRate ?? 0)}
           />
           <Metric
-            label="AI acceptance rate"
+            label={t.analytics.aiAcceptanceRate}
             value={formatPercent(summary?.totals.aiSuggestionAcceptanceRate ?? 0)}
           />
           <Metric
-            label="AI triage failures"
+            label={t.analytics.aiTriageFailures}
             value={`${summary?.totals.aiTriageFailureCount ?? 0} (${formatPercent(
               summary?.totals.aiTriageFailureRate ?? 0,
             )})`}
           />
           <Metric
-            label="Waiting for citizen"
+            label={t.analytics.waitingForCitizen}
             value={summary?.totals.casesWaitingForCitizen ?? 0}
           />
           <Metric
-            label="Estimated minutes saved"
+            label={t.analytics.minutesSaved}
             value={summary?.totals.estimatedManualMinutesSaved ?? 0}
           />
           <Metric
-            label="Avg. time to triage"
+            label={t.analytics.avgTriage}
             value={`${formatNullableNumber(
               summary?.totals.averageTimeToTriageMinutes,
+              t.common.missing,
             )} min`}
           />
           <Metric
-            label="Median time to triage"
+            label={t.analytics.medianTriage}
             value={`${formatNullableNumber(
               summary?.totals.medianTimeToTriageMinutes,
+              t.common.missing,
             )} min`}
           />
           <Metric
-            label="Avg. time to close"
+            label={t.analytics.avgClose}
             value={`${formatNullableNumber(
               summary?.totals.averageTimeToCloseHours,
+              t.common.missing,
             )} h`}
           />
           <Metric
-            label="Median time to close"
+            label={t.analytics.medianClose}
             value={`${formatNullableNumber(
               summary?.totals.medianTimeToCloseHours,
+              t.common.missing,
             )} h`}
           />
           <Metric
-            label="Cases per 1,000 inhabitants"
-            value={formatNullableNumber(summary?.totals.casesPer1000Inhabitants)}
+            label={t.analytics.per1000}
+            value={formatNullableNumber(summary?.totals.casesPer1000Inhabitants, t.common.missing)}
           />
           <Metric
-            label="Population basis"
-            value={summary?.ssbEnrichment.populationUsed?.toLocaleString() ?? "Missing"}
+            label={t.analytics.population}
+            value={summary?.ssbEnrichment.populationUsed?.toLocaleString() ?? t.common.missing}
           />
           <Metric
-            label="SSB year"
-            value={summary?.ssbEnrichment.populationYear ?? "Missing"}
+            label={t.analytics.ssbYear}
+            value={summary?.ssbEnrichment.populationYear ?? t.common.missing}
           />
           <Metric
-            label="SSB status"
-            value={summary?.ssbEnrichment.status ?? "missing"}
+            label={t.analytics.ssbStatus}
+            value={summary?.ssbEnrichment.status ?? t.common.missing}
           />
         </section>
 
@@ -234,25 +248,26 @@ export function AnalyticsDashboard() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">
-                Effect measurement
+                {t.analytics.effectTitle}
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Estimated manual time saved is a documented estimate, not an exact
-                measurement.
+                {t.analytics.effectText}
               </p>
             </div>
             <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
-              Last rebuild:{" "}
+              {t.analytics.lastRebuild}:{" "}
               {summary?.analyticsLastRebuiltAt
                 ? new Date(summary.analyticsLastRebuiltAt).toLocaleString()
-                : "Missing"}
+                : t.common.missing}
             </span>
           </div>
           <p className="mt-4 text-sm text-slate-600">
-            Assumption: accepted AI suggestions save{" "}
-            {summary?.assumptions.acceptedAiSuggestionMinutesSaved ?? 5} minutes;
-            corrected AI suggestions save{" "}
-            {summary?.assumptions.correctedAiSuggestionMinutesSaved ?? 2} minutes.
+            {t.analytics.assumption}: {t.analytics.acceptedSave}{" "}
+            {summary?.assumptions.acceptedAiSuggestionMinutesSaved ?? 5}{" "}
+            {t.analytics.minutes};
+            {t.analytics.correctedSave}{" "}
+            {summary?.assumptions.correctedAiSuggestionMinutesSaved ?? 2}{" "}
+            {t.analytics.minutes}.
           </p>
         </section>
 
@@ -260,32 +275,29 @@ export function AnalyticsDashboard() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">
-                SSB enrichment
+                {t.analytics.ssbTitle}
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Population data from Statistics Norway table 07459 is used to
-                calculate cases per 1,000 inhabitants.
+                {t.analytics.ssbText}
               </p>
             </div>
             <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
-              Source: SSB
+              {t.analytics.source}: SSB
             </span>
           </div>
           {summary?.ssbEnrichment.status === "missing" ? (
             <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
-              SSB population data is missing for this range. Import municipality
-              statistics and rebuild analytics to enable normalized metrics.
+              {t.analytics.ssbMissing}
             </p>
           ) : null}
           {summary?.ssbEnrichment.status === "stale" ? (
             <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
-              SSB population data is stale. Re-import municipality statistics and
-              rebuild analytics before using normalized metrics in decisions.
+              {t.analytics.ssbStale}
             </p>
           ) : null}
           {summary?.ssbEnrichment.lastImportedAt ? (
             <p className="mt-4 text-sm text-slate-600">
-              Last imported:{" "}
+              {t.analytics.imported}:{" "}
               {new Date(summary.ssbEnrichment.lastImportedAt).toLocaleString()}
             </p>
           ) : null}
@@ -293,21 +305,26 @@ export function AnalyticsDashboard() {
 
         <section className="mt-5 grid gap-5 lg:grid-cols-3">
           <Breakdown
-            title="Case volume by department"
+            title={t.analytics.byDepartment}
             values={summary?.totals.casesByDepartment ?? {}}
+            emptyLabel={t.analytics.noData}
           />
           <Breakdown
-            title="Case volume by category"
+            title={t.analytics.byCategory}
             values={summary?.totals.casesByCategory ?? {}}
+            emptyLabel={t.analytics.noData}
           />
           <Breakdown
-            title="Case volume by status"
+            title={t.analytics.byStatus}
             values={summary?.totals.casesByStatus ?? {}}
+            emptyLabel={t.analytics.noData}
           />
         </section>
 
         <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-950">Daily volume</h2>
+          <h2 className="text-lg font-semibold text-slate-950">
+            {t.analytics.daily}
+          </h2>
           <div className="mt-4 grid gap-2">
             {(summary?.daily ?? []).map((day) => (
               <div
@@ -315,24 +332,26 @@ export function AnalyticsDashboard() {
                 className="grid gap-2 rounded-md bg-slate-50 px-3 py-2 text-sm md:grid-cols-[1fr_auto_auto_auto_auto_auto]"
               >
                 <span className="font-medium text-slate-700">{day.date}</span>
-                <span className="text-slate-700">{day.totalCases} cases</span>
-                <span className="text-slate-500">
-                  {formatPercent(day.aiCorrectionRate)} AI correction
+                <span className="text-slate-700">
+                  {day.totalCases} {t.analytics.cases.toLowerCase()}
                 </span>
                 <span className="text-slate-500">
-                  {formatPercent(day.aiTriageFailureRate)} AI failure
+                  {formatPercent(day.aiCorrectionRate)} {t.analytics.aiCorrection}
                 </span>
                 <span className="text-slate-500">
-                  {day.estimatedManualMinutesSaved} min saved
+                  {formatPercent(day.aiTriageFailureRate)} {t.analytics.aiFailure}
                 </span>
                 <span className="text-slate-500">
-                  {formatNullableNumber(day.casesPer1000Inhabitants)} per 1,000
+                  {day.estimatedManualMinutesSaved} {t.analytics.minSaved}
+                </span>
+                <span className="text-slate-500">
+                  {formatNullableNumber(day.casesPer1000Inhabitants, t.common.missing)} per 1,000
                 </span>
               </div>
             ))}
             {summary?.daily.length === 0 ? (
               <p className="text-sm text-slate-500">
-                No aggregated analytics for this range.
+                {t.analytics.noDaily}
               </p>
             ) : null}
           </div>
@@ -376,9 +395,11 @@ function Metric({ label, value }: { label: string; value: string | number }) {
 function Breakdown({
   title,
   values,
+  emptyLabel,
 }: {
   title: string;
   values: Record<string, number>;
+  emptyLabel: string;
 }) {
   const entries = Object.entries(values).sort((left, right) => right[1] - left[1]);
 
@@ -396,7 +417,7 @@ function Breakdown({
           </div>
         ))}
         {entries.length === 0 ? (
-          <p className="text-sm text-slate-500">No data.</p>
+          <p className="text-sm text-slate-500">{emptyLabel}</p>
         ) : null}
       </div>
     </section>
@@ -422,9 +443,12 @@ function formatPercent(value: number) {
   return `${Math.round(value * 100)}%`;
 }
 
-function formatNullableNumber(value: number | null | undefined) {
+function formatNullableNumber(
+  value: number | null | undefined,
+  missingLabel: string,
+) {
   if (value === null || value === undefined) {
-    return "Missing";
+    return missingLabel;
   }
 
   return value.toFixed(2);

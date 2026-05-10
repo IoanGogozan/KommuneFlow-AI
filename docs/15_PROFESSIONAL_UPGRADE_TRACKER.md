@@ -26,8 +26,8 @@ Use this file to answer:
 ## Current Status
 
 ```txt
-Current phase: Phase J - README, screenshots, UI localization, and portfolio polish
-Last completed phase: Phase I - Demo data upgrade
+Current phase: Screenshots and final deployment preparation
+Last completed phase: Phase J - README and demo script polish
 Deployment status: Not deployed; Hetzner remains final phase only
 Last updated: 2026-05-09
 ```
@@ -194,25 +194,31 @@ Implemented:
 
 ### Phase J: README And Portfolio Polish
 
-Status: partially done, final polish still pending.
+Status: completed except screenshots.
 
-Target:
+Implemented:
 
 - update README for Kartverket, SSB, ELT, observability, security, business-flow e2e, and demo data
-- add or capture screenshots
 - clearly mark Hetzner as final phase and not deployed
 - keep English and Norwegian portfolio positioning text current
+- update demo script for the current seed data, internal localization, analytics, operations metrics, and deployment talking points
+
+Remaining:
+
+- screenshots are intentionally deferred
 
 ### Phase K: Internal UI Localization And Polish
 
-Status: not started.
+Status: completed for current internal UI scope.
 
-Target:
+Implemented:
 
 - user-facing internal UI labels available in Norwegian Bokmal and English
 - keep code, route internals, API fields, and technical identifiers in English
-- prefer a small internal dictionary unless route-level locale support becomes necessary
-- polish internal cases, analytics, operations, and login screens after the seed data upgrade
+- small internal dictionary split by locale under `apps/web/src/lib`
+- persistent internal language toggle with Norwegian Bokmal as default
+- internal login, cases, case detail, analytics, and operations screens use localized labels/errors
+- route-level `/internal/[locale]` was not added because the dictionary approach keeps the change smaller and avoids route churn
 
 ### Final Phase: Hetzner Deployment
 
@@ -247,11 +253,11 @@ Done:
 - demo seed includes three tenants, realistic cases, analytics, SSB records, audit records, and operational events
 - Kartverket integration documentation exists
 - SSB live query shape was manually verified on 2026-05-09
+- internal UI localization exists for Norwegian Bokmal and English
+- README and demo script reflect the current implemented scope
 
 Not done yet:
 
-- internal UI localization and polish
-- final README/docs polish
 - screenshots
 - Hetzner deployment and live HTTPS verification
 

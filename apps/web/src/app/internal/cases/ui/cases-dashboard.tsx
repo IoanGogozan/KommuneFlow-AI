@@ -5,6 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
+import {
+  InternalLanguageToggle,
+  useInternalI18n,
+} from "@/lib/internal-locale";
 
 type CaseListItem = {
   id: string;
@@ -35,6 +39,7 @@ const statuses = [
 
 export function CasesDashboard() {
   const router = useRouter();
+  const { locale, setLocale, t } = useInternalI18n();
   const [cases, setCases] = useState<CaseListItem[]>([]);
   const [status, setStatus] = useState("all");
   const [error, setError] = useState<string | null>(null);
@@ -62,35 +67,38 @@ export function CasesDashboard() {
 
         setCases((await response.json()) as CaseListItem[]);
       } catch {
-        setError("Could not load cases.");
+        setError(t.cases.loadError);
       }
     }
 
     void loadCases();
-  }, [query, router]);
+  }, [query, router, t.cases.loadError]);
 
   return (
     <main className="min-h-screen bg-slate-100">
       <div className="mx-auto max-w-6xl px-5 py-6">
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-300 pb-4">
           <div>
-            <p className="text-sm font-medium text-slate-500">KommuneFlow AI</p>
+            <p className="text-sm font-medium text-slate-500">
+              {t.common.app}
+            </p>
             <h1 className="text-3xl font-semibold text-slate-950">
-              Case dashboard
+              {t.cases.title}
             </h1>
           </div>
           <div className="flex flex-wrap gap-2">
+            <InternalLanguageToggle locale={locale} setLocale={setLocale} />
             <Link
               href="/internal/analytics"
               className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
             >
-              Analytics
+              {t.nav.analytics}
             </Link>
             <Link
               href="/internal/operations"
               className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
             >
-              Operations
+              {t.nav.operations}
             </Link>
             <button
               type="button"
@@ -100,14 +108,16 @@ export function CasesDashboard() {
               }}
               className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
             >
-              Sign out
+              {t.nav.signOut}
             </button>
           </div>
         </header>
 
         <section className="mt-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <label className="grid max-w-xs gap-2">
-            <span className="text-sm font-medium text-slate-700">Status</span>
+            <span className="text-sm font-medium text-slate-700">
+              {t.cases.status}
+            </span>
             <select
               value={status}
               onChange={(event) => setStatus(event.target.value)}
@@ -126,10 +136,10 @@ export function CasesDashboard() {
 
         <section className="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="grid grid-cols-[1.3fr_0.7fr_0.7fr_0.8fr] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">
-            <span>Case</span>
-            <span>Status</span>
-            <span>Department</span>
-            <span>Created</span>
+            <span>{t.cases.case}</span>
+            <span>{t.cases.status}</span>
+            <span>{t.cases.department}</span>
+            <span>{t.cases.created}</span>
           </div>
           {cases.map((caseItem) => (
             <Link
@@ -147,7 +157,7 @@ export function CasesDashboard() {
               </span>
               <span className="text-slate-700">{caseItem.status}</span>
               <span className="text-slate-700">
-                {caseItem.assignedDepartment?.name ?? "Unassigned"}
+                {caseItem.assignedDepartment?.name ?? t.common.unassigned}
               </span>
               <span className="text-slate-700">
                 {new Date(caseItem.createdAt).toLocaleDateString()}
@@ -155,7 +165,9 @@ export function CasesDashboard() {
             </Link>
           ))}
           {cases.length === 0 ? (
-            <p className="px-4 py-8 text-sm text-slate-500">No cases found.</p>
+            <p className="px-4 py-8 text-sm text-slate-500">
+              {t.cases.empty}
+            </p>
           ) : null}
         </section>
       </div>
