@@ -44,6 +44,18 @@ def check_snapshots(dataset: AnalyticsDataset) -> list[str]:
             errors.append("analytics snapshot has negative close duration")
         if not 0 <= row.ai_correction_rate <= 1:
             errors.append("analytics snapshot has invalid AI correction rate")
+        if not 0 <= row.ai_suggestion_acceptance_rate <= 1:
+            errors.append("analytics snapshot has invalid AI acceptance rate")
+        if not 0 <= row.ai_triage_failure_rate <= 1:
+            errors.append("analytics snapshot has invalid AI triage failure rate")
+        if row.cases_waiting_for_citizen < 0:
+            errors.append("analytics snapshot has negative waiting count")
+        if row.ai_triage_success_count < 0 or row.ai_triage_failure_count < 0:
+            errors.append("analytics snapshot has negative AI triage count")
+        if row.ai_suggestions_accepted < 0:
+            errors.append("analytics snapshot has negative AI acceptance count")
+        if row.estimated_manual_minutes_saved < 0:
+            errors.append("analytics snapshot has negative estimated time saved")
         if row.cases_per_1000_inhabitants is not None and (
             row.municipality_population is None or row.municipality_population <= 0
         ):

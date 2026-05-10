@@ -12,9 +12,14 @@ import {
   RequestWithId,
 } from '../middleware/request-id.middleware';
 import { appLogger } from '../logging/app-logger';
+import { OperationalEventService } from '../../modules/operations/operational-event.service';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
+  constructor(
+    private readonly operationalEventService: OperationalEventService,
+  ) {}
+
   catch(exception: unknown, host: ArgumentsHost) {
     const context = host.switchToHttp();
     const response = context.getResponse<Response>();
@@ -36,6 +41,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       errorCode,
       safeMessage,
     });
+    void this.recordOperationalEvent({
+      request,
+      requestId,
+      status,
+      errorCode,
+      safeMessage,
+    });
 
     response.status(status).json({
       error: {
@@ -43,6 +55,34 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message: safeMessage,
         requestId,
         path: request.url,
+      },
+    });
+  }
+
+  private async recordOperationalEvent(input: {
+    request: Request & RequestWithId;
+    requestId: string;
+    status: number;
+    errorCode: string;
+    safeMessage: string;
+  }) {
+    if (input.status < 500) {
+      return;
+    }
+
+    await this.operationalEventService.record({
+      eventType: 'api.error',
+      severity: input.status >= 500 ? 'error' : 'warning',
+      source: 'api',
+      tenantId: input.request.user?.tenantId,
+      userId: input.request.user?.id,
+      requestId: input.requestId,
+      safeMessage: input.safeMessage,
+      metadata: {
+        errorCode: input.errorCode,
+        method: input.request.method,
+        path: input.request.originalUrl ?? input.request.url,
+        statusCode: input.status,
       },
     });
   }

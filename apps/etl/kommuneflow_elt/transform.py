@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from datetime import date, datetime
-from statistics import mean
+from statistics import mean, median
 
 from .models import (
     AiQualityDaily,
@@ -15,6 +15,9 @@ from .models import (
     MunicipalityDaily,
     PopulationRecord,
 )
+
+ACCEPTED_AI_SUGGESTION_MINUTES_SAVED = 5
+CORRECTED_AI_SUGGESTION_MINUTES_SAVED = 2
 
 
 def rebuild_daily_analytics(
@@ -57,6 +60,7 @@ def rebuild_daily_analytics(
                 snapshot_date,
                 tenant_cases,
                 tenant_reviews,
+                tenant_triage,
                 population_by_code,
                 triage_by_case,
             )
@@ -89,21 +93,48 @@ def average_time_to_triage_minutes(
     cases: list[CaseRecord],
     triage_by_case: dict[str, AiTriageRecord],
 ) -> float | None:
-    durations = [
-        (triage_by_case[case.id].created_at - case.created_at).total_seconds() / 60
-        for case in cases
-        if case.id in triage_by_case
-    ]
+    durations = time_to_triage_minutes(cases, triage_by_case)
     return mean(durations) if durations else None
 
 
 def average_time_to_close_hours(cases: list[CaseRecord]) -> float | None:
+    durations = time_to_close_hours(cases)
+    return mean(durations) if durations else None
+
+
+def median_time_to_triage_minutes(
+    cases: list[CaseRecord],
+    triage_by_case: dict[str, AiTriageRecord],
+) -> float | None:
+    durations = time_to_triage_minutes(cases, triage_by_case)
+    return median(durations) if durations else None
+
+
+def median_time_to_close_hours(cases: list[CaseRecord]) -> float | None:
+    durations = time_to_close_hours(cases)
+    return median(durations) if durations else None
+
+
+def time_to_triage_minutes(
+    cases: list[CaseRecord],
+    triage_by_case: dict[str, AiTriageRecord],
+) -> list[float]:
+    return [
+        (triage_by_case[case.id].created_at - case.created_at).total_seconds() / 60
+        for case in cases
+        if case.id in triage_by_case
+        and (triage_by_case[case.id].created_at - case.created_at).total_seconds() >= 0
+    ]
+
+
+def time_to_close_hours(cases: list[CaseRecord]) -> list[float]:
     durations = [
         (case.closed_at - case.created_at).total_seconds() / 3600
         for case in cases
         if case.closed_at is not None
+        and (case.closed_at - case.created_at).total_seconds() >= 0
     ]
-    return mean(durations) if durations else None
+    return durations
 
 
 def calculate_ai_rates(ai_reviews: list[AiReviewRecord]) -> tuple[int, int, float, float]:
@@ -129,13 +160,16 @@ def build_snapshot(
     snapshot_date: date,
     cases: list[CaseRecord],
     ai_reviews: list[AiReviewRecord],
+    ai_triage: list[AiTriageRecord],
     population_by_code: dict[str, PopulationRecord],
     triage_by_case: dict[str, AiTriageRecord],
 ) -> DailySnapshot:
-    accepted, corrected, _acceptance_rate, correction_rate = calculate_ai_rates(
+    accepted, corrected, acceptance_rate, correction_rate = calculate_ai_rates(
         ai_reviews
     )
-    del accepted
+    successes = sum(1 for item in ai_triage if item.status in {"completed", "reviewed"})
+    failures = sum(1 for item in ai_triage if item.status == "failed")
+    triage_total = successes + failures
     municipality_codes = {
         case.municipality_code for case in cases if case.municipality_code
     }
@@ -148,6 +182,15 @@ def build_snapshot(
         else None
     )
     population_year = population_records[0].year if population_records else None
+    latest_imported_at = (
+        max(
+            (record.imported_at for record in population_records if record.imported_at),
+            default=None,
+        )
+        if population_records
+        else None
+    )
+    ssb_data_status = get_ssb_data_status(municipality_codes, population_records)
 
     return DailySnapshot(
         tenant_id=tenant_id,
@@ -170,6 +213,25 @@ def build_snapshot(
             cases, triage_by_case
         ),
         average_time_to_close_hours=average_time_to_close_hours(cases),
+        median_time_to_triage_minutes=median_time_to_triage_minutes(
+            cases, triage_by_case
+        ),
+        median_time_to_close_hours=median_time_to_close_hours(cases),
+        cases_waiting_for_citizen=sum(
+            1 for case in cases if case.status == "waiting_for_citizen"
+        ),
+        ai_triage_success_count=successes,
+        ai_triage_failure_count=failures,
+        ai_triage_failure_rate=failures / triage_total if triage_total else 0.0,
+        ai_suggestions_accepted=accepted,
+        ai_suggestion_acceptance_rate=acceptance_rate,
+        estimated_manual_minutes_saved=(
+            accepted * ACCEPTED_AI_SUGGESTION_MINUTES_SAVED
+            + corrected * CORRECTED_AI_SUGGESTION_MINUTES_SAVED
+        ),
+        analytics_rebuilt_at=datetime.now().astimezone(),
+        ssb_data_status=ssb_data_status,
+        ssb_imported_at=latest_imported_at,
     )
 
 
@@ -281,3 +343,16 @@ def earliest_triage_by_case(
 
 def parse_date(value: str) -> date:
     return datetime.strptime(value, "%Y-%m-%d").date()
+
+
+def get_ssb_data_status(
+    municipality_codes: set[str | None],
+    population_records: list[PopulationRecord],
+) -> str:
+    if not municipality_codes:
+        return "missing"
+
+    if not population_records:
+        return "missing"
+
+    return "available" if len(population_records) == len(municipality_codes) else "partial"

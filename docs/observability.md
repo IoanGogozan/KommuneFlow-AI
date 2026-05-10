@@ -72,6 +72,7 @@ Included metrics:
 - failed logins last 24 hours
 - permission denied events last 24 hours
 - cross-tenant access attempts last 24 hours
+- public and security rate-limit blocks last 24 hours
 - AI triage requests/failures last 24 hours
 - AI average latency from persisted AI observability events
 - document upload failures last 24 hours
@@ -100,6 +101,7 @@ The dashboard shows:
 - failed login count
 - permission denied count
 - cross-tenant access attempts
+- rate-limit blocks
 - document upload failures
 - retention cleanup status
 - backup status
@@ -161,7 +163,26 @@ Initial maintenance types:
 
 The operations summary reads latest backup and retention cleanup status from this table.
 
+## Operational Events
+
+Operational events are persisted in `OperationalEvent` for runtime/security events that are useful for operations but should not be mixed into legal/compliance audit history.
+
+Current event examples:
+
+- `auth.login_failed`
+- `security.permission_denied`
+- `security.cross_tenant_access_attempt`
+- `security.rate_limited`
+- `public.rate_limited`
+- `api.error`
+- `document.upload_failed`
+- `integration.kartverket.failed`
+- `integration.ssb.failed`
+- `ai.triage_failed`
+- `maintenance.retention_cleanup`
+
+Rate-limit events are recorded by the global throttling guard when a request is blocked. Metadata includes safe operational fields such as method, path, route surface, limit, total hits, and block expiry. Query strings, request bodies, raw tokens, and raw citizen content are not stored.
+
 ## Current Limitations
 
-- API error and security counters depend on persisted audit events. Some runtime errors are currently logged but not persisted as audit events.
 - Prometheus text format is not implemented yet; JSON metrics summary is the current supported interface.

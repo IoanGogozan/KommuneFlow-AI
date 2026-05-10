@@ -62,11 +62,23 @@ def load_snapshots(connection: Any, rows: list[DailySnapshot]) -> None:
               "aiReviewsTotal",
               "aiCorrectionsTotal",
               "aiCorrectionRate",
+              "averageTimeToTriageMinutes",
+              "medianTimeToTriageMinutes",
+              "averageTimeToCloseHours",
+              "medianTimeToCloseHours",
+              "casesWaitingForCitizen",
+              "aiTriageSuccessCount",
+              "aiTriageFailureCount",
+              "aiTriageFailureRate",
+              "aiSuggestionsAccepted",
+              "aiSuggestionAcceptanceRate",
+              "estimatedManualMinutesSaved",
               "municipalityPopulation",
               "municipalityPopulationYear",
               "casesPer1000Inhabitants",
               "ssbDataStatus",
               "ssbImportedAt",
+              "analyticsRebuiltAt",
               "updatedAt"
             )
             VALUES (
@@ -80,11 +92,23 @@ def load_snapshots(connection: Any, rows: list[DailySnapshot]) -> None:
               %(ai_reviews_total)s,
               %(ai_corrections_total)s,
               %(ai_correction_rate)s,
+              %(average_time_to_triage_minutes)s,
+              %(median_time_to_triage_minutes)s,
+              %(average_time_to_close_hours)s,
+              %(median_time_to_close_hours)s,
+              %(cases_waiting_for_citizen)s,
+              %(ai_triage_success_count)s,
+              %(ai_triage_failure_count)s,
+              %(ai_triage_failure_rate)s,
+              %(ai_suggestions_accepted)s,
+              %(ai_suggestion_acceptance_rate)s,
+              %(estimated_manual_minutes_saved)s,
               %(municipality_population)s,
               %(municipality_population_year)s,
               %(cases_per_1000_inhabitants)s,
               %(ssb_data_status)s,
               %(ssb_imported_at)s,
+              %(analytics_rebuilt_at)s,
               CURRENT_TIMESTAMP
             )
             ON CONFLICT ("tenantId", date)
@@ -96,11 +120,23 @@ def load_snapshots(connection: Any, rows: list[DailySnapshot]) -> None:
               "aiReviewsTotal" = EXCLUDED."aiReviewsTotal",
               "aiCorrectionsTotal" = EXCLUDED."aiCorrectionsTotal",
               "aiCorrectionRate" = EXCLUDED."aiCorrectionRate",
+              "averageTimeToTriageMinutes" = EXCLUDED."averageTimeToTriageMinutes",
+              "medianTimeToTriageMinutes" = EXCLUDED."medianTimeToTriageMinutes",
+              "averageTimeToCloseHours" = EXCLUDED."averageTimeToCloseHours",
+              "medianTimeToCloseHours" = EXCLUDED."medianTimeToCloseHours",
+              "casesWaitingForCitizen" = EXCLUDED."casesWaitingForCitizen",
+              "aiTriageSuccessCount" = EXCLUDED."aiTriageSuccessCount",
+              "aiTriageFailureCount" = EXCLUDED."aiTriageFailureCount",
+              "aiTriageFailureRate" = EXCLUDED."aiTriageFailureRate",
+              "aiSuggestionsAccepted" = EXCLUDED."aiSuggestionsAccepted",
+              "aiSuggestionAcceptanceRate" = EXCLUDED."aiSuggestionAcceptanceRate",
+              "estimatedManualMinutesSaved" = EXCLUDED."estimatedManualMinutesSaved",
               "municipalityPopulation" = EXCLUDED."municipalityPopulation",
               "municipalityPopulationYear" = EXCLUDED."municipalityPopulationYear",
               "casesPer1000Inhabitants" = EXCLUDED."casesPer1000Inhabitants",
               "ssbDataStatus" = EXCLUDED."ssbDataStatus",
               "ssbImportedAt" = EXCLUDED."ssbImportedAt",
+              "analyticsRebuiltAt" = EXCLUDED."analyticsRebuiltAt",
               "updatedAt" = CURRENT_TIMESTAMP
             """,
             {
@@ -114,13 +150,29 @@ def load_snapshots(connection: Any, rows: list[DailySnapshot]) -> None:
                 "ai_reviews_total": row.ai_reviews_total,
                 "ai_corrections_total": row.ai_corrections_total,
                 "ai_correction_rate": row.ai_correction_rate,
+                "average_time_to_triage_minutes": (
+                    row.average_time_to_triage_minutes
+                ),
+                "median_time_to_triage_minutes": row.median_time_to_triage_minutes,
+                "average_time_to_close_hours": row.average_time_to_close_hours,
+                "median_time_to_close_hours": row.median_time_to_close_hours,
+                "cases_waiting_for_citizen": row.cases_waiting_for_citizen,
+                "ai_triage_success_count": row.ai_triage_success_count,
+                "ai_triage_failure_count": row.ai_triage_failure_count,
+                "ai_triage_failure_rate": row.ai_triage_failure_rate,
+                "ai_suggestions_accepted": row.ai_suggestions_accepted,
+                "ai_suggestion_acceptance_rate": (
+                    row.ai_suggestion_acceptance_rate
+                ),
+                "estimated_manual_minutes_saved": (
+                    row.estimated_manual_minutes_saved
+                ),
                 "municipality_population": row.municipality_population,
                 "municipality_population_year": row.municipality_population_year,
                 "cases_per_1000_inhabitants": row.cases_per_1000_inhabitants,
-                "ssb_data_status": (
-                    "available" if row.municipality_population else "missing"
-                ),
-                "ssb_imported_at": None,
+                "ssb_data_status": row.ssb_data_status,
+                "ssb_imported_at": row.ssb_imported_at,
+                "analytics_rebuilt_at": row.analytics_rebuilt_at,
             },
         )
 

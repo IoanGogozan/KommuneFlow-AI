@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcryptjs';
 import { UserStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { OperationalEventService } from '../operations/operational-event.service';
 import { LoginInput } from './auth.schemas';
 import { CurrentUser } from './current-user';
 
@@ -11,6 +12,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly operationalEventService: OperationalEventService,
   ) {}
 
   async login(input: LoginInput) {
@@ -29,12 +31,17 @@ export class AuthService {
     });
 
     if (!user || user.status !== UserStatus.active) {
+      await this.recordFailedLogin(input.email, 'unknown_or_disabled_user');
       throw new UnauthorizedException('Invalid credentials.');
     }
 
     const passwordMatches = await compare(input.password, user.passwordHash);
 
     if (!passwordMatches) {
+      await this.recordFailedLogin(input.email, 'invalid_password', {
+        tenantId: user.tenantId,
+        userId: user.id,
+      });
       throw new UnauthorizedException('Invalid credentials.');
     }
 
@@ -59,5 +66,24 @@ export class AuthService {
         role: user.role,
       },
     };
+  }
+
+  private async recordFailedLogin(
+    email: string,
+    reason: string,
+    context?: { tenantId?: string; userId?: string },
+  ) {
+    await this.operationalEventService.record({
+      eventType: 'auth.login_failed',
+      severity: 'warning',
+      source: 'auth',
+      tenantId: context?.tenantId,
+      userId: context?.userId,
+      safeMessage: 'Login failed.',
+      metadata: {
+        reason,
+        emailDomain: email.includes('@') ? email.split('@').at(-1) : null,
+      },
+    });
   }
 }

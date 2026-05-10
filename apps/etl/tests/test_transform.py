@@ -25,6 +25,7 @@ def test_transform_calculates_average_time_to_triage() -> None:
     )
 
     assert dataset.snapshots[0].average_time_to_triage_minutes == 15
+    assert dataset.snapshots[0].median_time_to_triage_minutes == 15
 
 
 def test_transform_calculates_average_time_to_close() -> None:
@@ -48,6 +49,7 @@ def test_transform_calculates_average_time_to_close() -> None:
     )
 
     assert dataset.snapshots[0].average_time_to_close_hours == 5
+    assert dataset.snapshots[0].median_time_to_close_hours == 5
 
 
 def test_transform_calculates_ai_acceptance_and_correction_rates() -> None:
@@ -65,6 +67,38 @@ def test_transform_calculates_ai_acceptance_and_correction_rates() -> None:
     assert dataset.ai_quality[0].ai_acceptance_rate == 0.5
     assert dataset.ai_quality[0].ai_correction_rate == 0.5
     assert dataset.snapshots[0].ai_correction_rate == 0.5
+    assert dataset.snapshots[0].ai_suggestions_accepted == 1
+    assert dataset.snapshots[0].ai_suggestion_acceptance_rate == 0.5
+    assert dataset.snapshots[0].estimated_manual_minutes_saved == 7
+
+
+def test_transform_populates_snapshot_effect_metrics() -> None:
+    dataset = rebuild_daily_analytics(
+        cases=[
+            case_record("case_1", status="waiting_for_citizen"),
+            case_record("case_2"),
+        ],
+        ai_triage=[
+            triage_record("triage_1", "case_1", dt("2026-05-01T08:10:00+00:00")),
+            triage_record(
+                "triage_2",
+                "case_2",
+                dt("2026-05-01T08:20:00+00:00"),
+                status="failed",
+            ),
+        ],
+        ai_reviews=[review_record("review_1", "case_1", accepted=True)],
+        population=[],
+        snapshot_date=date(2026, 5, 1),
+    )
+
+    snapshot = dataset.snapshots[0]
+
+    assert snapshot.cases_waiting_for_citizen == 1
+    assert snapshot.ai_triage_success_count == 1
+    assert snapshot.ai_triage_failure_count == 1
+    assert snapshot.ai_triage_failure_rate == 0.5
+    assert snapshot.analytics_rebuilt_at is not None
 
 
 def test_transform_calculates_cases_per_1000_inhabitants() -> None:
@@ -88,6 +122,8 @@ def test_transform_calculates_cases_per_1000_inhabitants() -> None:
     )
 
     assert dataset.snapshots[0].cases_per_1000_inhabitants == 0.2
+    assert dataset.snapshots[0].ssb_data_status == "available"
+    assert dataset.snapshots[0].ssb_imported_at == dt("2026-05-01T00:00:00+00:00")
     assert dataset.municipalities[0].cases_per_1000_inhabitants == 0.2
 
 
@@ -97,6 +133,7 @@ def case_record(
     created_at: datetime | None = None,
     closed_at: datetime | None = None,
     municipality_code: str | None = None,
+    status: str = "new",
 ) -> CaseRecord:
     return CaseRecord(
         id=case_id,
@@ -104,7 +141,7 @@ def case_record(
         created_at=created_at or dt("2026-05-01T08:00:00+00:00"),
         updated_at=dt("2026-05-01T08:00:00+00:00"),
         closed_at=closed_at,
-        status="new",
+        status=status,
         category="building_case",
         department_id="department_1",
         department_name="Technical Department",
@@ -114,14 +151,18 @@ def case_record(
 
 
 def triage_record(
-    triage_id: str, case_id: str, created_at: datetime
+    triage_id: str,
+    case_id: str,
+    created_at: datetime,
+    *,
+    status: str = "completed",
 ) -> AiTriageRecord:
     return AiTriageRecord(
         id=triage_id,
         tenant_id="tenant_1",
         case_id=case_id,
         created_at=created_at,
-        status="completed",
+        status=status,
     )
 
 

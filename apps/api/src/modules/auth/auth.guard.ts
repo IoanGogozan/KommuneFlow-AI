@@ -12,6 +12,7 @@ import { CurrentUser } from './current-user';
 export type AuthenticatedRequest = Request & {
   user?: CurrentUser;
   cookies?: Record<string, unknown>;
+  requestId?: string;
 };
 
 @Injectable()

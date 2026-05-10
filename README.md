@@ -277,12 +277,11 @@ See [Demo Script](./docs/DEMO_SCRIPT.md) for an interview-ready walkthrough.
 - AI prompt redaction/minimization should be expanded before real production use.
 - Internal UI is still mostly English, while citizen intake is bilingual.
 - Privacy actions exist in API, but there is no full internal privacy UI.
-- Demo seed data is still smaller than the final portfolio target.
 
 ## Future Improvements
 
 - Real Hetzner deployment and screenshots
-- Larger realistic demo dataset
+- Additional demo scenarios after internal UI localization
 - Citizen status portal
 - Email confirmations
 - Background worker for AI and analytics aggregation

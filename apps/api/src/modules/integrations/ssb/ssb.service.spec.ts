@@ -134,7 +134,12 @@ describe('SsbService', () => {
 });
 
 function createService(prismaShape: Record<string, unknown>) {
-  return new SsbService(prismaShape as unknown as PrismaService);
+  return new SsbService(
+    prismaShape as unknown as PrismaService,
+    {
+      record: jest.fn().mockResolvedValue(undefined),
+    } as never,
+  );
 }
 
 function populationDataset() {

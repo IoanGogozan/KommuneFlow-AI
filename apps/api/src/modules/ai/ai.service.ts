@@ -10,6 +10,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUser } from '../auth/current-user';
 import { roleHasPermission } from '../auth/permissions';
+import { OperationalEventService } from '../operations/operational-event.service';
 import { AI_PROVIDER } from './ai-provider';
 import type { AIProvider } from './ai-provider';
 import {
@@ -24,6 +25,7 @@ export class AIService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly operationalEventService: OperationalEventService,
     @Inject(AI_PROVIDER) private readonly aiProvider: AIProvider,
   ) {}
 
@@ -106,7 +108,6 @@ export class AIService {
           inputWasTruncated: minimizedCase.inputWasTruncated,
         },
       });
-
       return result;
     } catch (error) {
       const durationMs = Date.now() - startedAt;
@@ -151,6 +152,20 @@ export class AIService {
         failureReason,
         metadata: {
           departmentCount: departments.length,
+        },
+      });
+      await this.operationalEventService.record({
+        eventType: 'ai.triage_failed',
+        severity: 'error',
+        source: 'ai',
+        tenantId: user.tenantId,
+        userId: user.id,
+        safeMessage: 'AI triage failed.',
+        metadata: {
+          caseId: caseRecord.id,
+          aiTriageResultId: result.id,
+          reason: failureReason,
+          classification: failureClassification,
         },
       });
 

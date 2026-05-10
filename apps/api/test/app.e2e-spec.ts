@@ -1,10 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { hash } from 'bcryptjs';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from '../src/configure-app';
 import { appLogger } from '../src/shared/logging/app-logger';
+import { PrismaService } from '../src/database/prisma.service';
 
 type ErrorResponseBody = {
   error: {
@@ -30,8 +32,59 @@ type ReadinessResponseBody = {
   timestamp: string;
 };
 
+type PublicCaseResponseBody = {
+  caseId: string;
+  status: string;
+  documentCount: number;
+};
+
+type LoginResponseBody = {
+  user: {
+    id: string;
+    tenantId: string;
+    departmentId: string | null;
+    email: string;
+    role: string;
+  };
+};
+
+type AiTriageResponseBody = {
+  id: string;
+  status: string;
+  suggestedCategory: string;
+  suggestedDepartment: {
+    slug: string;
+  } | null;
+  suggestedUrgency: string;
+};
+
+type AnalyticsSummaryResponseBody = {
+  totals: {
+    totalCases: number;
+    aiReviewsTotal: number;
+    aiSuggestionsAccepted: number;
+    aiTriageSuccessCount: number;
+    estimatedManualMinutesSaved: number;
+    casesPer1000Inhabitants: number | null;
+  };
+  analyticsLastRebuiltAt: string | null;
+  ssbEnrichment: {
+    status: string;
+    populationUsed: number | null;
+  };
+};
+
+type OperationsMetricsResponseBody = {
+  aiTriageRequestsLast24h: number;
+  rateLimitBlocksLast24h: number;
+  kartverketLookupCountLast24h: number;
+  analyticsLastRebuildAt: string | null;
+};
+
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
+  let prisma: PrismaService;
+  const tenantsToDelete: string[] = [];
   const originalFetch = global.fetch;
 
   beforeEach(async () => {
@@ -42,6 +95,7 @@ describe('AppController (e2e)', () => {
     app = moduleFixture.createNestApplication();
     configureApp(app);
     await app.init();
+    prisma = app.get(PrismaService);
   });
 
   it('/api/v1 (GET)', () => {
@@ -178,6 +232,18 @@ describe('AppController (e2e)', () => {
 
     expect(body.error.code).toBe('TOO_MANY_REQUESTS');
     expect(JSON.stringify(body)).not.toContain('stack');
+    await expect(
+      prisma.operationalEvent.findFirstOrThrow({
+        where: {
+          eventType: 'public.rate_limited',
+          requestId: body.error.requestId,
+        },
+      }),
+    ).resolves.toMatchObject({
+      severity: 'warning',
+      source: 'throttler',
+      safeMessage: 'Request rate limit exceeded.',
+    });
   });
 
   it('does not expose a public read endpoint for guessed citizen cases', async () => {
@@ -310,9 +376,331 @@ describe('AppController (e2e)', () => {
     expect(response.headers['x-request-id']).toEqual(expect.any(String));
   });
 
+  it('covers the citizen intake to internal triage business flow', async () => {
+    const suffix = `e2e_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    const tenantSlug = `business-flow-${suffix}`;
+    const userEmail = `worker.${suffix}@example.local`;
+    const password = 'correct-horse-battery-staple';
+    const today = new Date();
+    const todayKey = today.toISOString().slice(0, 10);
+    const allowedOrigin = process.env.APP_BASE_URL ?? 'http://localhost:3000';
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        adresser: [
+          {
+            adressetekst: 'Storgata 12',
+            adressekode: '12345',
+            nummer: 12,
+            kommunenummer: '9901',
+            kommunenavn: 'E2Evik',
+            postnummer: '4836',
+            poststed: 'Arendal',
+            representasjonspunkt: {
+              lat: 58.4612,
+              lon: 8.7724,
+            },
+          },
+        ],
+      }),
+    });
+
+    const { tenant, department } = await createBusinessFlowFixture(prisma, {
+      tenantSlug,
+      userEmail,
+      password,
+      year: today.getUTCFullYear(),
+    });
+    tenantsToDelete.push(tenant.id);
+
+    const publicCaseResponse = await request(app.getHttpServer())
+      .post(`/api/v1/public/tenants/${tenantSlug}/cases`)
+      .field(
+        'payload',
+        JSON.stringify({
+          citizen: {
+            name: 'E2E Citizen',
+            email: `citizen.${suffix}@example.local`,
+            phone: '+47 40000000',
+            address: 'Storgata 12, Arendal',
+          },
+          case: {
+            title: 'Water leak near school entrance',
+            description:
+              'There is a water leak near the school entrance and the road is slippery for children and staff.',
+            sourceLanguage: 'en',
+          },
+          privacyAccepted: true,
+        }),
+      )
+      .attach('documents', Buffer.from('%PDF-1.4\n%EOF'), {
+        filename: 'citizen-upload.pdf',
+        contentType: 'application/pdf',
+      })
+      .expect(201);
+    const publicCaseBody =
+      publicCaseResponse.body as unknown as PublicCaseResponseBody;
+
+    expect(publicCaseBody.status).toBe('new');
+    expect(publicCaseBody.documentCount).toBe(1);
+
+    await prisma.case.update({
+      where: { id: publicCaseBody.caseId },
+      data: {
+        assignedDepartmentId: department.id,
+        status: 'triage_pending',
+      },
+    });
+
+    const agent = request.agent(app.getHttpServer());
+    const loginResponse = await agent
+      .post('/api/v1/auth/login')
+      .send({ email: userEmail, password })
+      .expect(201);
+    const loginBody = loginResponse.body as unknown as LoginResponseBody;
+
+    expect(loginBody.user.tenantId).toBe(tenant.id);
+    expect(loginBody.user.departmentId).toBe(department.id);
+
+    const caseDetailResponse = await agent
+      .get(`/api/v1/cases/${publicCaseBody.caseId}`)
+      .expect(200);
+
+    expect(caseDetailResponse.body).toMatchObject({
+      id: publicCaseBody.caseId,
+      status: 'triage_pending',
+      addresses: [
+        expect.objectContaining({
+          validationStatus: 'validated',
+          municipalityCode: '9901',
+          municipalityName: 'E2Evik',
+        }),
+      ],
+    });
+
+    const internalUploadResponse = await agent
+      .post(`/api/v1/cases/${publicCaseBody.caseId}/documents`)
+      .set('Origin', allowedOrigin)
+      .field('isSensitive', 'false')
+      .attach('file', Buffer.from('%PDF-1.4\ninternal\n%EOF'), {
+        filename: 'internal-upload.pdf',
+        contentType: 'application/pdf',
+      })
+      .expect(201);
+
+    expect(internalUploadResponse.body).toMatchObject({
+      originalFileName: 'internal-upload.pdf',
+      mimeType: 'application/pdf',
+    });
+
+    const aiTriageResponse = await agent
+      .post(`/api/v1/cases/${publicCaseBody.caseId}/ai-triage`)
+      .set('Origin', allowedOrigin)
+      .expect(201);
+    const aiTriageBody =
+      aiTriageResponse.body as unknown as AiTriageResponseBody;
+
+    expect(aiTriageBody.status).toBe('completed');
+    expect(aiTriageBody.suggestedDepartment?.slug).toBe(department.slug);
+
+    await agent
+      .post(
+        `/api/v1/cases/${publicCaseBody.caseId}/ai-triage/${aiTriageBody.id}/review`,
+      )
+      .set('Origin', allowedOrigin)
+      .send({
+        approvedCategory: aiTriageBody.suggestedCategory,
+        approvedDepartmentSlug: department.slug,
+        approvedUrgency: aiTriageBody.suggestedUrgency,
+        reviewComment: 'Approved in e2e business flow.',
+        wasAiSuggestionAccepted: true,
+      })
+      .expect(201);
+
+    await agent
+      .patch(`/api/v1/cases/${publicCaseBody.caseId}/status`)
+      .set('Origin', allowedOrigin)
+      .send({ status: 'waiting_for_citizen' })
+      .expect(200);
+
+    await agent
+      .post('/api/v1/analytics/aggregate')
+      .set('Origin', allowedOrigin)
+      .send({ from: todayKey, to: todayKey })
+      .expect(201);
+
+    const analyticsResponse = await agent
+      .get('/api/v1/analytics/summary')
+      .query({ from: todayKey, to: todayKey })
+      .expect(200);
+    const analyticsBody =
+      analyticsResponse.body as unknown as AnalyticsSummaryResponseBody;
+
+    expect(analyticsBody.totals.totalCases).toBeGreaterThanOrEqual(1);
+    expect(analyticsBody.totals.aiReviewsTotal).toBeGreaterThanOrEqual(1);
+    expect(analyticsBody.totals.aiSuggestionsAccepted).toBeGreaterThanOrEqual(
+      1,
+    );
+    expect(analyticsBody.totals.aiTriageSuccessCount).toBeGreaterThanOrEqual(1);
+    expect(analyticsBody.totals.estimatedManualMinutesSaved).toBeGreaterThan(0);
+    expect(analyticsBody.analyticsLastRebuiltAt).toEqual(expect.any(String));
+    expect(analyticsBody.ssbEnrichment).toMatchObject({
+      status: 'available',
+      populationUsed: 45_000,
+    });
+    expect(analyticsBody.totals.casesPer1000Inhabitants).toBeGreaterThan(0);
+
+    const operationsResponse = await agent
+      .get('/api/v1/operations/metrics-summary')
+      .expect(200);
+    const operationsBody =
+      operationsResponse.body as unknown as OperationsMetricsResponseBody;
+
+    expect(operationsBody.aiTriageRequestsLast24h).toBeGreaterThanOrEqual(1);
+    expect(operationsBody.kartverketLookupCountLast24h).toBeGreaterThanOrEqual(
+      1,
+    );
+    expect(operationsBody.analyticsLastRebuildAt).toEqual(expect.any(String));
+
+    const auditActions = await prisma.auditEvent.findMany({
+      where: {
+        tenantId: tenant.id,
+        entityId: { in: [publicCaseBody.caseId, aiTriageBody.id] },
+      },
+      select: { action: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    expect(auditActions.map((event) => event.action)).toEqual(
+      expect.arrayContaining([
+        'case.created_by_citizen',
+        'ai.triage_result_created',
+        'case.status_updated',
+      ]),
+    );
+    await expect(
+      prisma.auditEvent.findFirstOrThrow({
+        where: {
+          tenantId: tenant.id,
+          action: 'document.uploaded_by_citizen',
+        },
+      }),
+    ).resolves.toBeTruthy();
+    await expect(
+      prisma.auditEvent.findFirstOrThrow({
+        where: {
+          tenantId: tenant.id,
+          action: 'document.uploaded',
+        },
+      }),
+    ).resolves.toBeTruthy();
+    await expect(
+      prisma.auditEvent.findFirstOrThrow({
+        where: {
+          tenantId: tenant.id,
+          action: 'integration.kartverket.address_validated',
+        },
+      }),
+    ).resolves.toBeTruthy();
+    await expect(
+      prisma.auditEvent.findFirstOrThrow({
+        where: {
+          tenantId: tenant.id,
+          action: 'ai.triage_review_created',
+        },
+      }),
+    ).resolves.toBeTruthy();
+  });
+
   afterEach(async () => {
     global.fetch = originalFetch;
     jest.restoreAllMocks();
+    for (const tenantId of tenantsToDelete.splice(0)) {
+      await prisma.tenant.deleteMany({ where: { id: tenantId } });
+    }
     await app.close();
   });
 });
+
+async function createBusinessFlowFixture(
+  prisma: PrismaService,
+  input: {
+    tenantSlug: string;
+    userEmail: string;
+    password: string;
+    year: number;
+  },
+) {
+  let tenantId: string | null = null;
+  try {
+    const tenant = await prisma.tenant.create({
+      data: {
+        name: `Business Flow ${input.tenantSlug}`,
+        slug: input.tenantSlug,
+        primaryLanguage: 'nb',
+      },
+      select: { id: true, slug: true },
+    });
+    tenantId = tenant.id;
+
+    const department = await prisma.department.create({
+      data: {
+        tenantId: tenant.id,
+        name: 'Technical Department',
+        slug: 'technical-department',
+        description: 'Handles technical infrastructure and water issues.',
+      },
+      select: { id: true, slug: true },
+    });
+
+    await prisma.user.create({
+      data: {
+        tenantId: tenant.id,
+        departmentId: department.id,
+        email: input.userEmail,
+        passwordHash: await hash(input.password, 10),
+        name: 'E2E Case Worker',
+        role: 'department_admin',
+        status: 'active',
+      },
+    });
+
+    await prisma.externalMunicipalityStatistic.upsert({
+      where: {
+        municipalityCode_statisticKey_year_sourceDataset: {
+          municipalityCode: '9901',
+          statisticKey: 'population_total',
+          year: input.year,
+          sourceDataset: '07459',
+        },
+      },
+      create: {
+        municipalityCode: '9901',
+        municipalityName: 'E2Evik',
+        statisticKey: 'population_total',
+        statisticLabel: 'Population total',
+        year: input.year,
+        value: 45_000,
+        unit: 'persons',
+        source: 'ssb',
+        sourceDataset: '07459',
+        importedAt: new Date(),
+      },
+      update: {
+        municipalityName: 'E2Evik',
+        value: 45_000,
+        unit: 'persons',
+        source: 'ssb',
+        importedAt: new Date(),
+      },
+    });
+
+    return { tenant, department };
+  } catch (error) {
+    if (tenantId) {
+      await prisma.tenant.deleteMany({ where: { id: tenantId } });
+    }
+    throw error;
+  }
+}

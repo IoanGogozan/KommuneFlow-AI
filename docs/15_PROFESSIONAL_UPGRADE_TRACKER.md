@@ -26,8 +26,8 @@ Use this file to answer:
 ## Current Status
 
 ```txt
-Current phase: Phase H - E2E tests in CI business-flow expansion
-Last completed phase: Phase G - Security and negative test completion
+Current phase: Phase J - README, screenshots, UI localization, and portfolio polish
+Last completed phase: Phase I - Demo data upgrade
 Deployment status: Not deployed; Hetzner remains final phase only
 Last updated: 2026-05-09
 ```
@@ -49,10 +49,7 @@ Implemented:
 - case detail address enrichment display
 - mocked service/controller/case intake tests
 - API reference entries for Kartverket endpoints
-
-Remaining future polish:
-
-- add dedicated `docs/integrations/kartverket-address.md`
+- `docs/integrations/kartverket-address.md`
 
 ### Phase B: SSB API Analytics Enrichment
 
@@ -119,6 +116,7 @@ Implemented:
 - readiness integration configuration status
 - `MaintenanceRun`
 - backup/retention status visibility
+- persisted operational events for failed logins, permission denials, cross-tenant attempts, rate-limit blocks, API errors, document failures, integration failures, AI failures, and maintenance runs
 - `docs/observability.md`
 
 ### Phase F: AI Production Hardening
@@ -153,48 +151,46 @@ Implemented:
 - dependency audit preserved in CI
 - `docs/security/negative-testing.md`
 
-## Remaining Phases
-
 ### Phase H: E2E Tests In CI Business-Flow Expansion
 
-Status: next.
+Status: completed.
 
-Target:
+Implemented:
 
-- expand e2e from negative/security checks into a realistic business flow
-- keep all external systems mocked in CI
-
-Planned flow:
-
-- citizen submits case with address
+- citizen submits case with address and a document
 - mocked Kartverket validates/enriches address
-- mocked AI generates triage suggestion
 - case worker logs in
+- mocked AI generates triage suggestion
 - case worker reviews AI suggestion
 - case worker updates status
-- document upload/download is exercised if stable in e2e
 - analytics rebuild is triggered
 - operations metrics show relevant events
-- audit log contains important events where API coverage exists
+- audit log contains important events
+- external systems remain mocked in CI
 
 ### Phase I: Demo Data Upgrade
 
-Status: not started.
+Status: completed.
 
-Target:
+Implemented:
 
 - Arendal Kommune
 - Grimstad Kommune
 - Kristiansand Kommune
-- realistic departments
-- 15 to 25 realistic cases
+- 5 departments per tenant
+- 18 realistic cases across statuses and categories
+- Norwegian and English demo case descriptions
 - validated demo addresses
-- accepted/corrected AI suggestions
+- accepted, corrected, and failed AI triage examples
 - waiting and closed cases
 - demo documents
 - SSB demo population data
 - analytics snapshots
 - audit history
+- operational events
+- seed code split into small modules under `apps/api/prisma/seed/`
+
+## Remaining Phases
 
 ### Phase J: README And Portfolio Polish
 
@@ -202,11 +198,31 @@ Status: partially done, final polish still pending.
 
 Target:
 
-- update README for Kartverket, SSB, ELT, observability, security, and negative testing
+- update README for Kartverket, SSB, ELT, observability, security, business-flow e2e, and demo data
 - add or capture screenshots
 - clearly mark Hetzner as final phase and not deployed
-- add missing Kartverket integration document
 - keep English and Norwegian portfolio positioning text current
+
+### Phase K: Internal UI Localization And Polish
+
+Status: not started.
+
+Target:
+
+- user-facing internal UI labels available in Norwegian Bokmal and English
+- keep code, route internals, API fields, and technical identifiers in English
+- prefer a small internal dictionary unless route-level locale support becomes necessary
+- polish internal cases, analytics, operations, and login screens after the seed data upgrade
+
+### Final Phase: Hetzner Deployment
+
+Status: not started.
+
+Target:
+
+- deploy only after the app is polished and explicitly requested
+- run smoke tests against the live HTTPS deployment
+- verify backups, restore path, Caddy TLS, health, readiness, and demo login
 
 ## Final Acceptance Status
 
@@ -223,16 +239,56 @@ Done:
 - metrics summary endpoint exists
 - AI integration has timeout/retry/safe failure handling
 - negative security tests pass
-- e2e tests run in CI for the API security/health scope
+- e2e tests run in CI for API security/health and business-flow scope
 - CI does not call real external APIs
+- Python ELT tests run in CI
+- operations metrics are backed by persisted `OperationalEvent` rows
+- public and security rate-limit blocks are persisted as operational events
+- demo seed includes three tenants, realistic cases, analytics, SSB records, audit records, and operational events
+- Kartverket integration documentation exists
+- SSB live query shape was manually verified on 2026-05-09
 
 Not done yet:
 
-- expanded business-flow e2e
-- realistic upgraded demo seed data
+- internal UI localization and polish
 - final README/docs polish
 - screenshots
 - Hetzner deployment and live HTTPS verification
+
+## Manual External Verification
+
+SSB live verification was run manually on 2026-05-09. This is intentionally not part of CI.
+
+Command:
+
+```bash
+cd apps/etl
+python - <<'PY'
+from kommuneflow_elt.ssb_import import fetch_population
+
+records = fetch_population(2025, ["4203", "4204", "4205"])
+for record in records:
+    print(f"{record.municipality_code}\t{record.municipality_name}\t{record.year}\t{record.value}")
+print(f"records={len(records)}")
+PY
+```
+
+Result:
+
+```txt
+4203    Arendal       2025    46568
+4204    Kristiansand  2025    118221
+4205    Lindesnes     2025    23768
+records=3
+```
+
+Conclusion:
+
+- table `07459` is reachable through PxWebApi v2
+- `valueCodes[Region]` accepts `K-<municipalityCode>` values with `codelist[Region]=agg_KommSummer`
+- `valueCodes[Tid]=2025` and `valueCodes[ContentsCode]=Personer1` return the expected population metric
+- the parser returns municipality code, name, year, and integer population values
+- CI must continue using mocked SSB responses only
 
 ## Last Verification
 
@@ -243,8 +299,10 @@ pnpm --filter @kommuneflow/api lint
 pnpm --filter @kommuneflow/api typecheck
 pnpm --filter @kommuneflow/api test -- --runInBand
 pnpm --filter @kommuneflow/api test:e2e -- --runInBand
+pnpm --filter @kommuneflow/api build
 pnpm --filter @kommuneflow/web typecheck
 pnpm --filter @kommuneflow/web lint
+python -m pytest -q
 pnpm audit:deps
 ```
 
@@ -253,7 +311,9 @@ Result:
 - API lint passed
 - API typecheck passed
 - API tests passed: 117 tests
-- API e2e passed: 18 tests
+- API e2e passed: 19 tests
+- API build passed
 - Web typecheck passed
 - Web lint passed
+- Python ELT tests passed: 12 tests
 - Dependency audit passed at the configured `high` threshold, with 2 moderate advisories still reported

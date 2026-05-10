@@ -8,6 +8,7 @@ import { appLogger } from '../../../shared/logging/app-logger';
 import { PrismaService } from '../../../database/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { CurrentUser } from '../../auth/current-user';
+import { OperationalEventService } from '../../operations/operational-event.service';
 import {
   AddressValidationMode,
   AddressValidationResult,
@@ -25,6 +26,7 @@ export class KartverketAddressService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly operationalEventService: OperationalEventService,
   ) {}
 
   async search(
@@ -68,6 +70,15 @@ export class KartverketAddressService {
           errorCode: `http_${response.status}`,
           safeMessage: 'Kartverket address search returned an upstream error.',
           metadata: { queryLength: normalizedQuery.length },
+        });
+        await this.recordOperationalFailure({
+          tenantId: context?.user?.tenantId ?? context?.tenantId,
+          eventType: 'integration.kartverket.failed',
+          safeMessage: 'Kartverket address search returned an upstream error.',
+          metadata: {
+            queryLength: normalizedQuery.length,
+            errorCode: `http_${response.status}`,
+          },
         });
         throw new BadGatewayException('Address lookup is unavailable.');
       }
@@ -118,6 +129,17 @@ export class KartverketAddressService {
           ? 'Kartverket address search timed out.'
           : 'Kartverket address search failed.',
         metadata: { queryLength: normalizedQuery.length },
+      });
+      await this.recordOperationalFailure({
+        tenantId: context?.user?.tenantId ?? context?.tenantId,
+        eventType: 'integration.kartverket.failed',
+        safeMessage: isTimeout
+          ? 'Kartverket address search timed out.'
+          : 'Kartverket address search failed.',
+        metadata: {
+          queryLength: normalizedQuery.length,
+          errorCode: isTimeout ? 'timeout' : 'invalid_response',
+        },
       });
 
       throw new BadGatewayException('Address lookup is unavailable.');
@@ -254,6 +276,22 @@ export class KartverketAddressService {
         'Could not record Kartverket integration health event.',
       );
     }
+  }
+
+  private async recordOperationalFailure(input: {
+    tenantId?: string;
+    eventType: string;
+    safeMessage: string;
+    metadata: Prisma.InputJsonObject;
+  }) {
+    await this.operationalEventService.record({
+      eventType: input.eventType,
+      severity: 'error',
+      source: 'kartverket_address',
+      tenantId: input.tenantId,
+      safeMessage: input.safeMessage,
+      metadata: input.metadata,
+    });
   }
 }
 

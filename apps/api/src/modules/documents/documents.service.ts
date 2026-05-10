@@ -20,6 +20,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { CurrentUser } from '../auth/current-user';
 import { roleHasPermission } from '../auth/permissions';
 import { AuditService } from '../audit/audit.service';
+import { OperationalEventService } from '../operations/operational-event.service';
 import { UploadDocumentBody } from './documents.schemas';
 
 const maxFileSizeBytes = 10 * 1024 * 1024;
@@ -35,6 +36,7 @@ export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly operationalEventService: OperationalEventService,
   ) {}
 
   async listForCase(caseId: string, user: CurrentUser) {
@@ -229,10 +231,17 @@ export class DocumentsService {
     input: UploadDocumentBody,
   ) {
     if (!file) {
+      await this.recordUploadFailure(caseId, user, 'missing_file');
       throw new BadRequestException('Document file is required.');
     }
 
-    validateDocumentFile(file);
+    try {
+      validateDocumentFile(file);
+    } catch (error) {
+      await this.recordUploadFailure(caseId, user, error);
+      throw error;
+    }
+
     const caseRecord = await this.findAccessibleCase(caseId, user);
     this.assertCanUploadToCase(user, caseRecord.assignedDepartmentId);
 
@@ -243,8 +252,13 @@ export class DocumentsService {
     const storageKey = `${user.tenantId}/${caseRecord.id}/${randomUUID()}${extension}`;
     const storagePath = resolveDocumentStoragePath(storageKey);
 
-    await mkdir(dirname(storagePath), { recursive: true });
-    await writeFile(storagePath, file.buffer, { flag: 'wx' });
+    try {
+      await mkdir(dirname(storagePath), { recursive: true });
+      await writeFile(storagePath, file.buffer, { flag: 'wx' });
+    } catch (error) {
+      await this.recordUploadFailure(caseId, user, error);
+      throw error;
+    }
 
     const document = await this.prisma.caseDocument.create({
       data: {
@@ -284,6 +298,25 @@ export class DocumentsService {
     });
 
     return document;
+  }
+
+  private async recordUploadFailure(
+    caseId: string,
+    user: CurrentUser,
+    error: unknown,
+  ) {
+    await this.operationalEventService.record({
+      eventType: 'document.upload_failed',
+      severity: 'warning',
+      source: 'documents',
+      tenantId: user.tenantId,
+      userId: user.id,
+      safeMessage: 'Document upload failed.',
+      metadata: {
+        caseId,
+        reason: error instanceof Error ? error.message : 'unknown',
+      },
+    });
   }
 
   private async findAccessibleCase(caseId: string, user: CurrentUser) {

@@ -38,6 +38,7 @@ The application UI must support:
 | [observability.md](./observability.md)                                         | Request IDs, structured logs, health/readiness, operations metrics, dashboard, integration events, and maintenance. |
 | [analytics/elt-pipeline.md](./analytics/elt-pipeline.md)                       | Python ELT pipeline, commands, transforms, quality checks, and idempotent loading.                                  |
 | [integrations/ssb.md](./integrations/ssb.md)                                   | SSB population import, local storage, idempotency, analytics enrichment, and limitations.                           |
+| [integrations/kartverket-address.md](./integrations/kartverket-address.md)     | Kartverket Adresse-API usage, stored fields, privacy behavior, failure handling, tests, and manual verification.     |
 | [security/negative-testing.md](./security/negative-testing.md)                 | Negative security coverage for auth, RBAC, tenant isolation, uploads, AI, external integrations, and CI.            |
 | [privacy/PRIVACY_NOTICE.md](./privacy/PRIVACY_NOTICE.md)                       | Citizen-facing and deployment privacy notice baseline.                                                              |
 | [privacy/DATA_PROCESSING_INVENTORY.md](./privacy/DATA_PROCESSING_INVENTORY.md) | Data categories, purpose, storage, access, retention, and privacy notes.                                            |

@@ -62,6 +62,18 @@ class DailySnapshot:
     cases_per_1000_inhabitants: float | None
     average_time_to_triage_minutes: float | None
     average_time_to_close_hours: float | None
+    median_time_to_triage_minutes: float | None = None
+    median_time_to_close_hours: float | None = None
+    cases_waiting_for_citizen: int = 0
+    ai_triage_success_count: int = 0
+    ai_triage_failure_count: int = 0
+    ai_triage_failure_rate: float = 0.0
+    ai_suggestions_accepted: int = 0
+    ai_suggestion_acceptance_rate: float = 0.0
+    estimated_manual_minutes_saved: int = 0
+    analytics_rebuilt_at: datetime | None = None
+    ssb_data_status: str = "missing"
+    ssb_imported_at: datetime | None = None
 
 
 @dataclass(frozen=True)

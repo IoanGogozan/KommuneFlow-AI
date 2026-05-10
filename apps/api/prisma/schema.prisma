@@ -87,6 +87,13 @@ enum AIProviderFailureClassification {
   validation_failed
 }
 
+enum OperationalEventSeverity {
+  info
+  warning
+  error
+  critical
+}
+
 model Tenant {
   id                         String                       @id @default(cuid())
   name                       String
@@ -300,6 +307,24 @@ model MaintenanceRun {
   @@index([type, startedAt])
   @@index([status])
   @@map("maintenance_runs")
+}
+
+model OperationalEvent {
+  id           String                   @id @default(cuid())
+  tenantId     String?
+  userId       String?
+  eventType    String
+  severity     OperationalEventSeverity
+  source       String
+  requestId    String?
+  safeMessage  String?
+  metadataJson Json
+  createdAt    DateTime                 @default(now())
+
+  @@index([eventType, createdAt])
+  @@index([severity, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("operational_events")
 }
 
 model AIObservabilityEvent {

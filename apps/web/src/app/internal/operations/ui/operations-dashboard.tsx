@@ -24,6 +24,7 @@ type MetricsSummary = {
   failedLoginsLast24h: number;
   permissionDeniedLast24h: number;
   crossTenantAccessAttemptsLast24h: number;
+  rateLimitBlocksLast24h: number;
   aiTriageRequestsLast24h: number;
   aiTriageFailuresLast24h: number;
   averageAiLatencyMsLast24h: number | null;
@@ -173,6 +174,10 @@ export function OperationsDashboard() {
           <Metric
             label="Cross-tenant attempts"
             value={metrics?.crossTenantAccessAttemptsLast24h ?? 0}
+          />
+          <Metric
+            label="Rate limit blocks"
+            value={metrics?.rateLimitBlocksLast24h ?? 0}
           />
           <Metric
             label="AI triage requests"

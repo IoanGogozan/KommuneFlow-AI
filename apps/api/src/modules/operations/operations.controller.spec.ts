@@ -97,6 +97,7 @@ describe('OperationsController', () => {
       failedLoginsLast24h: 1,
       permissionDeniedLast24h: 2,
       crossTenantAccessAttemptsLast24h: 0,
+      rateLimitBlocksLast24h: 4,
       aiTriageRequestsLast24h: 5,
       aiTriageFailuresLast24h: 1,
       averageAiLatencyMsLast24h: null,
@@ -119,6 +120,7 @@ describe('OperationsController', () => {
 
     expect(response.body).toMatchObject({
       failedLoginsLast24h: 1,
+      rateLimitBlocksLast24h: 4,
       kartverketLookupCountLast24h: 3,
       ssbImportLastStatus: 'completed',
     });

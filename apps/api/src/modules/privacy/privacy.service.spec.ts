@@ -349,6 +349,9 @@ function createService(
       ({
         record: jest.fn().mockResolvedValue(undefined),
       } as unknown as AuditService),
+    {
+      record: jest.fn().mockResolvedValue(undefined),
+    } as never,
   );
 }
 
@@ -441,6 +444,9 @@ function retentionPrismaShape(input: {
     analyticsDailySnapshot: {
       count: jest.fn().mockResolvedValue(input.counts.analyticsSnapshots),
       deleteMany: input.deleteManyMock,
+    },
+    maintenanceRun: {
+      create: jest.fn().mockResolvedValue({ id: 'maintenance_1' }),
     },
   };
 }

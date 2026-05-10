@@ -111,6 +111,8 @@ By default, `import-ssb` imports SSB population for municipality codes already p
 python -m kommuneflow_elt.cli import-ssb --year 2025 --municipality-code 4203
 ```
 
+The live SSB query shape was manually verified on 2026-05-09 with table `07459`, `valueCodes[Region]`, `valueCodes[Tid]=2025`, and `valueCodes[ContentsCode]=Personer1`. The detailed result is documented in [SSB Integration](../integrations/ssb.md).
+
 Run quality checks:
 
 ```bash
@@ -148,4 +150,4 @@ The tests do not call Kartverket, SSB, OpenAI, or the application API.
 - The first ELT slice is day-based and intentionally small.
 - The loader supports PostgreSQL, but local tests use pure Python in-memory idempotency checks.
 - Scheduling is not implemented yet.
-- SSB import remains owned by the backend API in this phase.
+- SSB import can be run through the backend API or the Python ELT CLI; CI still uses mocked SSB behavior only.

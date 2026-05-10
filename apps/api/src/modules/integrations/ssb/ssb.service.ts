@@ -2,6 +2,7 @@ import { BadGatewayException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { appLogger } from '../../../shared/logging/app-logger';
+import { OperationalEventService } from '../../operations/operational-event.service';
 import { ImportMunicipalityPopulationInput } from './ssb.schemas';
 import {
   ImportMunicipalityPopulationResult,
@@ -18,7 +19,10 @@ const DEFAULT_TIMEOUT_MS = 5_000;
 
 @Injectable()
 export class SsbService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly operationalEventService: OperationalEventService,
+  ) {}
 
   async importMunicipalityPopulation(
     input: ImportMunicipalityPopulationInput,
@@ -134,6 +138,17 @@ export class SsbService {
         metadata: {
           year: input.year,
           municipalityCount: municipalityCodes.length,
+        },
+      });
+      await this.operationalEventService.record({
+        eventType: 'integration.ssb.failed',
+        severity: 'error',
+        source: 'ssb',
+        safeMessage,
+        metadata: {
+          year: input.year,
+          municipalityCount: municipalityCodes.length,
+          errorCode: isTimeoutError(error) ? 'timeout' : 'import_failed',
         },
       });
 

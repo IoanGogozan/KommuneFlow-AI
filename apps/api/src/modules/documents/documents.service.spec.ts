@@ -505,6 +505,9 @@ function createService(
       ({
         record: jest.fn().mockResolvedValue(undefined),
       } as unknown as AuditService),
+    {
+      record: jest.fn().mockResolvedValue(undefined),
+    } as never,
   );
 }
 

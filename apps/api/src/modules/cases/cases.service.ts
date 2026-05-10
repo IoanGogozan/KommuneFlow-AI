@@ -16,6 +16,7 @@ import {
   validateDocumentFile,
 } from '../documents/documents.service';
 import { KartverketAddressService } from '../integrations/kartverket-address/kartverket-address.service';
+import { OperationalEventService } from '../operations/operational-event.service';
 import {
   CreateInternalNoteInput,
   CreatePublicCaseInput,
@@ -29,6 +30,7 @@ export class CasesService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly kartverketAddressService: KartverketAddressService,
+    private readonly operationalEventService: OperationalEventService,
   ) {}
 
   async createPublicCase(
@@ -173,6 +175,7 @@ export class CasesService {
     });
 
     if (!caseRecord) {
+      await this.recordCrossTenantCaseAccessIfNeeded(caseId, user);
       throw new NotFoundException('Case not found.');
     }
 
@@ -248,6 +251,7 @@ export class CasesService {
     });
 
     if (!caseRecord) {
+      await this.recordCrossTenantCaseAccessIfNeeded(caseId, user);
       throw new NotFoundException('Case not found.');
     }
 
@@ -293,6 +297,7 @@ export class CasesService {
     });
 
     if (!caseRecord) {
+      await this.recordCrossTenantCaseAccessIfNeeded(caseId, user);
       throw new NotFoundException('Case not found.');
     }
 
@@ -484,6 +489,33 @@ export class CasesService {
     throw new ForbiddenException(
       'You do not have permission to update this case.',
     );
+  }
+
+  private async recordCrossTenantCaseAccessIfNeeded(
+    caseId: string,
+    user: CurrentUser,
+  ) {
+    const existingCase = await this.prisma.case.findUnique({
+      where: { id: caseId },
+      select: { tenantId: true },
+    });
+
+    if (!existingCase || existingCase.tenantId === user.tenantId) {
+      return;
+    }
+
+    await this.operationalEventService.record({
+      eventType: 'security.cross_tenant_access_attempt',
+      severity: 'critical',
+      source: 'cases',
+      tenantId: user.tenantId,
+      userId: user.id,
+      safeMessage: 'Cross-tenant case access attempt blocked.',
+      metadata: {
+        caseId,
+        targetTenantId: existingCase.tenantId,
+      },
+    });
   }
 }
 

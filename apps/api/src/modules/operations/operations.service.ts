@@ -21,6 +21,7 @@ export type OperationsMetricsSummary = {
   failedLoginsLast24h: number;
   permissionDeniedLast24h: number;
   crossTenantAccessAttemptsLast24h: number;
+  rateLimitBlocksLast24h: number;
   aiTriageRequestsLast24h: number;
   aiTriageFailuresLast24h: number;
   averageAiLatencyMsLast24h: number | null;
@@ -67,6 +68,7 @@ export class OperationsService {
       failedLoginsLast24h,
       permissionDeniedLast24h,
       crossTenantAccessAttemptsLast24h,
+      rateLimitBlocksLast24h,
       aiTriageRequestsLast24h,
       aiTriageFailuresLast24h,
       aiObservabilityEvents,
@@ -79,15 +81,21 @@ export class OperationsService {
       retentionCleanupLastRun,
       backupLastRun,
     ] = await Promise.all([
-      this.countAuditEvents(['api.error'], since),
-      this.countAuditEvents(['auth.login_failed'], since),
-      this.countAuditEvents(['security.permission_denied'], since),
-      this.countAuditEvents(['security.cross_tenant_access_attempt'], since),
-      this.countAuditEvents(
-        ['ai.triage_result_created', 'ai.triage_result_failed'],
+      this.countOperationalEvents(['api.error'], since),
+      this.countOperationalEvents(['auth.login_failed'], since),
+      this.countOperationalEvents(['security.permission_denied'], since),
+      this.countOperationalEvents(
+        ['security.cross_tenant_access_attempt'],
         since,
       ),
-      this.countAuditEvents(['ai.triage_result_failed'], since),
+      this.countOperationalEvents(
+        ['public.rate_limited', 'security.rate_limited'],
+        since,
+      ),
+      this.prisma.aIObservabilityEvent.count({
+        where: { createdAt: { gte: since } },
+      }),
+      this.countOperationalEvents(['ai.triage_failed'], since),
       this.prisma.aIObservabilityEvent.findMany({
         where: {
           createdAt: { gte: since },
@@ -96,7 +104,7 @@ export class OperationsService {
           durationMs: true,
         },
       }),
-      this.countAuditEvents(['document.upload_failed'], since),
+      this.countOperationalEvents(['document.upload_failed'], since),
       this.prisma.integrationHealthEvent.count({
         where: {
           integrationName: 'kartverket_address',
@@ -149,6 +157,7 @@ export class OperationsService {
       failedLoginsLast24h,
       permissionDeniedLast24h,
       crossTenantAccessAttemptsLast24h,
+      rateLimitBlocksLast24h,
       aiTriageRequestsLast24h,
       aiTriageFailuresLast24h,
       averageAiLatencyMsLast24h: averageDuration(aiObservabilityEvents),
@@ -169,10 +178,10 @@ export class OperationsService {
     };
   }
 
-  private countAuditEvents(actions: string[], since: Date) {
-    return this.prisma.auditEvent.count({
+  private countOperationalEvents(eventTypes: string[], since: Date) {
+    return this.prisma.operationalEvent.count({
       where: {
-        action: { in: actions },
+        eventType: { in: eventTypes },
         createdAt: { gte: since },
       },
     });

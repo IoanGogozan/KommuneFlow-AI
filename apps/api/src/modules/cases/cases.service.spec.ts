@@ -361,6 +361,7 @@ describe('CasesService', () => {
     const service = createService({
       case: {
         findFirst: jest.fn().mockResolvedValue(null),
+        findUnique: jest.fn().mockResolvedValue(null),
       },
     });
 
@@ -473,6 +474,7 @@ describe('CasesService', () => {
           capturedFindFirstInput = input;
           return Promise.resolve(null);
         }),
+        findUnique: jest.fn().mockResolvedValue(null),
       },
     });
 
@@ -498,6 +500,7 @@ describe('CasesService', () => {
           capturedFindFirstInput = input;
           return Promise.resolve(null);
         }),
+        findUnique: jest.fn().mockResolvedValue(null),
       },
     });
 
@@ -617,6 +620,9 @@ function createService(
           address: null,
         }),
       } as unknown as KartverketAddressService),
+    {
+      record: jest.fn().mockResolvedValue(undefined),
+    } as never,
   );
 }
 

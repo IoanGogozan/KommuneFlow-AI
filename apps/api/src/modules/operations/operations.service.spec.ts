@@ -4,14 +4,14 @@ import { OperationsService } from './operations.service';
 describe('OperationsService', () => {
   it('summarizes operational metrics from persisted events', async () => {
     const service = new OperationsService({
-      auditEvent: {
+      operationalEvent: {
         count: jest
           .fn()
           .mockResolvedValueOnce(2)
           .mockResolvedValueOnce(3)
           .mockResolvedValueOnce(4)
           .mockResolvedValueOnce(1)
-          .mockResolvedValueOnce(5)
+          .mockResolvedValueOnce(6)
           .mockResolvedValueOnce(1)
           .mockResolvedValueOnce(0),
       },
@@ -22,6 +22,7 @@ describe('OperationsService', () => {
           .mockResolvedValue([{ latencyMs: 100 }, { latencyMs: 200 }]),
       },
       aIObservabilityEvent: {
+        count: jest.fn().mockResolvedValue(5),
         findMany: jest
           .fn()
           .mockResolvedValue([{ durationMs: 1200 }, { durationMs: 1800 }]),
@@ -55,6 +56,7 @@ describe('OperationsService', () => {
       failedLoginsLast24h: 3,
       permissionDeniedLast24h: 4,
       crossTenantAccessAttemptsLast24h: 1,
+      rateLimitBlocksLast24h: 6,
       aiTriageRequestsLast24h: 5,
       aiTriageFailuresLast24h: 1,
       averageAiLatencyMsLast24h: 1500,

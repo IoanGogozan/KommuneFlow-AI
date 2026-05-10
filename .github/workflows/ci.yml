@@ -57,6 +57,21 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python ELT
+        working-directory: apps/etl
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Python ELT tests
+        working-directory: apps/etl
+        run: pytest -q
+
       - name: Prepare e2e database
         run: pnpm --filter @kommuneflow/api prisma migrate deploy
         env:

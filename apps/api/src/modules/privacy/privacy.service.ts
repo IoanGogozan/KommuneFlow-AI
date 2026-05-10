@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUser } from '../auth/current-user';
+import { OperationalEventService } from '../operations/operational-event.service';
 import {
   CitizenDataExportQuery,
   RetentionCleanupInput,
@@ -13,6 +14,7 @@ export class PrivacyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly operationalEventService: OperationalEventService,
   ) {}
 
   getStatus() {
@@ -159,6 +161,36 @@ export class PrivacyService {
       metadata: {
         candidates: result.candidates,
         deleted: result.deleted,
+      },
+    });
+    const maintenanceRun = await this.prisma.maintenanceRun.create({
+      data: {
+        type: 'retention_cleanup',
+        status: 'completed',
+        completedAt: new Date(),
+        safeMessage: input.confirm
+          ? 'Retention cleanup executed.'
+          : 'Retention cleanup dry run completed.',
+        metadataJson: {
+          mode: result.mode,
+          candidates: result.candidates,
+          deleted: result.deleted,
+        },
+      },
+      select: { id: true },
+    });
+    await this.operationalEventService.record({
+      eventType: 'maintenance.retention_cleanup',
+      severity: 'info',
+      source: 'privacy',
+      tenantId: user.tenantId,
+      userId: user.id,
+      safeMessage: input.confirm
+        ? 'Retention cleanup executed.'
+        : 'Retention cleanup dry run completed.',
+      metadata: {
+        maintenanceRunId: maintenanceRun.id,
+        mode: result.mode,
       },
     });
 

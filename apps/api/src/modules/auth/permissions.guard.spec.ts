@@ -7,6 +7,7 @@ describe('PermissionsGuard', () => {
   it('returns 403 when the user role lacks the required permission', () => {
     const guard = new PermissionsGuard(
       createReflector(['case:update:department']),
+      operationalEvents(),
     );
 
     expect(() => guard.canActivate(createContext(UserRole.auditor))).toThrow(
@@ -17,6 +18,7 @@ describe('PermissionsGuard', () => {
   it('allows a user role with the required permission', () => {
     const guard = new PermissionsGuard(
       createReflector(['case:update:department']),
+      operationalEvents(),
     );
 
     expect(guard.canActivate(createContext(UserRole.case_worker))).toBe(true);
@@ -27,6 +29,12 @@ function createReflector(requiredPermissions: string[]): Reflector {
   return {
     getAllAndOverride: jest.fn().mockReturnValue(requiredPermissions),
   } as unknown as Reflector;
+}
+
+function operationalEvents() {
+  return {
+    record: jest.fn().mockResolvedValue(undefined),
+  } as never;
 }
 
 function createContext(role: UserRole): ExecutionContext {

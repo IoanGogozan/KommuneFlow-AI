@@ -94,7 +94,7 @@ Example payload:
 ```json
 {
   "year": 2025,
-  "municipalityCodes": ["4203", "4204", "4205"]
+  "municipalityCodes": ["4203", "4202", "4204"]
 }
 ```
 
@@ -137,6 +137,43 @@ If SSB data is missing, analytics still works and reports `missing` enrichment s
 - Keep SSB failures safe and generic in API responses.
 - Store safe failure messages in import runs and integration health events.
 - Respect SSB rate limits and avoid frequent repeated imports.
+
+## Manual Live Verification
+
+The SSB query shape was manually verified against the live PxWebApi v2 endpoint on 2026-05-09. This check is intentionally manual and must not run in CI.
+
+Verification command:
+
+```bash
+cd apps/etl
+python - <<'PY'
+from kommuneflow_elt.ssb_import import fetch_population
+
+records = fetch_population(2025, ["4203", "4204", "4205"])
+for record in records:
+    print(f"{record.municipality_code}\t{record.municipality_name}\t{record.year}\t{record.value}")
+print(f"records={len(records)}")
+PY
+```
+
+Result:
+
+```txt
+4203    Arendal       2025    46568
+4204    Kristiansand  2025    118221
+4205    Lindesnes     2025    23768
+records=3
+```
+
+The request confirmed that:
+
+- table `07459` is reachable
+- `valueCodes[Region]` works with `K-<municipalityCode>` values
+- `valueCodes[Tid]=2025` returns 2025 population values
+- `valueCodes[ContentsCode]=Personer1` returns total population
+- the response can be parsed into municipality code, name, year, and population value
+
+The demo tenants use municipality codes `4203` Arendal, `4202` Grimstad, and `4204` Kristiansand. The live verification used `4205` as an additional known municipality to confirm multi-code response parsing.
 
 ## Current Limitations
 

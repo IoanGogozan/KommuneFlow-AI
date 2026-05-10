@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AIModule } from './modules/ai/ai.module';
@@ -11,9 +11,11 @@ import { DatabaseModule } from './database/database.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { KartverketAddressModule } from './modules/integrations/kartverket-address/kartverket-address.module';
 import { SsbModule } from './modules/integrations/ssb/ssb.module';
+import { OperationalEventsModule } from './modules/operations/operational-events.module';
 import { OperationsModule } from './modules/operations/operations.module';
 import { PrivacyModule } from './modules/privacy/privacy.module';
 import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
+import { OperationalThrottlerGuard } from './shared/guards/operational-throttler.guard';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
     DocumentsModule,
     KartverketAddressModule,
     SsbModule,
+    OperationalEventsModule,
     AIModule,
     AnalyticsModule,
     OperationsModule,
@@ -43,7 +46,7 @@ import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
     },
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: OperationalThrottlerGuard,
     },
   ],
 })

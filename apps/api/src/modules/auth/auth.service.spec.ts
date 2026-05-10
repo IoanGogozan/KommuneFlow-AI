@@ -25,7 +25,7 @@ describe('AuthService', () => {
     const jwtService = {
       signAsync: jest.fn().mockResolvedValue('access-token'),
     } as unknown as JwtService;
-    const service = new AuthService(prisma, jwtService);
+    const service = new AuthService(prisma, jwtService, operationalEvents());
 
     await expect(
       service.login({
@@ -105,5 +105,11 @@ function createService(user: unknown) {
     signAsync: jest.fn().mockResolvedValue('access-token'),
   } as unknown as JwtService;
 
-  return new AuthService(prisma, jwtService);
+  return new AuthService(prisma, jwtService, operationalEvents());
+}
+
+function operationalEvents() {
+  return {
+    record: jest.fn().mockResolvedValue(undefined),
+  } as never;
 }
