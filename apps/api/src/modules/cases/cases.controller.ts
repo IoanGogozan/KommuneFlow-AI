@@ -24,6 +24,7 @@ import {
   createInternalNoteSchema,
   createPublicCaseSchema,
   listCasesQuerySchema,
+  publicCaseStatusQuerySchema,
   updateCaseStatusSchema,
 } from './cases.schemas';
 
@@ -48,6 +49,26 @@ export class PublicCasesController {
     } catch (error) {
       if (error instanceof ZodError || error instanceof SyntaxError) {
         throw new BadRequestException('Invalid case intake payload.');
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('status')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  async findPublicStatus(
+    @Param('tenantSlug') tenantSlug: string,
+    @Query() query: unknown,
+  ) {
+    try {
+      return await this.casesService.findPublicStatus(
+        tenantSlug,
+        publicCaseStatusQuerySchema.parse(query),
+      );
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new BadRequestException('Invalid case status lookup query.');
       }
 
       throw error;

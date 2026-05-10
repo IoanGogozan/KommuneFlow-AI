@@ -7,6 +7,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { CurrentUser } from '../auth/current-user';
 import { AuditService } from '../audit/audit.service';
 import { KartverketAddressService } from '../integrations/kartverket-address/kartverket-address.service';
+import { NotificationService } from '../notifications/notification.service';
 import { CasesService } from './cases.service';
 
 describe('CasesService', () => {
@@ -84,6 +85,74 @@ describe('CasesService', () => {
         action: 'case.created_by_citizen',
         entityType: 'case',
         entityId: 'case_1',
+      }),
+    );
+  });
+
+  it('keeps public intake successful if confirmation email logging fails', async () => {
+    const operationalRecordMock = jest.fn().mockResolvedValue(undefined);
+    const service = createService(
+      {
+        tenant: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'tenant_1',
+            slug: 'arendal',
+          }),
+        },
+        citizenProfile: {
+          create: jest.fn().mockResolvedValue({
+            id: 'citizen_1',
+            email: 'citizen@example.local',
+          }),
+        },
+        case: {
+          create: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            caseReference: 'KF-2026-ABCD1234',
+            title: 'Road damage report',
+            status: CaseStatus.new,
+            createdAt: new Date('2026-05-09T07:00:00.000Z'),
+          }),
+        },
+      },
+      undefined,
+      undefined,
+      {
+        logCaseConfirmation: jest
+          .fn()
+          .mockRejectedValue(new Error('email log failed')),
+      } as unknown as NotificationService,
+      {
+        record: operationalRecordMock,
+      },
+    );
+
+    await expect(
+      service.createPublicCase('arendal', {
+        citizen: {
+          name: 'Demo Citizen',
+          email: 'Citizen@Example.Local',
+          phone: '',
+          address: '',
+        },
+        case: {
+          title: 'Road damage report',
+          description:
+            'There is a damaged road surface near the school entrance.',
+          sourceLanguage: 'en',
+        },
+        privacyAccepted: true,
+      }),
+    ).resolves.toMatchObject({
+      caseId: 'case_1',
+      status: CaseStatus.new,
+    });
+    expect(operationalRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'notification.email_log_failed',
+        severity: 'warning',
+        source: 'notifications',
+        safeMessage: 'Confirmation email log failed.',
       }),
     );
   });
@@ -333,6 +402,160 @@ describe('CasesService', () => {
     });
   });
 
+  it('returns a public reference and access code for citizen status lookup', async () => {
+    const logCaseConfirmationMock = jest.fn().mockResolvedValue({
+      id: 'email_1',
+    });
+    const service = createService(
+      {
+        tenant: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'tenant_1',
+            slug: 'arendal',
+          }),
+        },
+        citizenProfile: {
+          create: jest.fn().mockResolvedValue({
+            id: 'citizen_1',
+            email: 'citizen@example.local',
+          }),
+        },
+        case: {
+          create: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            caseReference: 'KF-2026-ABCD1234',
+            title: 'Road damage report',
+            status: CaseStatus.new,
+            createdAt: new Date('2026-05-09T07:00:00.000Z'),
+          }),
+        },
+      },
+      undefined,
+      undefined,
+      {
+        logCaseConfirmation: logCaseConfirmationMock,
+      } as unknown as NotificationService,
+    );
+
+    const result = await service.createPublicCase('arendal', {
+      citizen: {
+        name: 'Demo Citizen',
+        email: 'citizen@example.local',
+        phone: '',
+        address: '',
+      },
+      case: {
+        title: 'Road damage report',
+        description:
+          'There is a damaged road surface near the school entrance.',
+        sourceLanguage: 'en',
+      },
+      privacyAccepted: true,
+    });
+
+    expect(result).toMatchObject({
+      caseId: 'case_1',
+      caseReference: 'KF-2026-ABCD1234',
+      statusAccessCode: expect.any(String) as string,
+      status: CaseStatus.new,
+    });
+    expect(result.statusAccessCode).toHaveLength(8);
+    expect(logCaseConfirmationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        caseId: 'case_1',
+        caseReference: 'KF-2026-ABCD1234',
+        recipientEmail: 'citizen@example.local',
+        statusAccessCode: expect.any(String) as string,
+      }),
+    );
+  });
+
+  it('returns only safe fields for a valid public status lookup', async () => {
+    let capturedFindFirstInput: unknown;
+    const service = createService({
+      case: {
+        findFirst: jest.fn((input: unknown) => {
+          capturedFindFirstInput = input;
+          return Promise.resolve({
+            caseReference: 'KF-2026-ABCD1234',
+            title: 'Road damage report',
+            status: CaseStatus.in_progress,
+            createdAt: new Date('2026-05-09T07:00:00.000Z'),
+            updatedAt: new Date('2026-05-09T08:00:00.000Z'),
+            assignedDepartment: { name: 'Technical Department' },
+          });
+        }),
+      },
+    });
+
+    await expect(
+      service.findPublicStatus('arendal', {
+        caseReference: 'kf-2026-abcd1234',
+        statusAccessCode: 'abc123xyz',
+      }),
+    ).resolves.toEqual({
+      caseReference: 'KF-2026-ABCD1234',
+      title: 'Road damage report',
+      status: CaseStatus.in_progress,
+      createdAt: new Date('2026-05-09T07:00:00.000Z'),
+      updatedAt: new Date('2026-05-09T08:00:00.000Z'),
+      assignedDepartmentName: 'Technical Department',
+    });
+    expect(capturedFindFirstInput).toMatchObject({
+      where: {
+        tenant: { slug: 'arendal' },
+        caseReference: 'KF-2026-ABCD1234',
+      },
+    });
+    expect(JSON.stringify(capturedFindFirstInput)).not.toContain(
+      'internalNotes',
+    );
+    expect(JSON.stringify(capturedFindFirstInput)).not.toContain(
+      'rawResponseJson',
+    );
+    expect(JSON.stringify(capturedFindFirstInput)).not.toContain('documents');
+  });
+
+  it('rejects invalid public status lookup secrets and guessed references', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+    });
+
+    await expect(
+      service.findPublicStatus('arendal', {
+        caseReference: 'KF-2026-GUESSED',
+        statusAccessCode: 'wrong-code',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects public status lookup when the reference belongs to another tenant', async () => {
+    let capturedFindFirstInput: unknown;
+    const service = createService({
+      case: {
+        findFirst: jest.fn((input: unknown) => {
+          capturedFindFirstInput = input;
+          return Promise.resolve(null);
+        }),
+      },
+    });
+
+    await expect(
+      service.findPublicStatus('grimstad', {
+        caseReference: 'KF-2026-ABCD1234',
+        statusAccessCode: 'abc123xyz',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(capturedFindFirstInput).toMatchObject({
+      where: {
+        tenant: { slug: 'grimstad' },
+        caseReference: 'KF-2026-ABCD1234',
+      },
+    });
+  });
+
   it('returns not found when creating a public case for an unknown tenant', async () => {
     const service = createService({
       tenant: {
@@ -530,7 +753,11 @@ describe('CasesService', () => {
             id: 'case_1',
             tenantId: 'tenant_1',
             status: CaseStatus.new,
+            caseReference: 'KF-2026-ABCD1234',
             assignedDepartmentId: 'department_1',
+            citizenProfile: {
+              email: 'citizen@example.local',
+            },
           }),
           update: jest.fn().mockResolvedValue({
             id: 'case_1',
@@ -553,6 +780,101 @@ describe('CasesService', () => {
       expect.objectContaining({
         action: 'case.status_updated',
         tenantId: 'tenant_1',
+      }),
+    );
+  });
+
+  it('logs status-change email when a case status changes', async () => {
+    const logStatusChangedMock = jest.fn().mockResolvedValue({ id: 'email_2' });
+    const service = createService(
+      {
+        case: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            tenantId: 'tenant_1',
+            status: CaseStatus.new,
+            caseReference: 'KF-2026-ABCD1234',
+            assignedDepartmentId: 'department_1',
+            citizenProfile: {
+              email: 'citizen@example.local',
+            },
+          }),
+          update: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            status: CaseStatus.in_progress,
+          }),
+        },
+      },
+      undefined,
+      undefined,
+      {
+        logCaseConfirmation: jest.fn(),
+        logStatusChanged: logStatusChangedMock,
+      } as unknown as NotificationService,
+    );
+
+    await service.updateStatus('case_1', caseWorker(), {
+      status: CaseStatus.in_progress,
+    });
+
+    expect(logStatusChangedMock).toHaveBeenCalledWith({
+      tenantId: 'tenant_1',
+      caseId: 'case_1',
+      userId: 'user_1',
+      recipientEmail: 'citizen@example.local',
+      caseReference: 'KF-2026-ABCD1234',
+      previousStatus: CaseStatus.new,
+      nextStatus: CaseStatus.in_progress,
+    });
+  });
+
+  it('keeps status updates successful if status-change email logging fails', async () => {
+    const operationalRecordMock = jest.fn().mockResolvedValue(undefined);
+    const service = createService(
+      {
+        case: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            tenantId: 'tenant_1',
+            status: CaseStatus.new,
+            caseReference: 'KF-2026-ABCD1234',
+            assignedDepartmentId: 'department_1',
+            citizenProfile: {
+              email: 'citizen@example.local',
+            },
+          }),
+          update: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            status: CaseStatus.in_progress,
+          }),
+        },
+      },
+      undefined,
+      undefined,
+      {
+        logCaseConfirmation: jest.fn(),
+        logStatusChanged: jest
+          .fn()
+          .mockRejectedValue(new Error('email log failed')),
+      } as unknown as NotificationService,
+      {
+        record: operationalRecordMock,
+      },
+    );
+
+    await expect(
+      service.updateStatus('case_1', caseWorker(), {
+        status: CaseStatus.in_progress,
+      }),
+    ).resolves.toMatchObject({
+      id: 'case_1',
+      status: CaseStatus.in_progress,
+    });
+    expect(operationalRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'notification.email_log_failed',
+        userId: 'user_1',
+        safeMessage: 'Status-change email log failed.',
       }),
     );
   });
@@ -606,6 +928,8 @@ function createService(
   prismaShape: Record<string, unknown>,
   auditService?: AuditService,
   kartverketAddressService?: KartverketAddressService,
+  notificationService?: NotificationService,
+  operationalEventService?: { record: jest.Mock },
 ) {
   return new CasesService(
     prismaShape as unknown as PrismaService,
@@ -620,9 +944,14 @@ function createService(
           address: null,
         }),
       } as unknown as KartverketAddressService),
-    {
+    (operationalEventService ?? {
       record: jest.fn().mockResolvedValue(undefined),
-    } as never,
+    }) as never,
+    notificationService ??
+      ({
+        logCaseConfirmation: jest.fn().mockResolvedValue({ id: 'email_1' }),
+        logStatusChanged: jest.fn().mockResolvedValue({ id: 'email_2' }),
+      } as unknown as NotificationService),
   );
 }
 

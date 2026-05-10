@@ -32,6 +32,17 @@ export type IntakeDictionary = {
   successTitle: string;
   successText: string;
   caseIdLabel: string;
+  caseReferenceLabel: string;
+  statusAccessCodeLabel: string;
+  statusLookupTitle: string;
+  statusLookupText: string;
+  statusLookupSubmit: string;
+  statusLookupLoading: string;
+  statusLookupError: string;
+  statusLookupResultTitle: string;
+  statusLabel: string;
+  updatedLabel: string;
+  departmentLabel: string;
   newCase: string;
   error: string;
 };
@@ -69,6 +80,18 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     successTitle: "Henvendelsen er registrert",
     successText: "Kommunen har mottatt saken og vil behandle den videre.",
     caseIdLabel: "Saks-ID",
+    caseReferenceLabel: "Saksreferanse",
+    statusAccessCodeLabel: "Tilgangskode",
+    statusLookupTitle: "Sjekk saksstatus",
+    statusLookupText:
+      "Bruk saksreferansen og tilgangskoden du fikk da saken ble sendt inn.",
+    statusLookupSubmit: "Sjekk status",
+    statusLookupLoading: "Sjekker...",
+    statusLookupError: "Fant ikke saken med denne kombinasjonen.",
+    statusLookupResultTitle: "Status for saken",
+    statusLabel: "Status",
+    updatedLabel: "Sist oppdatert",
+    departmentLabel: "Avdeling",
     newCase: "Ny henvendelse",
     error: "Kunne ikke sende inn henvendelsen. Prov igjen.",
   },
@@ -104,6 +127,18 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     successTitle: "Request registered",
     successText: "The municipality has received the case for processing.",
     caseIdLabel: "Case ID",
+    caseReferenceLabel: "Case reference",
+    statusAccessCodeLabel: "Access code",
+    statusLookupTitle: "Check case status",
+    statusLookupText:
+      "Use the case reference and access code you received after submission.",
+    statusLookupSubmit: "Check status",
+    statusLookupLoading: "Checking...",
+    statusLookupError: "No case was found with that combination.",
+    statusLookupResultTitle: "Case status",
+    statusLabel: "Status",
+    updatedLabel: "Last updated",
+    departmentLabel: "Department",
     newCase: "New request",
     error: "Could not submit the request. Please try again.",
   },

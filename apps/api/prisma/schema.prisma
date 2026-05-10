@@ -105,6 +105,7 @@ model Tenant {
   users                      User[]
   citizenProfiles            CitizenProfile[]
   cases                      Case[]
+  emailLogs                  EmailLog[]
   auditEvents                AuditEvent[]
   internalNotes              InternalNote[]
   documents                  CaseDocument[]
@@ -188,6 +189,8 @@ model Case {
   citizenProfileId     String
   assignedDepartmentId String?
   assignedUserId       String?
+  caseReference        String           @unique
+  statusAccessCodeHash String
   title                String
   description          String
   category             CaseCategory     @default(unknown)
@@ -206,11 +209,35 @@ model Case {
   aiTriageResults      AITriageResult[]
   aiReviews            AIReview[]
   addresses            CaseAddress[]
+  emailLogs            EmailLog[]
 
   @@index([tenantId])
+  @@index([tenantId, caseReference])
   @@index([tenantId, assignedDepartmentId])
   @@index([tenantId, status])
   @@map("cases")
+}
+
+model EmailLog {
+  id             String    @id @default(cuid())
+  tenantId       String
+  caseId         String?
+  recipientEmail String
+  subject        String
+  bodyText       String
+  template       String
+  provider       String    @default("mock")
+  status         String    @default("logged")
+  metadataJson   Json
+  sentAt         DateTime?
+  createdAt      DateTime  @default(now())
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  case           Case?     @relation(fields: [caseId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, caseId])
+  @@index([recipientEmail, createdAt])
+  @@map("email_logs")
 }
 
 model CaseAddress {

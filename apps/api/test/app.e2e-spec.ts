@@ -34,6 +34,8 @@ type ReadinessResponseBody = {
 
 type PublicCaseResponseBody = {
   caseId: string;
+  caseReference: string;
+  statusAccessCode: string;
   status: string;
   documentCount: number;
 };
@@ -340,6 +342,35 @@ describe('AppController (e2e)', () => {
     warnSpy.mockRestore();
   });
 
+  it('does not include query-string secrets in error paths or logs', async () => {
+    const requestId = 'req_safe-path-12345678';
+    const warnSpy = jest.spyOn(appLogger, 'warn').mockImplementation();
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/public/tenants/arendal/cases/status')
+      .query({
+        caseReference: 'KF-2026-SECRET',
+        statusAccessCode: 'SECRET-CODE-123',
+      })
+      .set('X-Request-Id', requestId)
+      .expect(404);
+    const body = response.body as unknown as ErrorResponseBody;
+
+    expect(body.error.requestId).toBe(requestId);
+    expect(body.error.path).toBe('/api/v1/public/tenants/arendal/cases/status');
+    expect(JSON.stringify(body)).not.toContain('SECRET-CODE-123');
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'http_error',
+        requestId,
+        path: '/api/v1/public/tenants/arendal/cases/status',
+      }),
+    );
+    expect(JSON.stringify(warnSpy.mock.calls)).not.toContain('SECRET-CODE-123');
+
+    warnSpy.mockRestore();
+  });
+
   it('/api/v1/health (GET)', async () => {
     const response = await request(app.getHttpServer())
       .get('/api/v1/health')
@@ -443,7 +474,22 @@ describe('AppController (e2e)', () => {
       publicCaseResponse.body as unknown as PublicCaseResponseBody;
 
     expect(publicCaseBody.status).toBe('new');
+    expect(publicCaseBody.caseReference).toEqual(expect.stringMatching(/^KF-/));
+    expect(publicCaseBody.statusAccessCode).toEqual(expect.any(String));
     expect(publicCaseBody.documentCount).toBe(1);
+    await expect(
+      prisma.emailLog.findFirstOrThrow({
+        where: {
+          tenantId: tenant.id,
+          caseId: publicCaseBody.caseId,
+          template: 'case_confirmation',
+        },
+      }),
+    ).resolves.toMatchObject({
+      provider: 'mock',
+      status: 'logged',
+      recipientEmail: `citizen.${suffix}@example.local`,
+    });
 
     await prisma.case.update({
       where: { id: publicCaseBody.caseId },
@@ -523,6 +569,43 @@ describe('AppController (e2e)', () => {
       .set('Origin', allowedOrigin)
       .send({ status: 'waiting_for_citizen' })
       .expect(200);
+
+    const publicStatusResponse = await request(app.getHttpServer())
+      .get(`/api/v1/public/tenants/${tenantSlug}/cases/status`)
+      .query({
+        caseReference: publicCaseBody.caseReference.toLowerCase(),
+        statusAccessCode: publicCaseBody.statusAccessCode.toLowerCase(),
+      })
+      .expect(200);
+
+    expect(publicStatusResponse.body).toMatchObject({
+      caseReference: publicCaseBody.caseReference,
+      title: 'Water leak near school entrance',
+      status: 'waiting_for_citizen',
+      assignedDepartmentName: 'Technical Department',
+    });
+    expect(JSON.stringify(publicStatusResponse.body)).not.toContain(
+      `citizen.${suffix}@example.local`,
+    );
+    expect(JSON.stringify(publicStatusResponse.body)).not.toContain(
+      'E2E Citizen',
+    );
+    expect(JSON.stringify(publicStatusResponse.body)).not.toContain(
+      'Approved in e2e business flow.',
+    );
+    await expect(
+      prisma.emailLog.findFirstOrThrow({
+        where: {
+          tenantId: tenant.id,
+          caseId: publicCaseBody.caseId,
+          template: 'case_status_changed',
+        },
+      }),
+    ).resolves.toMatchObject({
+      provider: 'mock',
+      status: 'logged',
+      recipientEmail: `citizen.${suffix}@example.local`,
+    });
 
     await agent
       .post('/api/v1/analytics/aggregate')

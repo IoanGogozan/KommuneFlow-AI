@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CaseStatus, Prisma, UserRole } from '@prisma/client';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, extname } from 'node:path';
 import { PrismaService } from '../../database/prisma.service';
@@ -17,10 +17,12 @@ import {
 } from '../documents/documents.service';
 import { KartverketAddressService } from '../integrations/kartverket-address/kartverket-address.service';
 import { OperationalEventService } from '../operations/operational-event.service';
+import { NotificationService } from '../notifications/notification.service';
 import {
   CreateInternalNoteInput,
   CreatePublicCaseInput,
   ListCasesQuery,
+  PublicCaseStatusQuery,
   UpdateCaseStatusInput,
 } from './cases.schemas';
 
@@ -31,6 +33,7 @@ export class CasesService {
     private readonly auditService: AuditService,
     private readonly kartverketAddressService: KartverketAddressService,
     private readonly operationalEventService: OperationalEventService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async createPublicCase(
@@ -59,10 +62,14 @@ export class CasesService {
       },
     });
 
+    const caseReference = generateCaseReference();
+    const statusAccessCode = generateStatusAccessCode();
     const caseRecord = await this.prisma.case.create({
       data: {
         tenantId: tenant.id,
         citizenProfileId: citizenProfile.id,
+        caseReference,
+        statusAccessCodeHash: hashStatusAccessCode(statusAccessCode),
         title: input.case.title,
         description: input.case.description,
         sourceLanguage: input.case.sourceLanguage,
@@ -72,6 +79,7 @@ export class CasesService {
       },
       select: {
         id: true,
+        caseReference: true,
         title: true,
         status: true,
         createdAt: true,
@@ -107,11 +115,57 @@ export class CasesService {
       });
     }
 
+    await this.logCaseConfirmationSafely({
+      tenantId: tenant.id,
+      caseId: caseRecord.id,
+      recipientEmail: citizenProfile.email,
+      caseReference: caseRecord.caseReference,
+      statusAccessCode,
+      title: caseRecord.title,
+    });
+
     return {
       caseId: caseRecord.id,
+      caseReference: caseRecord.caseReference,
+      statusAccessCode,
       status: caseRecord.status,
       createdAt: caseRecord.createdAt,
       documentCount: files.length,
+    };
+  }
+
+  async findPublicStatus(tenantSlug: string, query: PublicCaseStatusQuery) {
+    const caseRecord = await this.prisma.case.findFirst({
+      where: {
+        tenant: { slug: tenantSlug },
+        caseReference: query.caseReference.trim().toUpperCase(),
+        statusAccessCodeHash: hashStatusAccessCode(query.statusAccessCode),
+      },
+      select: {
+        caseReference: true,
+        title: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        assignedDepartment: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!caseRecord) {
+      throw new NotFoundException('Case status not found.');
+    }
+
+    return {
+      caseReference: caseRecord.caseReference,
+      title: caseRecord.title,
+      status: caseRecord.status,
+      createdAt: caseRecord.createdAt,
+      updatedAt: caseRecord.updatedAt,
+      assignedDepartmentName: caseRecord.assignedDepartment?.name ?? null,
     };
   }
 
@@ -246,7 +300,13 @@ export class CasesService {
         id: true,
         tenantId: true,
         status: true,
+        caseReference: true,
         assignedDepartmentId: true,
+        citizenProfile: {
+          select: {
+            email: true,
+          },
+        },
       },
     });
 
@@ -275,6 +335,16 @@ export class CasesService {
         previousStatus: caseRecord.status,
         nextStatus: input.status,
       },
+    });
+
+    await this.logStatusChangedSafely({
+      tenantId: user.tenantId,
+      caseId: caseRecord.id,
+      userId: user.id,
+      recipientEmail: caseRecord.citizenProfile.email,
+      caseReference: caseRecord.caseReference,
+      previousStatus: caseRecord.status,
+      nextStatus: input.status,
     });
 
     return updatedCase;
@@ -517,8 +587,76 @@ export class CasesService {
       },
     });
   }
+
+  private async logCaseConfirmationSafely(input: {
+    tenantId: string;
+    caseId: string;
+    recipientEmail: string;
+    caseReference: string;
+    statusAccessCode: string;
+    title: string;
+  }) {
+    try {
+      await this.notificationService.logCaseConfirmation(input);
+    } catch {
+      await this.operationalEventService.record({
+        eventType: 'notification.email_log_failed',
+        severity: 'warning',
+        source: 'notifications',
+        tenantId: input.tenantId,
+        safeMessage: 'Confirmation email log failed.',
+        metadata: {
+          caseId: input.caseId,
+          template: 'case_confirmation',
+        },
+      });
+    }
+  }
+
+  private async logStatusChangedSafely(input: {
+    tenantId: string;
+    caseId: string;
+    userId: string;
+    recipientEmail: string;
+    caseReference: string;
+    previousStatus: CaseStatus;
+    nextStatus: CaseStatus;
+  }) {
+    try {
+      await this.notificationService.logStatusChanged(input);
+    } catch {
+      await this.operationalEventService.record({
+        eventType: 'notification.email_log_failed',
+        severity: 'warning',
+        source: 'notifications',
+        tenantId: input.tenantId,
+        userId: input.userId,
+        safeMessage: 'Status-change email log failed.',
+        metadata: {
+          caseId: input.caseId,
+          template: 'case_status_changed',
+        },
+      });
+    }
+  }
 }
 
 function emptyToNull(value: string | undefined): string | null {
   return value && value.length > 0 ? value : null;
+}
+
+function generateCaseReference() {
+  return `KF-${new Date().getUTCFullYear()}-${randomBytes(6)
+    .toString('hex')
+    .toUpperCase()}`;
+}
+
+function generateStatusAccessCode() {
+  return randomBytes(6).toString('base64url').toUpperCase();
+}
+
+function hashStatusAccessCode(statusAccessCode: string) {
+  return createHash('sha256')
+    .update(statusAccessCode.trim().toUpperCase())
+    .digest('hex');
 }

@@ -57,7 +57,13 @@ export const createInternalNoteSchema = z.object({
   body: z.string().trim().min(2).max(2000),
 });
 
+export const publicCaseStatusQuerySchema = z.object({
+  caseReference: z.string().trim().min(6).max(40),
+  statusAccessCode: z.string().trim().min(8).max(40),
+});
+
 export type UpdateCaseStatusInput = z.infer<typeof updateCaseStatusSchema>;
 export type CreatePublicCaseInput = z.infer<typeof createPublicCaseSchema>;
 export type ListCasesQuery = z.infer<typeof listCasesQuerySchema>;
 export type CreateInternalNoteInput = z.infer<typeof createInternalNoteSchema>;
+export type PublicCaseStatusQuery = z.infer<typeof publicCaseStatusQuerySchema>;

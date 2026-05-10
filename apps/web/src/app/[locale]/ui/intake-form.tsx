@@ -11,8 +11,19 @@ type IntakeFormProps = {
 
 type SubmissionResult = {
   caseId: string;
+  caseReference: string;
+  statusAccessCode: string;
   status: string;
   createdAt: string;
+};
+
+type PublicStatusResult = {
+  caseReference: string;
+  title: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  assignedDepartmentName: string | null;
 };
 
 type AddressSearchResult = {
@@ -28,8 +39,13 @@ type AddressSearchResult = {
 
 export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusLookupError, setStatusLookupError] = useState<string | null>(null);
+  const [statusResult, setStatusResult] = useState<PublicStatusResult | null>(
+    null,
+  );
   const [address, setAddress] = useState("");
   const [addressSuggestion, setAddressSuggestion] =
     useState<AddressSearchResult["results"][number] | null>(null);
@@ -139,6 +155,35 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
     }
   }
 
+  async function handleStatusLookup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatusLookupError(null);
+    setStatusResult(null);
+    setIsCheckingStatus(true);
+
+    const formData = new FormData(event.currentTarget);
+    const caseReference = String(formData.get("caseReference") ?? "");
+    const statusAccessCode = String(formData.get("statusAccessCode") ?? "");
+    const query = new URLSearchParams({ caseReference, statusAccessCode });
+
+    try {
+      const response = await fetch(
+        `${getApiBaseUrl()}/public/tenants/arendal/cases/status?${query.toString()}`,
+      );
+
+      if (!response.ok) {
+        setStatusLookupError(dictionary.statusLookupError);
+        return;
+      }
+
+      setStatusResult((await response.json()) as PublicStatusResult);
+    } catch {
+      setStatusLookupError(dictionary.statusLookupError);
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  }
+
   if (result) {
     return (
       <section className="rounded-lg border border-emerald-200 bg-white p-6 shadow-sm">
@@ -148,10 +193,16 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
         <p className="mt-3 text-slate-600">{dictionary.successText}</p>
         <dl className="mt-6 rounded-md bg-slate-50 p-4">
           <dt className="text-sm font-medium text-slate-500">
-            {dictionary.caseIdLabel}
+            {dictionary.caseReferenceLabel}
           </dt>
           <dd className="mt-1 break-all font-mono text-sm text-slate-950">
-            {result.caseId}
+            {result.caseReference}
+          </dd>
+          <dt className="mt-4 text-sm font-medium text-slate-500">
+            {dictionary.statusAccessCodeLabel}
+          </dt>
+          <dd className="mt-1 break-all font-mono text-sm text-slate-950">
+            {result.statusAccessCode}
           </dd>
         </dl>
         <button
@@ -166,11 +217,12 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
-    >
-      <div className="mb-5 rounded-md border border-slate-200 bg-slate-50 p-4">
+    <div className="grid gap-5">
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+      >
+        <div className="mb-5 rounded-md border border-slate-200 bg-slate-50 p-4">
         <label className="text-sm font-medium text-slate-700">
           {dictionary.tenantLabel}
         </label>
@@ -285,14 +337,79 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
 
       {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="mt-6 w-full rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="mt-6 w-full rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          {isSubmitting ? dictionary.submitting : dictionary.submit}
+        </button>
+      </form>
+
+      <form
+        onSubmit={handleStatusLookup}
+        className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
       >
-        {isSubmitting ? dictionary.submitting : dictionary.submit}
-      </button>
-    </form>
+        <h2 className="text-xl font-semibold text-slate-950">
+          {dictionary.statusLookupTitle}
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          {dictionary.statusLookupText}
+        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <Field
+            label={dictionary.caseReferenceLabel}
+            name="caseReference"
+            required
+          />
+          <Field
+            label={dictionary.statusAccessCodeLabel}
+            name="statusAccessCode"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={isCheckingStatus}
+          className="mt-5 rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          {isCheckingStatus
+            ? dictionary.statusLookupLoading
+            : dictionary.statusLookupSubmit}
+        </button>
+        {statusLookupError ? (
+          <p className="mt-4 text-sm text-red-700">{statusLookupError}</p>
+        ) : null}
+        {statusResult ? (
+          <dl className="mt-5 grid gap-3 rounded-md bg-slate-50 p-4 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-500">{dictionary.statusLabel}</dt>
+              <dd className="font-medium text-slate-950">
+                {statusResult.status}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-500">{dictionary.caseTitleLabel}</dt>
+              <dd className="text-right font-medium text-slate-950">
+                {statusResult.title}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-500">{dictionary.departmentLabel}</dt>
+              <dd className="font-medium text-slate-950">
+                {statusResult.assignedDepartmentName ?? "-"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-500">{dictionary.updatedLabel}</dt>
+              <dd className="font-medium text-slate-950">
+                {new Date(statusResult.updatedAt).toLocaleString()}
+              </dd>
+            </div>
+          </dl>
+        ) : null}
+      </form>
+    </div>
   );
 }
 
