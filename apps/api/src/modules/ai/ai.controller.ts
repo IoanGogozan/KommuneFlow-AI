@@ -62,3 +62,15 @@ export class AIController {
     }
   }
 }
+
+@Controller('internal/ai/diagnostics')
+@UseGuards(AuthGuard, PermissionsGuard)
+export class AIDiagnosticsController {
+  constructor(private readonly aiService: AIService) {}
+
+  @Get()
+  @RequirePermissions('ai:diagnostics:read')
+  getProviderDiagnostics() {
+    return this.aiService.getProviderDiagnostics();
+  }
+}

@@ -33,4 +33,16 @@ describe('roleHasPermission', () => {
       false,
     );
   });
+
+  it('allows only super admins to read AI diagnostics', () => {
+    expect(roleHasPermission(UserRole.super_admin, 'ai:diagnostics:read')).toBe(
+      true,
+    );
+    expect(
+      roleHasPermission(UserRole.department_admin, 'ai:diagnostics:read'),
+    ).toBe(false);
+    expect(roleHasPermission(UserRole.auditor, 'ai:diagnostics:read')).toBe(
+      false,
+    );
+  });
 });

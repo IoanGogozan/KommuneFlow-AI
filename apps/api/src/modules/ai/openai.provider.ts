@@ -28,8 +28,8 @@ type OpenAIResponse = {
   }>;
 };
 
-const DEFAULT_TIMEOUT_MS = 15_000;
-const MAX_ATTEMPTS = 2;
+export const OPENAI_DEFAULT_TIMEOUT_MS = 15_000;
+export const OPENAI_MAX_ATTEMPTS = 2;
 
 @Injectable()
 export class OpenAIProvider implements AIProvider {
@@ -43,6 +43,14 @@ export class OpenAIProvider implements AIProvider {
         'OPENAI_API_KEY is not configured.',
         'provider_error',
         'AI provider is not configured.',
+      );
+    }
+
+    if (process.env.CI === 'true') {
+      throw new AIProviderError(
+        'OpenAI calls are disabled in CI.',
+        'provider_error',
+        'Real OpenAI calls are disabled in CI.',
       );
     }
 
@@ -94,7 +102,7 @@ async function fetchWithRetry(input: {
 }) {
   let lastError: unknown;
 
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+  for (let attempt = 1; attempt <= OPENAI_MAX_ATTEMPTS; attempt += 1) {
     try {
       const response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
@@ -123,16 +131,19 @@ async function fetchWithRetry(input: {
             },
           },
         }),
-        signal: AbortSignal.timeout(getTimeoutMs()),
+        signal: AbortSignal.timeout(getOpenAITimeoutMs()),
       });
 
-      if (!isRetryableStatus(response.status) || attempt === MAX_ATTEMPTS) {
+      if (
+        !isRetryableStatus(response.status) ||
+        attempt === OPENAI_MAX_ATTEMPTS
+      ) {
         return response;
       }
     } catch (error) {
       lastError = error;
 
-      if (!isAbortError(error) || attempt === MAX_ATTEMPTS) {
+      if (!isAbortError(error) || attempt === OPENAI_MAX_ATTEMPTS) {
         break;
       }
     }
@@ -210,7 +221,9 @@ function isAbortError(error: unknown) {
   );
 }
 
-function getTimeoutMs() {
+export function getOpenAITimeoutMs() {
   const parsed = Number(process.env.OPENAI_TIMEOUT_MS);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TIMEOUT_MS;
+  return Number.isFinite(parsed) && parsed > 0
+    ? parsed
+    : OPENAI_DEFAULT_TIMEOUT_MS;
 }

@@ -18,6 +18,7 @@ import {
   safeAIProviderFailureReason,
 } from './ai-provider-errors';
 import { caseTriagePromptVersion } from './ai-prompts';
+import { getOpenAITimeoutMs, OPENAI_MAX_ATTEMPTS } from './openai.provider';
 import { ReviewAITriageInput } from './ai.schemas';
 
 @Injectable()
@@ -28,6 +29,38 @@ export class AIService {
     private readonly operationalEventService: OperationalEventService,
     @Inject(AI_PROVIDER) private readonly aiProvider: AIProvider,
   ) {}
+
+  getProviderDiagnostics() {
+    const configuredProvider =
+      process.env.AI_PROVIDER === 'openai' ? 'openai' : 'mock';
+    const openAIApiKeyConfigured = Boolean(process.env.OPENAI_API_KEY);
+    const ciExternalCallsDisabled = process.env.CI === 'true';
+    const issues: string[] = [];
+
+    if (configuredProvider === 'openai' && !openAIApiKeyConfigured) {
+      issues.push('OPENAI_API_KEY is required when AI_PROVIDER=openai.');
+    }
+
+    if (configuredProvider === 'openai' && ciExternalCallsDisabled) {
+      issues.push('Real OpenAI calls are disabled in CI.');
+    }
+
+    return {
+      provider: configuredProvider,
+      status: issues.length === 0 ? 'ready' : 'not_ready',
+      issues,
+      openai: {
+        apiKeyConfigured: openAIApiKeyConfigured,
+        model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+        timeoutMs: getOpenAITimeoutMs(),
+        maxAttempts: OPENAI_MAX_ATTEMPTS,
+        externalCallsDisabledInCi: ciExternalCallsDisabled,
+      },
+      mock: {
+        available: true,
+      },
+    };
+  }
 
   async runCaseTriage(caseId: string, user: CurrentUser) {
     const caseRecord = await this.findAccessibleCase(caseId, user);

@@ -7,7 +7,67 @@ import { AIProvider } from './ai-provider';
 import { AIProviderError } from './ai-provider-errors';
 import { AIService } from './ai.service';
 
+const originalAIProvider = process.env.AI_PROVIDER;
+const originalOpenAIAPIKey = process.env.OPENAI_API_KEY;
+const originalCI = process.env.CI;
+
 describe('AIService', () => {
+  afterEach(() => {
+    restoreEnv('AI_PROVIDER', originalAIProvider);
+    restoreEnv('OPENAI_API_KEY', originalOpenAIAPIKey);
+    restoreEnv('CI', originalCI);
+  });
+
+  it('reports mock AI diagnostics as ready without exposing secrets', () => {
+    process.env.AI_PROVIDER = 'mock';
+    delete process.env.OPENAI_API_KEY;
+    const service = createService({});
+
+    expect(service.getProviderDiagnostics()).toMatchObject({
+      provider: 'mock',
+      status: 'ready',
+      issues: [],
+      openai: {
+        apiKeyConfigured: false,
+      },
+      mock: {
+        available: true,
+      },
+    });
+  });
+
+  it('reports OpenAI diagnostics as not ready when the key is missing', () => {
+    process.env.AI_PROVIDER = 'openai';
+    delete process.env.OPENAI_API_KEY;
+    const service = createService({});
+
+    expect(service.getProviderDiagnostics()).toMatchObject({
+      provider: 'openai',
+      status: 'not_ready',
+      issues: ['OPENAI_API_KEY is required when AI_PROVIDER=openai.'],
+      openai: {
+        apiKeyConfigured: false,
+      },
+    });
+  });
+
+  it('reports that real OpenAI calls are disabled in CI', () => {
+    process.env.AI_PROVIDER = 'openai';
+    process.env.OPENAI_API_KEY = 'test-openai-key';
+    process.env.CI = 'true';
+    const service = createService({});
+
+    expect(service.getProviderDiagnostics()).toMatchObject({
+      provider: 'openai',
+      status: 'not_ready',
+      issues: ['Real OpenAI calls are disabled in CI.'],
+      openai: {
+        apiKeyConfigured: true,
+        externalCallsDisabledInCi: true,
+      },
+    });
+  });
+
   it('stores a valid AI triage result without mutating official case fields', async () => {
     const caseUpdateMock = jest.fn();
     let capturedResultCreateInput: unknown;
@@ -435,3 +495,12 @@ type ObservabilityCreateInput = {
     failureReason?: string;
   };
 };
+
+function restoreEnv(name: string, value: string | undefined) {
+  if (value === undefined) {
+    delete process.env[name];
+    return;
+  }
+
+  process.env[name] = value;
+}

@@ -3,16 +3,38 @@ import { AIProviderError } from './ai-provider-errors';
 
 const originalFetch = global.fetch;
 const originalApiKey = process.env.OPENAI_API_KEY;
+const originalCi = process.env.CI;
 
 describe('OpenAIProvider', () => {
   beforeEach(() => {
     process.env.OPENAI_API_KEY = 'test-openai-key';
+    delete process.env.CI;
   });
 
   afterEach(() => {
     global.fetch = originalFetch;
-    process.env.OPENAI_API_KEY = originalApiKey;
+    if (originalApiKey === undefined) {
+      delete process.env.OPENAI_API_KEY;
+    } else {
+      process.env.OPENAI_API_KEY = originalApiKey;
+    }
+    if (originalCi === undefined) {
+      delete process.env.CI;
+    } else {
+      process.env.CI = originalCi;
+    }
     jest.restoreAllMocks();
+  });
+
+  it('does not call OpenAI when CI is enabled', async () => {
+    process.env.CI = 'true';
+    global.fetch = jest.fn();
+
+    await expect(provider().generateCaseTriage(input())).rejects.toMatchObject({
+      classification: 'provider_error',
+      safeReason: 'Real OpenAI calls are disabled in CI.',
+    } satisfies Partial<AIProviderError>);
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it('handles OpenAI timeout safely', async () => {
