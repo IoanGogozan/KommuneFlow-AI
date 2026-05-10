@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { unlink } from 'node:fs/promises';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUser } from '../auth/current-user';
+import { resolveDocumentStoragePath } from '../documents/documents.service';
 import { OperationalEventService } from '../operations/operational-event.service';
 import {
   CitizenDataExportQuery,
@@ -115,16 +117,21 @@ export class PrivacyService {
       auditEvents: 0,
       analyticsSnapshots: 0,
     };
+    const documentStorage = {
+      filesDeleted: 0,
+      filesAlreadyMissing: 0,
+      cleanupFailures: 0,
+    };
 
     if (input.confirm) {
       const [
         deletedClosedCases,
-        deletedDeletedDocuments,
+        deletedDocumentCleanup,
         deletedAuditEvents,
         deletedAnalytics,
       ] = await Promise.all([
         this.prisma.case.deleteMany({ where: where.closedCases }),
-        this.prisma.caseDocument.deleteMany({ where: where.deletedDocuments }),
+        this.deleteExpiredDocumentFiles(where.deletedDocuments),
         this.prisma.auditEvent.deleteMany({ where: where.auditEvents }),
         this.prisma.analyticsDailySnapshot.deleteMany({
           where: where.analytics,
@@ -132,9 +139,13 @@ export class PrivacyService {
       ]);
 
       deleted.closedCases = deletedClosedCases.count;
-      deleted.deletedDocuments = deletedDeletedDocuments.count;
+      deleted.deletedDocuments = deletedDocumentCleanup.metadataDeleted;
       deleted.auditEvents = deletedAuditEvents.count;
       deleted.analyticsSnapshots = deletedAnalytics.count;
+      documentStorage.filesDeleted = deletedDocumentCleanup.filesDeleted;
+      documentStorage.filesAlreadyMissing =
+        deletedDocumentCleanup.filesAlreadyMissing;
+      documentStorage.cleanupFailures = deletedDocumentCleanup.cleanupFailures;
     }
 
     const result = {
@@ -148,6 +159,7 @@ export class PrivacyService {
         analyticsSnapshots: analytics,
       },
       deleted,
+      documentStorage,
     };
 
     await this.auditService.record({
@@ -161,6 +173,7 @@ export class PrivacyService {
       metadata: {
         candidates: result.candidates,
         deleted: result.deleted,
+        documentStorage: result.documentStorage,
       },
     });
     const maintenanceRun = await this.prisma.maintenanceRun.create({
@@ -175,6 +188,7 @@ export class PrivacyService {
           mode: result.mode,
           candidates: result.candidates,
           deleted: result.deleted,
+          documentStorage: result.documentStorage,
         },
       },
       select: { id: true },
@@ -195,6 +209,70 @@ export class PrivacyService {
     });
 
     return result;
+  }
+
+  private async deleteExpiredDocumentFiles(where: {
+    tenantId: string;
+    deletedAt: {
+      not: null;
+      lt: Date;
+    };
+  }) {
+    const documents = await this.prisma.caseDocument.findMany({
+      where,
+      select: {
+        id: true,
+        storageKey: true,
+      },
+    });
+    const result = {
+      metadataDeleted: 0,
+      filesDeleted: 0,
+      filesAlreadyMissing: 0,
+      cleanupFailures: 0,
+    };
+
+    for (const document of documents) {
+      const fileDeleted = await this.deleteDocumentFileIfPresent(
+        document.storageKey,
+      );
+
+      if (!fileDeleted.ok) {
+        result.cleanupFailures += 1;
+        continue;
+      }
+
+      if (fileDeleted.status === 'deleted') {
+        result.filesDeleted += 1;
+      } else {
+        result.filesAlreadyMissing += 1;
+      }
+
+      await this.prisma.caseDocument.delete({
+        where: { id: document.id },
+      });
+      result.metadataDeleted += 1;
+    }
+
+    return result;
+  }
+
+  private async deleteDocumentFileIfPresent(
+    storageKey: string,
+  ): Promise<
+    | { ok: true; status: 'deleted' | 'already_missing' }
+    | { ok: false; status: 'failed' }
+  > {
+    try {
+      await unlink(resolveDocumentStoragePath(storageKey));
+      return { ok: true, status: 'deleted' };
+    } catch (error) {
+      if (isMissingFileError(error) || error instanceof NotFoundException) {
+        return { ok: true, status: 'already_missing' };
+      }
+
+      return { ok: false, status: 'failed' };
+    }
   }
 
   async exportCitizenData(user: CurrentUser, query: CitizenDataExportQuery) {
@@ -411,4 +489,13 @@ function daysBefore(date: Date, days: number) {
   const cutoff = new Date(date);
   cutoff.setUTCDate(cutoff.getUTCDate() - days);
   return cutoff;
+}
+
+function isMissingFileError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 'ENOENT'
+  );
 }

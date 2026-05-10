@@ -1,5 +1,8 @@
 import { NotFoundException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
+import { access, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUser } from '../auth/current-user';
@@ -325,17 +328,79 @@ describe('PrivacyService', () => {
       mode: 'delete',
       deleted: {
         closedCases: 7,
-        deletedDocuments: 7,
+        deletedDocuments: 0,
         auditEvents: 7,
         analyticsSnapshots: 7,
       },
     });
-    expect(deleteManyMock).toHaveBeenCalledTimes(4);
+    expect(deleteManyMock).toHaveBeenCalledTimes(3);
     expect(auditRecordMock).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'privacy.retention_cleanup_executed',
       }),
     );
+  });
+
+  it('deletes expired document files before deleting document metadata', async () => {
+    const previousStoragePath = process.env.UPLOAD_STORAGE_PATH;
+    const storagePath = await mkdtemp(join(tmpdir(), 'kommuneflow-privacy-'));
+    process.env.UPLOAD_STORAGE_PATH = storagePath;
+    const storageKey = 'tenant_1/case_1/document.pdf';
+    const filePath = join(storagePath, storageKey);
+    await mkdir(dirname(filePath), { recursive: true });
+    await writeFile(filePath, Buffer.from('%PDF demo'));
+    const caseDocumentDeleteMock = jest.fn().mockResolvedValue({
+      id: 'document_1',
+    });
+
+    try {
+      const service = createService({
+        ...retentionPrismaShape({
+          deleteManyMock: jest.fn().mockResolvedValue({ count: 0 }),
+          counts: {
+            closedCases: 0,
+            deletedDocuments: 1,
+            auditEvents: 0,
+            analyticsSnapshots: 0,
+          },
+        }),
+        caseDocument: {
+          count: jest.fn().mockResolvedValue(1),
+          findMany: jest.fn().mockResolvedValue([
+            {
+              id: 'document_1',
+              storageKey,
+            },
+          ]),
+          delete: caseDocumentDeleteMock,
+        },
+      });
+
+      await expect(
+        service.runRetentionCleanup(superAdmin(), { confirm: true }),
+      ).resolves.toMatchObject({
+        deleted: {
+          deletedDocuments: 1,
+        },
+        documentStorage: {
+          filesDeleted: 1,
+          filesAlreadyMissing: 0,
+          cleanupFailures: 0,
+        },
+      });
+      await expect(access(filePath)).rejects.toThrow();
+      expect(caseDocumentDeleteMock).toHaveBeenCalledWith({
+        where: { id: 'document_1' },
+      });
+    } finally {
+      if (previousStoragePath === undefined) {
+        delete process.env.UPLOAD_STORAGE_PATH;
+      } else {
+        process.env.UPLOAD_STORAGE_PATH = previousStoragePath;
+      }
+
+      await rm(storagePath, { recursive: true, force: true });
+    }
   });
 });
 
@@ -435,7 +500,8 @@ function retentionPrismaShape(input: {
     },
     caseDocument: {
       count: jest.fn().mockResolvedValue(input.counts.deletedDocuments),
-      deleteMany: input.deleteManyMock,
+      findMany: jest.fn().mockResolvedValue([]),
+      delete: jest.fn(),
     },
     auditEvent: {
       count: jest.fn().mockResolvedValue(input.counts.auditEvents),
