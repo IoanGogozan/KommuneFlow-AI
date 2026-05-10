@@ -38,6 +38,7 @@ describe('AIService', () => {
 
   it('reports OpenAI diagnostics as not ready when the key is missing', () => {
     process.env.AI_PROVIDER = 'openai';
+    process.env.CI = 'false';
     delete process.env.OPENAI_API_KEY;
     const service = createService({});
 
