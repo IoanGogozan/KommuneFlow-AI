@@ -178,7 +178,7 @@ Implemented:
 - Grimstad Kommune
 - Kristiansand Kommune
 - 5 departments per tenant
-- 18 realistic cases across statuses and categories
+- 20 realistic cases across statuses and categories
 - Norwegian and English demo case descriptions
 - validated demo addresses
 - accepted, corrected, and failed AI triage examples

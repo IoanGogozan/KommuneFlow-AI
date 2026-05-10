@@ -208,7 +208,7 @@ Covered behavior:
 Use the public endpoint locally after starting the API:
 
 ```bash
-curl "http://localhost:3001/api/v1/public/tenants/arendal/integrations/kartverket/address-search?q=Storgata%2012"
+curl "http://localhost:3101/api/v1/public/tenants/arendal/integrations/kartverket/address-search?q=Storgata%2012"
 ```
 
 Expected result:

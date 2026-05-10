@@ -199,10 +199,4 @@ The project is ready to show to an employer only when:
 
 ## Portfolio Positioning
 
-English:
-
 I built KommuneFlow AI, a portfolio project inspired by Norwegian municipal service development. It is a multi-tenant platform for citizen case intake, document handling, AI-assisted case triage, role-based access control, audit logging, privacy workflows, retention, and operational analytics. The system uses human-in-the-loop review for AI suggestions. The target deployment is Hetzner Cloud using Docker Compose, PostgreSQL, HTTPS, firewall rules, and a documented backup strategy.
-
-Norwegian:
-
-Jeg har bygget KommuneFlow AI, et portefoljeprosjekt inspirert av kommunal tjenesteutvikling i Norge. Losningen er en multi-tenant plattform for innbyggerhenvendelser, dokumenthandtering, KI-assistert saksruting, rollebasert tilgangsstyring, audit-logg, personvernflyter, retensjon og operasjonell innsikt. KI brukes som beslutningsstotte med menneskelig kvalitetssikring. Malet for deployment er Hetzner Cloud med Docker Compose, PostgreSQL, HTTPS, brannmurregler og dokumentert backup-strategi.
