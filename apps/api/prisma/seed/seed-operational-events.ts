@@ -43,6 +43,7 @@ export async function seedOperationalEvents(
     const admin = context.adminByTenant.get(tenantSpec.slug)!;
 
     await seedEventsForTenant(prisma, tenantSpec.slug, tenant.id, admin.id);
+    await seedIntegrationHealthEvents(prisma, tenantSpec.slug);
     await seedImportRun(prisma, context, tenantSpec);
     await seedMaintenanceRun(prisma, tenantSpec.slug);
   }
@@ -54,7 +55,10 @@ async function seedEventsForTenant(
   tenantId: string,
   adminUserId: string,
 ) {
-  for (const [index, [eventType, severity, source, safeMessage]] of eventTemplates.entries()) {
+  for (const [
+    index,
+    [eventType, severity, source, safeMessage],
+  ] of eventTemplates.entries()) {
     const id = `seed_${tenantSlug}_operational_${index + 1}`;
     const data = {
       tenantId,
@@ -100,8 +104,39 @@ async function seedImportRun(
   });
 }
 
+async function seedIntegrationHealthEvents(
+  prisma: PrismaClient,
+  tenantSlug: string,
+) {
+  const samples = [
+    ['address_search', 'success', 184],
+    ['address_search', 'success', 221],
+    ['address_search', 'success', 166],
+  ] as const;
+
+  for (const [index, [eventType, status, latencyMs]] of samples.entries()) {
+    const id = `seed_${tenantSlug}_kartverket_health_${index + 1}`;
+    const data = {
+      integrationName: 'kartverket_address',
+      eventType,
+      status,
+      latencyMs,
+      errorCode: null,
+      safeMessage: 'Seeded Kartverket address lookup.',
+      metadataJson: { source: 'prisma_seed', tenantSlug },
+      createdAt: addMinutes(hoursAgo(2), index * 9),
+    };
+
+    await prisma.integrationHealthEvent.upsert({
+      where: { id },
+      update: data,
+      create: { id, ...data },
+    });
+  }
+}
+
 async function seedMaintenanceRun(prisma: PrismaClient, tenantSlug: string) {
-  const data = {
+  const retentionData = {
     type: 'retention_cleanup',
     status: 'completed',
     startedAt: hoursAgo(4),
@@ -112,7 +147,25 @@ async function seedMaintenanceRun(prisma: PrismaClient, tenantSlug: string) {
 
   await prisma.maintenanceRun.upsert({
     where: { id: `seed_${tenantSlug}_retention_cleanup_run` },
-    update: data,
-    create: { id: `seed_${tenantSlug}_retention_cleanup_run`, ...data },
+    update: retentionData,
+    create: {
+      id: `seed_${tenantSlug}_retention_cleanup_run`,
+      ...retentionData,
+    },
+  });
+
+  const backupData = {
+    type: 'backup',
+    status: 'completed',
+    startedAt: hoursAgo(5),
+    completedAt: addMinutes(hoursAgo(5), 4),
+    safeMessage: 'Seeded database backup completed.',
+    metadataJson: { source: 'prisma_seed' },
+  };
+
+  await prisma.maintenanceRun.upsert({
+    where: { id: `seed_${tenantSlug}_backup_run` },
+    update: backupData,
+    create: { id: `seed_${tenantSlug}_backup_run`, ...backupData },
   });
 }

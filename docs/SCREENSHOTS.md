@@ -31,3 +31,11 @@ docs/screenshots/10-hetzner-smoke-test.png
 ```
 
 Current status: screenshots 1-9 were captured locally from seeded demo data on 2026-05-10. Do not add Hetzner screenshots until the final deployment phase.
+
+Regenerate the main local demo screenshots with:
+
+```bash
+pnpm screenshots:demo
+```
+
+The script captures the citizen portal, internal login, case dashboard, analytics dashboard, and operations dashboard against the running local web/API services. It uses the Kristiansand department admin demo account and narrows the analytics date range so the screenshot shows populated recent demo data instead of a long empty range.

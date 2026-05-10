@@ -37,21 +37,35 @@ type AddressSearchResult = {
   }>;
 };
 
+const demoTenants = [
+  { slug: "arendal", name: "Arendal Kommune" },
+  { slug: "grimstad", name: "Grimstad Kommune" },
+  { slug: "kristiansand", name: "Kristiansand Kommune" },
+] as const;
+
+type DemoTenant = (typeof demoTenants)[number];
+
 export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
+  const [selectedTenant, setSelectedTenant] = useState<DemoTenant>(
+    demoTenants[2],
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [statusLookupError, setStatusLookupError] = useState<string | null>(null);
+  const [statusLookupError, setStatusLookupError] = useState<string | null>(
+    null,
+  );
   const [statusResult, setStatusResult] = useState<PublicStatusResult | null>(
     null,
   );
   const [address, setAddress] = useState("");
-  const [addressSuggestion, setAddressSuggestion] =
-    useState<AddressSearchResult["results"][number] | null>(null);
-  const [addressSearchMessage, setAddressSearchMessage] = useState<string | null>(
-    null,
-  );
+  const [addressSuggestion, setAddressSuggestion] = useState<
+    AddressSearchResult["results"][number] | null
+  >(null);
+  const [addressSearchMessage, setAddressSearchMessage] = useState<
+    string | null
+  >(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [result, setResult] = useState<SubmissionResult | null>(null);
 
@@ -70,7 +84,7 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
 
     try {
       const response = await fetch(
-        `${getApiBaseUrl()}/public/tenants/arendal/integrations/kartverket/address-search?q=${encodeURIComponent(query)}`,
+        `${getApiBaseUrl()}/public/tenants/${selectedTenant.slug}/integrations/kartverket/address-search?q=${encodeURIComponent(query)}`,
       );
 
       if (!response.ok) {
@@ -131,7 +145,7 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
 
     try {
       const response = await fetch(
-        `${getApiBaseUrl()}/public/tenants/arendal/cases`,
+        `${getApiBaseUrl()}/public/tenants/${selectedTenant.slug}/cases`,
         {
           method: "POST",
           body: requestBody,
@@ -168,7 +182,7 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
 
     try {
       const response = await fetch(
-        `${getApiBaseUrl()}/public/tenants/arendal/cases/status?${query.toString()}`,
+        `${getApiBaseUrl()}/public/tenants/${selectedTenant.slug}/cases/status?${query.toString()}`,
       );
 
       if (!response.ok) {
@@ -223,119 +237,149 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
         className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
       >
         <div className="mb-5 rounded-md border border-slate-200 bg-slate-50 p-4">
-        <label className="text-sm font-medium text-slate-700">
-          {dictionary.tenantLabel}
-        </label>
-        <p className="mt-1 text-base font-semibold text-slate-950">
-          Arendal Kommune
-        </p>
-        <p className="mt-1 text-sm text-slate-500">{dictionary.tenantHelp}</p>
-      </div>
+          <label className="text-sm font-medium text-slate-700">
+            {dictionary.tenantLabel}
+          </label>
+          <select
+            value={selectedTenant.slug}
+            onChange={(event) => {
+              const tenant = demoTenants.find(
+                (item) => item.slug === event.target.value,
+              );
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={dictionary.nameLabel} name="name" required />
-        <Field label={dictionary.emailLabel} name="email" type="email" required />
-        <Field label={dictionary.phoneLabel} name="phone" />
-        <label className="grid gap-2">
-          <span className="text-sm font-medium text-slate-700">
-            {dictionary.addressLabel}
-          </span>
-          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-            <input
-              name="address"
-              value={address}
-              onChange={(event) => {
-                setAddress(event.target.value);
-                setIsAddressConfirmed(false);
-              }}
-              className="rounded-md border border-slate-300 px-3 py-2 text-slate-950 outline-none focus:border-slate-600"
-            />
+              if (!tenant) {
+                return;
+              }
+
+              setSelectedTenant(tenant);
+              setAddressSuggestion(null);
+              setAddressSearchMessage(null);
+              setIsAddressConfirmed(false);
+              setStatusResult(null);
+              setStatusLookupError(null);
+            }}
+            className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-slate-950 outline-none focus:border-slate-600"
+          >
+            {demoTenants.map((tenant) => (
+              <option key={tenant.slug} value={tenant.slug}>
+                {tenant.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-sm text-slate-500">{dictionary.tenantHelp}</p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={dictionary.nameLabel} name="name" required />
+          <Field
+            label={dictionary.emailLabel}
+            name="email"
+            type="email"
+            required
+          />
+          <Field label={dictionary.phoneLabel} name="phone" />
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-slate-700">
+              {dictionary.addressLabel}
+            </span>
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+              <input
+                name="address"
+                value={address}
+                onChange={(event) => {
+                  setAddress(event.target.value);
+                  setIsAddressConfirmed(false);
+                }}
+                className="rounded-md border border-slate-300 px-3 py-2 text-slate-950 outline-none focus:border-slate-600"
+              />
+              <button
+                type="button"
+                onClick={searchAddress}
+                disabled={isSearchingAddress}
+                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                {isSearchingAddress
+                  ? dictionary.addressSearching
+                  : dictionary.addressSearch}
+              </button>
+            </div>
+          </label>
+        </div>
+
+        {addressSuggestion ? (
+          <section className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4">
+            <p className="text-sm font-medium text-emerald-950">
+              {dictionary.addressSuggestionLabel}
+            </p>
+            <p className="mt-1 text-sm text-emerald-900">
+              {addressSuggestion.normalizedAddress}
+            </p>
             <button
               type="button"
-              onClick={searchAddress}
-              disabled={isSearchingAddress}
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              onClick={confirmAddress}
+              className="mt-3 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
             >
-              {isSearchingAddress
-                ? dictionary.addressSearching
-                : dictionary.addressSearch}
+              {isAddressConfirmed
+                ? dictionary.addressConfirmed
+                : dictionary.addressConfirm}
             </button>
-          </div>
-        </label>
-      </div>
+          </section>
+        ) : null}
 
-      {addressSuggestion ? (
-        <section className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4">
-          <p className="text-sm font-medium text-emerald-950">
-            {dictionary.addressSuggestionLabel}
-          </p>
-          <p className="mt-1 text-sm text-emerald-900">
-            {addressSuggestion.normalizedAddress}
-          </p>
-          <button
-            type="button"
-            onClick={confirmAddress}
-            className="mt-3 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
-          >
-            {isAddressConfirmed
-              ? dictionary.addressConfirmed
-              : dictionary.addressConfirm}
-          </button>
-        </section>
-      ) : null}
+        {addressSearchMessage ? (
+          <p className="mt-3 text-sm text-slate-600">{addressSearchMessage}</p>
+        ) : null}
 
-      {addressSearchMessage ? (
-        <p className="mt-3 text-sm text-slate-600">{addressSearchMessage}</p>
-      ) : null}
+        <div className="mt-4 grid gap-4">
+          <Field label={dictionary.caseTitleLabel} name="title" required />
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-slate-700">
+              {dictionary.descriptionLabel}
+            </span>
+            <textarea
+              name="description"
+              required
+              minLength={20}
+              rows={7}
+              className="min-h-40 rounded-md border border-slate-300 px-3 py-2 text-slate-950 outline-none focus:border-slate-600"
+            />
+          </label>
+        </div>
 
-      <div className="mt-4 grid gap-4">
-        <Field label={dictionary.caseTitleLabel} name="title" required />
-        <label className="grid gap-2">
+        <label className="mt-4 grid gap-2">
           <span className="text-sm font-medium text-slate-700">
-            {dictionary.descriptionLabel}
+            {dictionary.documentsLabel}
           </span>
-          <textarea
-            name="description"
-            required
-            minLength={20}
-            rows={7}
-            className="min-h-40 rounded-md border border-slate-300 px-3 py-2 text-slate-950 outline-none focus:border-slate-600"
+          <input
+            name="documents"
+            type="file"
+            multiple
+            accept="application/pdf,image/png,image/jpeg"
+            className="rounded-md border border-slate-300 px-3 py-2 text-slate-950 outline-none focus:border-slate-600"
           />
+          <span className="text-sm text-slate-500">
+            {dictionary.documentsHelp}
+          </span>
         </label>
-      </div>
 
-      <label className="mt-4 grid gap-2">
-        <span className="text-sm font-medium text-slate-700">
-          {dictionary.documentsLabel}
-        </span>
-        <input
-          name="documents"
-          type="file"
-          multiple
-          accept="application/pdf,image/png,image/jpeg"
-          className="rounded-md border border-slate-300 px-3 py-2 text-slate-950 outline-none focus:border-slate-600"
-        />
-        <span className="text-sm text-slate-500">{dictionary.documentsHelp}</span>
-      </label>
-
-      <label className="mt-5 flex gap-3 rounded-md border border-slate-200 bg-slate-50 p-4">
-        <input
-          name="privacyAccepted"
-          type="checkbox"
-          required
-          className="mt-1 h-4 w-4"
-        />
-        <span>
-          <span className="block text-sm font-medium text-slate-800">
-            {dictionary.privacyLabel}
+        <label className="mt-5 flex gap-3 rounded-md border border-slate-200 bg-slate-50 p-4">
+          <input
+            name="privacyAccepted"
+            type="checkbox"
+            required
+            className="mt-1 h-4 w-4"
+          />
+          <span>
+            <span className="block text-sm font-medium text-slate-800">
+              {dictionary.privacyLabel}
+            </span>
+            <span className="mt-1 block text-sm leading-6 text-slate-600">
+              {dictionary.privacyText}
+            </span>
           </span>
-          <span className="mt-1 block text-sm leading-6 text-slate-600">
-            {dictionary.privacyText}
-          </span>
-        </span>
-      </label>
+        </label>
 
-      {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
+        {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
 
         <button
           type="submit"

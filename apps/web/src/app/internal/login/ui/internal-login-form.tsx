@@ -3,10 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
-import {
-  InternalLanguageToggle,
-  useInternalI18n,
-} from "@/lib/internal-locale";
+import { InternalLanguageToggle, useInternalI18n } from "@/lib/internal-locale";
 
 export function InternalLoginForm() {
   const router = useRouter();
@@ -49,18 +46,14 @@ export function InternalLoginForm() {
       <section className="mx-auto max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-medium text-slate-500">
-              {t.common.app}
-            </p>
+            <p className="text-sm font-medium text-slate-500">{t.common.app}</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-950">
               {t.login.title}
             </h1>
           </div>
           <InternalLanguageToggle locale={locale} setLocale={setLocale} />
         </div>
-        <p className="mt-3 text-sm leading-6 text-slate-600">
-          {t.login.intro}
-        </p>
+        <p className="mt-3 text-sm leading-6 text-slate-600">{t.login.intro}</p>
         <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
           <label className="grid gap-2">
             <span className="text-sm font-medium text-slate-700">

@@ -5,10 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
-import {
-  InternalLanguageToggle,
-  useInternalI18n,
-} from "@/lib/internal-locale";
+import { InternalLanguageToggle, useInternalI18n } from "@/lib/internal-locale";
 
 type AnalyticsSummary = {
   from: string;
@@ -133,9 +130,7 @@ export function AnalyticsDashboard() {
       <div className="mx-auto max-w-6xl px-5 py-6">
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-300 pb-4">
           <div>
-            <p className="text-sm font-medium text-slate-500">
-              {t.common.app}
-            </p>
+            <p className="text-sm font-medium text-slate-500">{t.common.app}</p>
             <h1 className="text-3xl font-semibold text-slate-950">
               {t.analytics.title}
             </h1>
@@ -173,80 +168,125 @@ export function AnalyticsDashboard() {
         {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
 
         <section className="mt-5 grid gap-4 md:grid-cols-4">
-          <Metric label={t.analytics.cases} value={summary?.totals.totalCases ?? 0} />
+          <Metric
+            label={t.analytics.cases}
+            value={summary ? summary.totals.totalCases : "..."}
+          />
           <Metric
             label={t.analytics.aiReviews}
-            value={summary?.totals.aiReviewsTotal ?? 0}
+            value={summary ? summary.totals.aiReviewsTotal : "..."}
           />
           <Metric
             label={t.analytics.aiCorrections}
-            value={summary?.totals.aiCorrectionsTotal ?? 0}
+            value={summary ? summary.totals.aiCorrectionsTotal : "..."}
           />
           <Metric
             label={t.analytics.aiCorrectionRate}
-            value={formatPercent(summary?.totals.aiCorrectionRate ?? 0)}
+            value={
+              summary ? formatPercent(summary.totals.aiCorrectionRate) : "..."
+            }
           />
           <Metric
             label={t.analytics.aiAcceptanceRate}
-            value={formatPercent(summary?.totals.aiSuggestionAcceptanceRate ?? 0)}
+            value={
+              summary
+                ? formatPercent(summary.totals.aiSuggestionAcceptanceRate)
+                : "..."
+            }
           />
           <Metric
             label={t.analytics.aiTriageFailures}
-            value={`${summary?.totals.aiTriageFailureCount ?? 0} (${formatPercent(
-              summary?.totals.aiTriageFailureRate ?? 0,
-            )})`}
+            value={
+              summary
+                ? `${summary.totals.aiTriageFailureCount} (${formatPercent(
+                    summary.totals.aiTriageFailureRate,
+                  )})`
+                : "..."
+            }
           />
           <Metric
             label={t.analytics.waitingForCitizen}
-            value={summary?.totals.casesWaitingForCitizen ?? 0}
+            value={summary ? summary.totals.casesWaitingForCitizen : "..."}
           />
           <Metric
             label={t.analytics.minutesSaved}
-            value={summary?.totals.estimatedManualMinutesSaved ?? 0}
+            value={summary ? summary.totals.estimatedManualMinutesSaved : "..."}
           />
           <Metric
             label={t.analytics.avgTriage}
-            value={`${formatNullableNumber(
-              summary?.totals.averageTimeToTriageMinutes,
-              t.common.missing,
-            )} min`}
+            value={
+              summary
+                ? `${formatNullableNumber(
+                    summary.totals.averageTimeToTriageMinutes,
+                    t.common.missing,
+                  )} min`
+                : "..."
+            }
           />
           <Metric
             label={t.analytics.medianTriage}
-            value={`${formatNullableNumber(
-              summary?.totals.medianTimeToTriageMinutes,
-              t.common.missing,
-            )} min`}
+            value={
+              summary
+                ? `${formatNullableNumber(
+                    summary.totals.medianTimeToTriageMinutes,
+                    t.common.missing,
+                  )} min`
+                : "..."
+            }
           />
           <Metric
             label={t.analytics.avgClose}
-            value={`${formatNullableNumber(
-              summary?.totals.averageTimeToCloseHours,
-              t.common.missing,
-            )} h`}
+            value={
+              summary
+                ? `${formatNullableNumber(
+                    summary.totals.averageTimeToCloseHours,
+                    t.common.missing,
+                  )} h`
+                : "..."
+            }
           />
           <Metric
             label={t.analytics.medianClose}
-            value={`${formatNullableNumber(
-              summary?.totals.medianTimeToCloseHours,
-              t.common.missing,
-            )} h`}
+            value={
+              summary
+                ? `${formatNullableNumber(
+                    summary.totals.medianTimeToCloseHours,
+                    t.common.missing,
+                  )} h`
+                : "..."
+            }
           />
           <Metric
             label={t.analytics.per1000}
-            value={formatNullableNumber(summary?.totals.casesPer1000Inhabitants, t.common.missing)}
+            value={
+              summary
+                ? formatNullableNumber(
+                    summary.totals.casesPer1000Inhabitants,
+                    t.common.missing,
+                  )
+                : "..."
+            }
           />
           <Metric
             label={t.analytics.population}
-            value={summary?.ssbEnrichment.populationUsed?.toLocaleString() ?? t.common.missing}
+            value={
+              summary
+                ? (summary.ssbEnrichment.populationUsed?.toLocaleString() ??
+                  t.common.missing)
+                : "..."
+            }
           />
           <Metric
             label={t.analytics.ssbYear}
-            value={summary?.ssbEnrichment.populationYear ?? t.common.missing}
+            value={
+              summary
+                ? (summary.ssbEnrichment.populationYear ?? t.common.missing)
+                : "..."
+            }
           />
           <Metric
             label={t.analytics.ssbStatus}
-            value={summary?.ssbEnrichment.status ?? t.common.missing}
+            value={summary ? summary.ssbEnrichment.status : "..."}
           />
         </section>
 
@@ -270,8 +310,7 @@ export function AnalyticsDashboard() {
           <p className="mt-4 text-sm text-slate-600">
             {t.analytics.assumption}: {t.analytics.acceptedSave}{" "}
             {summary?.assumptions.acceptedAiSuggestionMinutesSaved ?? 5}{" "}
-            {t.analytics.minutes};
-            {t.analytics.correctedSave}{" "}
+            {t.analytics.minutes}; {t.analytics.correctedSave}{" "}
             {summary?.assumptions.correctedAiSuggestionMinutesSaved ?? 2}{" "}
             {t.analytics.minutes}.
           </p>
@@ -342,23 +381,27 @@ export function AnalyticsDashboard() {
                   {day.totalCases} {t.analytics.cases.toLowerCase()}
                 </span>
                 <span className="text-slate-500">
-                  {formatPercent(day.aiCorrectionRate)} {t.analytics.aiCorrection}
+                  {formatPercent(day.aiCorrectionRate)}{" "}
+                  {t.analytics.aiCorrection}
                 </span>
                 <span className="text-slate-500">
-                  {formatPercent(day.aiTriageFailureRate)} {t.analytics.aiFailure}
+                  {formatPercent(day.aiTriageFailureRate)}{" "}
+                  {t.analytics.aiFailure}
                 </span>
                 <span className="text-slate-500">
                   {day.estimatedManualMinutesSaved} {t.analytics.minSaved}
                 </span>
                 <span className="text-slate-500">
-                  {formatNullableNumber(day.casesPer1000Inhabitants, t.common.missing)} per 1,000
+                  {formatNullableNumber(
+                    day.casesPer1000Inhabitants,
+                    t.common.missing,
+                  )}{" "}
+                  per 1,000
                 </span>
               </div>
             ))}
             {summary?.daily.length === 0 ? (
-              <p className="text-sm text-slate-500">
-                {t.analytics.noDaily}
-              </p>
+              <p className="text-sm text-slate-500">{t.analytics.noDaily}</p>
             ) : null}
           </div>
         </section>
@@ -407,7 +450,9 @@ function Breakdown({
   values: Record<string, number>;
   emptyLabel: string;
 }) {
-  const entries = Object.entries(values).sort((left, right) => right[1] - left[1]);
+  const entries = Object.entries(values).sort(
+    (left, right) => right[1] - left[1],
+  );
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">

@@ -25,7 +25,9 @@ export default async function IntakePage({ params }: PageProps) {
         <header className="flex items-center justify-between border-b border-slate-200 pb-4">
           <div>
             <p className="text-sm font-medium text-slate-500">KommuneFlow AI</p>
-            <p className="text-xs text-slate-500">Arendal Kommune</p>
+            <p className="text-xs text-slate-500">
+              Arendal / Grimstad / Kristiansand
+            </p>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <span className="text-slate-500">{dictionary.languageLabel}</span>

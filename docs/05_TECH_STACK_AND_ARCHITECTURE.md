@@ -71,6 +71,10 @@ The production-like deployment must use:
 - Backups or snapshots
 - Basic monitoring/logging
 
+### Microsoft Stack Extension
+
+The current deployment documentation targets Hetzner, but the application is intentionally portable. For Microsoft-oriented environments, see [Azure, AI Foundry, and Fabric Extension](./AZURE_FABRIC_EXTENSION.md). The proposed mapping uses Azure Container Apps or App Service, Azure Database for PostgreSQL, Blob Storage, Key Vault, Application Insights, Azure OpenAI/AI Foundry, and Microsoft Fabric.
+
 ## Recommended Monorepo Structure
 
 ```txt
