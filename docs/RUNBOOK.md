@@ -116,10 +116,16 @@ For production, backup scripts should:
 
 - write timestamped database dumps
 - back up upload storage
+- encrypt database dumps and upload archives before offsite transfer with `BACKUP_GPG_RECIPIENT` or `BACKUP_GPG_PASSPHRASE`
+- store backups outside the VPS and outside the running application volumes
+- restrict backup access to named operators
 - avoid including `.env` files in backup artifacts
 - log success or failure
-- keep backups outside the application container filesystem
 - document retention rules
+- document deletion of expired backups
+- produce checksums and verify them before restore tests
+
+The upload backup script excludes `.env*` files and fails if such files are found in the archive listing.
 
 ## Restore
 
@@ -127,6 +133,13 @@ Restore a local PostgreSQL dump into the Docker database:
 
 ```bash
 docker compose exec -T postgres psql -U kommuneflow -d kommuneflow_ai < backup.sql
+```
+
+For encrypted production backups, decrypt first and verify the checksum before restoring:
+
+```bash
+sha256sum -c backup.dump.gpg.sha256
+gpg --output backup.dump --decrypt backup.dump.gpg
 ```
 
 Restore uploaded files by copying the backup directory back to `UPLOAD_STORAGE_PATH`:
@@ -151,6 +164,8 @@ Then verify:
 - document listing on a known case
 
 Record the date and result of each restore test in deployment notes once production deployment exists.
+
+Production restore tests should be scheduled and documented. A backup strategy is not complete until a restore from encrypted offsite storage has been tested.
 
 ## AI Provider Failure
 
@@ -252,3 +267,20 @@ When investigating an incident, record:
 - follow-up task
 
 Keep incident notes free from secrets and unnecessary personal data.
+
+## Personal Data Breach / Avvik
+
+Treat a suspected personal data breach as an incident immediately. Examples include unauthorized tenant access, exposed backups, leaked credentials, public upload files, logs containing personal data, or accidental disclosure of citizen case data.
+
+Immediate steps:
+
+1. Preserve evidence without copying unnecessary personal data.
+2. Contain the issue, for example revoke credentials, disable public access, stop a leaking job, or isolate the affected host.
+3. Identify affected data categories, tenants, users, cases, documents, and time window.
+4. Check audit events, operational events, request IDs, deployment history, backup access, and relevant provider logs.
+5. Notify the data controller decision-maker. For a real municipal deployment, the municipality is normally the controller.
+6. Decide whether the breach is notifiable to Datatilsynet and whether affected persons must be informed.
+7. If notification is required, prepare notification as soon as possible and normally within 72 hours after becoming aware of the breach. If all facts are not ready, use phased notification.
+8. Record timeline, containment, impact assessment, notification decision, remediation, and follow-up tasks.
+
+Incident notes must not include full document contents, full citizen identifiers, passwords, cookies, API keys, status access codes, or raw AI prompts/responses containing personal data.

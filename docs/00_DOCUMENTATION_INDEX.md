@@ -28,6 +28,8 @@ The application UI must support:
 | [03_SECURITY_AND_PRIVACY.md](./03_SECURITY_AND_PRIVACY.md)               | Authentication, authorization, privacy, GDPR-style requirements, file upload security, and acceptance criteria. |
 | [04_AI_GOVERNANCE.md](./04_AI_GOVERNANCE.md)                             | Responsible AI rules, human review, prompt versioning, structured output, and AI tests.                         |
 | [05_TECH_STACK_AND_ARCHITECTURE.md](./05_TECH_STACK_AND_ARCHITECTURE.md) | Stack, backend/frontend architecture, database approach, code quality rules, and API conventions.               |
+| [security/PRODUCTION_SECURITY_HARDENING.md](./security/PRODUCTION_SECURITY_HARDENING.md) | Implemented controls, known production gaps, target controls, and public demo safety rules. |
+| [AZURE_FABRIC_EXTENSION.md](./AZURE_FABRIC_EXTENSION.md)                 | Microsoft Azure, AI Foundry, and Fabric target architecture for organizations using that stack.                 |
 | [06_TESTING_STRATEGY.md](./06_TESTING_STRATEGY.md)                       | Unit, integration, API, security, RBAC, tenant isolation, AI mock, E2E, and CI test requirements.               |
 | [09_DEFINITION_OF_DONE.md](./09_DEFINITION_OF_DONE.md)                   | Common feature completion criteria.                                                                             |
 
@@ -38,7 +40,7 @@ The application UI must support:
 | [observability.md](./observability.md)                                         | Request IDs, structured logs, health/readiness, operations metrics, dashboard, integration events, and maintenance. |
 | [analytics/elt-pipeline.md](./analytics/elt-pipeline.md)                       | Python ELT pipeline, commands, transforms, quality checks, and idempotent loading.                                  |
 | [integrations/ssb.md](./integrations/ssb.md)                                   | SSB population import, local storage, idempotency, analytics enrichment, and limitations.                           |
-| [integrations/kartverket-address.md](./integrations/kartverket-address.md)     | Kartverket Adresse-API usage, stored fields, privacy behavior, failure handling, tests, and manual verification.     |
+| [integrations/kartverket-address.md](./integrations/kartverket-address.md)     | Kartverket Adresse-API usage, stored fields, privacy behavior, failure handling, tests, and manual verification.    |
 | [security/negative-testing.md](./security/negative-testing.md)                 | Negative security coverage for auth, RBAC, tenant isolation, uploads, AI, external integrations, and CI.            |
 | [privacy/PRIVACY_NOTICE.md](./privacy/PRIVACY_NOTICE.md)                       | Citizen-facing and deployment privacy notice baseline.                                                              |
 | [privacy/DATA_PROCESSING_INVENTORY.md](./privacy/DATA_PROCESSING_INVENTORY.md) | Data categories, purpose, storage, access, retention, and privacy notes.                                            |
@@ -66,4 +68,4 @@ Before implementing a feature:
 
 ## Product Positioning
 
-KommuneFlow AI is a professional portfolio project inspired by Norwegian municipal service development. It is a multi-tenant platform for citizen case intake, document handling, AI-assisted case triage, role-based access control, audit logging, privacy workflows, retention, and operational analytics. AI is used as decision support with human review. The target deployment is Hetzner Cloud using Docker Compose, PostgreSQL, HTTPS, firewall rules, and a documented backup strategy.
+KommuneFlow AI is a professional portfolio project inspired by Norwegian municipal service development. It is a multi-tenant platform for citizen case intake, document handling, AI-assisted case triage, role-based access control, audit logging, privacy workflows, retention, and operational analytics. AI is used as decision support with human review. The concrete deployment documentation targets Hetzner Cloud using Docker Compose, PostgreSQL, HTTPS, firewall rules, and a documented backup strategy. The Azure/Fabric extension document shows how the same system can map to Azure Container Apps or App Service, Azure Database for PostgreSQL, Blob Storage, Key Vault, Application Insights, Azure OpenAI/AI Foundry, and Microsoft Fabric.

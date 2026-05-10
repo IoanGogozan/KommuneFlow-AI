@@ -1,8 +1,12 @@
-# DPIA-Lite Risk Assessment
+# DPIA-Lite Portfolio Risk Assessment
 
 ## Purpose
 
 This document is a lightweight privacy risk assessment for KommuneFlow AI. It is suitable for portfolio documentation, not a replacement for a formal DPIA required by a real municipality.
+
+## Not A Formal DPIA
+
+This document is not a formal DPIA. A real municipality would need a formal DPIA, legal basis assessment, archival/legal-hold analysis, processor agreements, subprocessor review, security risk assessment, identity verification model, AI provider review, and DPO involvement before real citizen data is processed.
 
 ## Processing Summary
 
@@ -18,7 +22,7 @@ The core processing is necessary to:
 - route cases to departments
 - allow employees to review documents
 - provide traceability for internal actions
-- support privacy export, anonymization, and retention
+- support privacy export, profile identifier anonymization, and retention
 - monitor operational volumes through aggregated analytics
 
 The system reduces unnecessary processing by:
@@ -37,12 +41,12 @@ The system reduces unnecessary processing by:
 | Cross-tenant data exposure | high | medium | tenant filtering, RBAC guards, negative tests | low to medium |
 | Unauthorized internal mutation | high | medium | permissions guard, auditor read-only tests | low |
 | Cookie-based CSRF | high | medium | SameSite cookie, strict Origin/Referer validation | low |
-| File upload abuse | high | medium | size, extension, MIME, magic-byte, filename validation; private storage | low to medium |
+| File upload abuse | high | medium | Multer and reverse-proxy body limits; size, extension, MIME, magic-byte, filename validation; private storage | low to medium |
 | Sensitive document overexposure | high | medium | `document:read:sensitive`, audit events | medium |
 | AI sends too much personal data | high | medium | provider abstraction, human review, planned minimization/redaction | medium |
 | AI suggestion treated as final decision | high | medium | official fields change only after human review | low |
 | Personal data in analytics | medium | medium | aggregated daily snapshots without citizen identifiers | low |
-| Excessive retention | high | medium | configurable retention policy, dry-run cleanup, audited delete mode | medium |
+| Excessive retention | high | medium | configurable retention policy, dry-run cleanup, audited delete mode, physical file cleanup for expired soft-deleted documents | medium |
 | Backup data leakage | high | medium | documented backup/restore scripts; needs real storage controls | medium |
 | Logs exposing secrets or PII | high | medium | safe request logging, structured errors, no cookie/auth logging | low to medium |
 
@@ -70,14 +74,15 @@ Risks that remain:
 
 - real archive/legal hold rules are not modeled
 - backup deletion must be enforced operationally
-- physical uploaded files should be removed when metadata is deleted in a future storage cleanup enhancement
+- expired soft-deleted uploaded files are removed before document metadata is deleted
+- archive/legal hold rules are not modeled
 
 ## Data Subject Rights
 
 Implemented demo capabilities:
 
 - citizen data export
-- citizen profile anonymization
+- citizen profile anonymization for structured profile identifiers
 - document soft-delete
 - retention cleanup
 
@@ -87,6 +92,7 @@ Real deployment gaps:
 - formal deadline handling
 - exception handling for legal/archival obligations
 - UI for privacy actions
+- full anonymization/erasure of free text, documents, audit records, email logs, AI summaries, filenames, and archive-bound data
 
 ## Deployment And Operations Privacy
 
@@ -103,6 +109,8 @@ Before public deployment, verify:
 - HTTPS certificate issuance
 - no public PostgreSQL exposure
 - backup storage access control
+- backup encryption
+- offsite backup storage outside the VPS
 - restore test
 - secret scanning
 - container image scanning
@@ -110,6 +118,6 @@ Before public deployment, verify:
 
 ## Conclusion
 
-The project demonstrates a credible privacy-by-design baseline for a portfolio system. It includes tenant isolation, RBAC, auditability, privacy export, anonymization, retention configuration, and aggregated analytics without citizen identifiers.
+The project demonstrates a credible privacy-by-design baseline for a portfolio system. It includes tenant isolation, RBAC, auditability, privacy export, citizen profile anonymization, retention configuration, physical file cleanup for expired soft-deleted documents, and aggregated analytics without citizen identifiers.
 
 The project should still be treated as a demo until real legal basis, controller/processor roles, archival requirements, identity verification, AI provider terms, backup retention, and production deployment controls are reviewed.

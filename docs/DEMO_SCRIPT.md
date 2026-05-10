@@ -21,14 +21,16 @@ Open:
 - internal login: `http://localhost:3000/internal/login`
 - API health: `http://localhost:3101/api/v1/health`
 
-Demo credentials:
+Local demo credentials:
 
 ```txt
-department.admin@arendal.local
+department.admin@kristiansand.local
 DemoPassword123!
 ```
 
-The seed includes Arendal, Grimstad, and Kristiansand tenants, five departments per tenant, 20 realistic cases, documents, AI reviews, SSB population records, analytics snapshots, audit events, operational events, and email logs.
+These credentials are for local or separately protected demos only. Do not expose them in an open public deployment.
+
+The seed includes Kristiansand, Arendal, and Grimstad tenants, five departments per tenant, 20 realistic cases, documents, AI reviews, SSB population records, analytics snapshots, audit events, operational events, and email logs.
 
 ## Walkthrough
 
@@ -36,7 +38,7 @@ The seed includes Arendal, Grimstad, and Kristiansand tenants, five departments 
 2. Submit a realistic citizen case with an address and a PDF/PNG/JPG document.
 3. Mention that Kartverket address search validates and normalizes addresses, while CI uses mocked external APIs.
 4. Explain document validation: size, extension, MIME type, magic bytes, and unsafe filename checks.
-5. Log in as `department.admin@arendal.local`.
+5. Log in as `department.admin@kristiansand.local`.
 6. Switch the internal UI language between Norwegian Bokmal and English.
 7. Open the case dashboard and show realistic seeded cases across statuses and departments.
 8. Open the submitted case or an existing seeded case.
@@ -51,7 +53,7 @@ The seed includes Arendal, Grimstad, and Kristiansand tenants, five departments 
 17. Show effect metrics: triage time, close time, waiting cases, AI acceptance/correction, AI failures, estimated minutes saved, and cases per 1,000 inhabitants.
 18. Explain SSB enrichment from table `07459` and local idempotent imports.
 19. Open operations and show health, readiness, Kartverket metrics, SSB import status, AI metrics, failed logins, permission denials, rate-limit blocks, document upload failures, and maintenance status.
-20. Discuss privacy features: export, anonymization, retention policy, cleanup dry-run/delete, and privacy docs.
+20. Discuss privacy features: export, profile identifier anonymization, retention policy, cleanup dry-run/delete, and privacy docs.
 21. Discuss deployment assets: Dockerfiles, production Compose, Caddy HTTPS, backup/restore, and smoke test.
 
 ## Interview Talking Points

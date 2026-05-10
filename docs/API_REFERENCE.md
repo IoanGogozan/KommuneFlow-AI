@@ -78,6 +78,25 @@ Supports JSON body or multipart form data:
 | `PATCH` | `/privacy/retention-policy` | `privacy:anonymize` | Update tenant retention policy |
 | `POST` | `/privacy/retention-cleanup` | `privacy:anonymize` | Run retention cleanup dry-run or confirmed delete |
 
+Retention cleanup responses include candidate counts, deleted counts, and `documentStorage` counters for physical uploaded-file cleanup:
+
+```json
+{
+  "mode": "delete",
+  "candidates": {
+    "deletedDocuments": 2
+  },
+  "deleted": {
+    "deletedDocuments": 2
+  },
+  "documentStorage": {
+    "filesDeleted": 2,
+    "filesAlreadyMissing": 0,
+    "cleanupFailures": 0
+  }
+}
+```
+
 ## Operations
 
 | Method | Path | Auth | Purpose |

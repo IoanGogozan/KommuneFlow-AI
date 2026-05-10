@@ -8,7 +8,7 @@ This inventory maps data categories, purposes, storage locations, retention, acc
 
 | Data Category | Examples | Purpose | Stored In | Access | Retention | Privacy Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| Citizen identity | name, email, phone, address | create and process municipal requests | `citizen_profiles` | tenant-scoped case workers/admins, auditors, super admins | tied to case and retention policy | export and anonymization supported |
+| Citizen identity | name, email, phone, address | create and process municipal requests | `citizen_profiles` | tenant-scoped case workers/admins, auditors, super admins | tied to case and retention policy | export and profile identifier anonymization supported |
 | Case content | title, description, source language | case handling and routing | `cases` | tenant and department scoped | closed case retention policy | may contain personal data entered by citizen |
 | Case status/classification | status, category, urgency, assigned department | workflow and operational reporting | `cases` | tenant and department scoped | closed case retention policy | used in aggregated analytics |
 | Uploaded documents | file content, original filename, MIME, checksum, size | support document-based case handling | upload volume + `case_documents` metadata | tenant/department scoped, sensitive permission for sensitive documents | soft-deleted document retention policy | downloads are audited |

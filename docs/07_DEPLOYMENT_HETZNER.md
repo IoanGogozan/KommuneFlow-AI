@@ -80,15 +80,26 @@ Required values:
 APP_DOMAIN=your-domain.example
 APP_BASE_URL=https://your-domain.example
 ACME_EMAIL=admin@your-domain.example
+DEMO_BASIC_AUTH_USER=<demo gate username>
+DEMO_BASIC_AUTH_HASH=<Caddy bcrypt hash>
 POSTGRES_DB=kommuneflow_ai
 POSTGRES_USER=kommuneflow
 POSTGRES_PASSWORD=<long random secret>
 JWT_SECRET=<long random secret>
 SESSION_SECRET=<long random secret>
+STATUS_CODE_PEPPER=<separate long random secret>
 AI_PROVIDER=mock
 ```
 
 Use `AI_PROVIDER=openai` only after `OPENAI_API_KEY` is configured.
+
+Generate the Basic Auth hash with Caddy:
+
+```bash
+docker run --rm caddy:2-alpine caddy hash-password --plaintext 'replace-with-demo-gate-password'
+```
+
+The Caddy Basic Auth gate protects the public demo before traffic reaches the web or API containers. It is separate from seeded application users.
 
 ## Deployment Procedure
 
@@ -138,6 +149,8 @@ docker compose -f docker-compose.prod.yml --env-file .env.production ps
 14. Run the smoke test:
 
 ```bash
+SMOKE_BASIC_AUTH_USER=<demo gate username> \
+SMOKE_BASIC_AUTH_PASSWORD=<demo gate password> \
 sh scripts/smoke-test.sh https://your-domain.example
 ```
 
@@ -152,6 +165,7 @@ The smoke test checks:
 
 Manual checks after the script:
 
+- authenticate through the Caddy Basic Auth prompt
 - log in with a demo user
 - create a citizen case
 - upload a document
@@ -211,7 +225,7 @@ The script writes compressed custom-format PostgreSQL dumps to:
 backups/postgres/
 ```
 
-It also writes a SHA-256 checksum next to each dump.
+It writes a SHA-256 checksum next to each dump. If `BACKUP_GPG_RECIPIENT` or `BACKUP_GPG_PASSPHRASE` is set, it also writes an encrypted `.gpg` artifact and checksum. Unless `BACKUP_KEEP_PLAINTEXT=yes` is set, the plaintext backup is removed after encryption.
 
 Upload files are stored in the Docker volume `uploads_data`. Back them up from the repository root on the server:
 
@@ -225,7 +239,18 @@ The script writes dated `.tar.gz` archives to:
 backups/uploads/
 ```
 
-Copy database and upload backups to storage outside the VPS after each successful backup.
+The upload backup script excludes `.env*` files and refuses to keep an archive if `.env*` appears in the archive listing. It also writes checksums and supports the same optional GPG encryption variables as the PostgreSQL backup script.
+
+Encrypt database and upload backups before copying them to storage outside the VPS. Keep backup storage access separate from application runtime access, and do not include `.env`, `.env.production`, API keys, cookies, or other secrets in backup artifacts.
+
+Optional backup encryption variables:
+
+```txt
+BACKUP_GPG_RECIPIENT=ops-backups@example.com
+# or
+BACKUP_GPG_PASSPHRASE=<strong backup passphrase>
+BACKUP_KEEP_PLAINTEXT=no
+```
 
 Before major deployment changes, create a Hetzner snapshot in addition to application-level PostgreSQL and upload backups.
 
@@ -235,6 +260,13 @@ Restore requires an explicit confirmation environment variable:
 
 ```bash
 RESTORE_CONFIRM=yes sh scripts/restore-postgres.sh backups/postgres/kommuneflow_ai_YYYYMMDDTHHMMSSZ.dump
+```
+
+If the PostgreSQL backup is encrypted, decrypt it first on the restore host:
+
+```bash
+sha256sum -c backups/postgres/kommuneflow_ai_YYYYMMDDTHHMMSSZ.dump.gpg.sha256
+gpg --output backups/postgres/kommuneflow_ai_YYYYMMDDTHHMMSSZ.dump --decrypt backups/postgres/kommuneflow_ai_YYYYMMDDTHHMMSSZ.dump.gpg
 ```
 
 After restore:
@@ -284,3 +316,5 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 - Keep `JWT_SECRET`, `SESSION_SECRET`, and `POSTGRES_PASSWORD` long and random.
 - Run `sh scripts/smoke-test.sh` after deploy changes.
 - Run a restore test before calling the deployment backup-ready.
+- Use encrypted offsite backups with documented retention and deletion.
+- Do not expose a public demo with seeded credentials unless protected by separate access control such as Caddy Basic Auth.

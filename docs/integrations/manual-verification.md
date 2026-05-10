@@ -31,7 +31,7 @@ These checks are for local pre-demo verification only. Do not run real Kartverke
    Internal login: http://localhost:3000/internal/login
    ```
 
-5. Use local demo credentials unless a step says otherwise.
+5. Use local demo credentials unless a step says otherwise. These are for local verification only and must not be enabled in an open public deployment.
 
    ```txt
    super.admin@kommuneflow.local

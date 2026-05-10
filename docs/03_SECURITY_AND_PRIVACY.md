@@ -43,8 +43,11 @@ The application must follow these principles:
 Uploads must validate:
 
 - file size
+- multipart parser limits before application-level validation
 - MIME type
 - allowed extensions
+- magic bytes
+- unsafe filenames
 - storage path safety
 - checksum/hash
 
@@ -62,6 +65,8 @@ Disallowed file types:
 - unknown binary files
 
 Uploaded files must not be stored in a publicly accessible web directory.
+
+Before real production use, uploaded files must be scanned asynchronously with ClamAV or an equivalent malware scanning service before case workers can download or process them. A production design should model document scan status, for example `pending_scan`, `clean`, and `blocked`.
 
 ## GDPR-Style Privacy Requirements
 
@@ -102,7 +107,7 @@ The implementation supports tenant-level retention configuration for:
 - audit events
 - analytics snapshots
 
-Cleanup supports dry-run mode and confirmed deletion mode. Both modes are audited.
+Cleanup supports dry-run mode and confirmed deletion mode. Both modes are audited. Confirmed cleanup removes expired physical uploaded files before deleting document metadata. If a file is already missing, metadata cleanup continues; if physical deletion fails, metadata is retained for retry.
 
 Default demo policy:
 
@@ -118,11 +123,13 @@ Real deployments must adjust these values to the municipality's legal, archival,
 The system must include backend services for:
 
 - exporting citizen data by citizen profile ID or email
-- anonymizing a citizen profile
+- anonymizing citizen profile identifiers
 - soft-deleting documents
 - logging privacy-related actions in the audit log
 - configuring tenant retention policy
 - running retention cleanup dry-run and confirmed deletion
+
+Citizen profile anonymization covers structured profile identifiers: name, email, phone, and address. It is not full erasure or full anonymization of case descriptions, titles, internal notes, uploaded documents, document filenames, AI summaries, audit records, email logs, case addresses, or archive-bound records. A real municipality would need legal/archival rules and additional processing for those areas.
 
 ## Security Acceptance Criteria
 

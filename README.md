@@ -25,12 +25,13 @@ AI is decision support only. Official case category, department, urgency, and st
 - `HttpOnly` cookie authentication for internal UI
 - Audit events for case, document, AI, privacy, and retention actions
 - Persisted operational events for metrics and incident-style visibility
-- Citizen data export and anonymization
+- Citizen data export and profile identifier anonymization
 - Retention policy and dry-run/confirmed cleanup
 - Aggregated analytics dashboard with SSB population enrichment
 - Python ELT package for analytics rebuilds and SSB import
 - Health/readiness endpoints and structured logging
 - Production Dockerfiles, Caddy reverse proxy, backup/restore scripts, and Hetzner deployment docs
+- Microsoft Azure, AI Foundry, and Fabric extension plan
 
 ## Tech Stack
 
@@ -98,7 +99,7 @@ Implemented controls include:
 - Private upload storage
 - Secure document download with audit events
 - Safe error response shape with request IDs
-- Privacy export, anonymization, retention policy, and retention cleanup
+- Privacy export, profile identifier anonymization, retention policy, and retention cleanup
 - Aggregated analytics without citizen identifiers
 
 Privacy docs:
@@ -106,6 +107,11 @@ Privacy docs:
 - [Privacy Notice](./docs/privacy/PRIVACY_NOTICE.md)
 - [Data Processing Inventory](./docs/privacy/DATA_PROCESSING_INVENTORY.md)
 - [DPIA-Lite](./docs/privacy/DPIA_LITE.md)
+- [Production Security Hardening](./docs/security/PRODUCTION_SECURITY_HARDENING.md)
+
+Cloud extension:
+
+- [Azure, AI Foundry, and Fabric Extension](./docs/AZURE_FABRIC_EXTENSION.md)
 
 ## AI Governance
 
@@ -115,27 +121,27 @@ Current limitation: AI calls are still synchronous in the request path. Before r
 
 ## Demo Users
 
-Seeded demo users use this password:
+Seeded demo users use this password for local development and controlled demos only:
 
 ```txt
 DemoPassword123!
 ```
 
-| Role | Email | Notes |
-| --- | --- | --- |
-| Super admin | `super.admin@kommuneflow.local` | Tenant-wide admin and privacy actions |
-| Case worker | `case.worker@arendal.local` | Department-scoped case handling |
-| Department admin | `department.admin@arendal.local` | Department admin and analytics access |
-| Auditor | `auditor@arendal.local` | Read-only audit/privacy visibility |
-| Grimstad case worker | `case.worker@grimstad.local` | Cross-tenant isolation demo |
+| Role                          | Email                                 | Notes                                                         |
+| ----------------------------- | ------------------------------------- | ------------------------------------------------------------- |
+| Super admin                   | `super.admin@kommuneflow.local`       | Tenant-wide admin and privacy actions                         |
+| Kristiansand department admin | `department.admin@kristiansand.local` | Main demo account with case, analytics, and operations access |
+| Kristiansand case worker      | `case.worker@kristiansand.local`      | Department-scoped case handling                               |
+| Kristiansand auditor          | `auditor@kristiansand.local`          | Read-only audit/privacy visibility                            |
+| Grimstad case worker          | `case.worker@grimstad.local`          | Cross-tenant isolation demo                                   |
 
-Demo credentials are for local/demo use only and must never be reused in production.
+Demo credentials are local demo credentials only. They are not displayed in the public login form and must not be enabled in an open public deployment. Protect public portfolio demos with a separate access control such as Caddy Basic Auth or a temporary recruiter/interview account, and use synthetic data only.
 
 ## Demo Data
 
 The seed creates a realistic local portfolio dataset:
 
-- tenants: Arendal Kommune, Grimstad Kommune, Kristiansand Kommune
+- tenants: Kristiansand Kommune, Arendal Kommune, Grimstad Kommune
 - five departments per tenant
 - 20 realistic cases across statuses, categories, and urgencies
 - Norwegian and English case descriptions
@@ -268,10 +274,13 @@ docker compose -f docker-compose.prod.yml --env-file .env.production build
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d postgres
 docker compose -f docker-compose.prod.yml --env-file .env.production run --rm --entrypoint sh api -lc "./node_modules/.bin/prisma migrate deploy"
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+SMOKE_BASIC_AUTH_USER=demo-user \
+SMOKE_BASIC_AUTH_PASSWORD=demo-password \
 sh scripts/smoke-test.sh https://your-domain.example
 ```
 
 See [Hetzner Deployment](./docs/07_DEPLOYMENT_HETZNER.md) for firewall, HTTPS, backup, restore, and smoke-test details.
+See [Production Security Hardening](./docs/security/PRODUCTION_SECURITY_HARDENING.md) for the distinction between implemented demo controls, known production gaps, and target controls for real municipal use.
 
 Deployment status: production assets are implemented and locally verified. Public Hetzner HTTPS deployment still needs to be executed and verified on a real host.
 
@@ -314,6 +323,8 @@ See [Demo Script](./docs/DEMO_SCRIPT.md) for an interview-ready walkthrough.
 - Email confirmation is logged through a mock provider; real SMTP/transactional email is future production work.
 - Document OCR/PDF text extraction is not implemented.
 - Malware scanning is represented as a future provider concern, not a real scanner.
+- Citizen profile anonymization does not fully anonymize free text, uploaded documents, filenames, AI summaries, audit records, email logs, or archive-bound records.
+- Backup scripts support optional GPG encryption, but offsite transfer, storage access control, and scheduled restore tests are production operations outside this demo.
 - AI calls are synchronous in the request path.
 - AI prompt redaction/minimization should be expanded before real production use.
 - Privacy actions have a simple internal UI; a fuller workflow with approvals and scheduled retention jobs is future work.

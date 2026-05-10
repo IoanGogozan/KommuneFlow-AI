@@ -49,32 +49,34 @@ export type IntakeDictionary = {
 
 export const dictionaries: Record<Locale, IntakeDictionary> = {
   nb: {
-    languageLabel: "Sprak",
+    languageLabel: "Språk",
     switchLanguage: "English",
     badge: "Innbyggerportal",
     title: "Send inn en henvendelse",
     intro:
-      "Beskriv saken din, sa registrerer kommunen den for videre behandling.",
+      "Beskriv saken din, så registrerer kommunen den for videre behandling.",
     tenantLabel: "Kommune",
-    tenantHelp: "Demo bruker Arendal Kommune.",
+    tenantHelp:
+      "Velg kommunen saken gjelder. Henvendelsen lagres hos valgt kommune.",
     nameLabel: "Navn",
     emailLabel: "E-post",
     phoneLabel: "Telefon",
     addressLabel: "Adresse",
-    addressSearch: "Sok adresse",
-    addressSearching: "Soker...",
+    addressSearch: "Søk adresse",
+    addressSearching: "Søker...",
     addressSuggestionLabel: "Foreslatt adresse",
     addressConfirm: "Bekreft adresse",
     addressConfirmed: "Adresse bekreftet",
     addressNoResults: "Fant ingen adresseforslag.",
-    addressError: "Kunne ikke validere adressen na.",
+    addressError: "Kunne ikke validere adressen nå.",
     caseTitleLabel: "Tittel",
     descriptionLabel: "Beskrivelse",
     documentsLabel: "Dokumenter",
-    documentsHelp: "Valgfritt. Last opp PDF, PNG eller JPG. Maks 10 MB per fil.",
+    documentsHelp:
+      "Valgfritt. Last opp PDF, PNG eller JPG. Maks 10 MB per fil.",
     privacyLabel: "Personvern",
     privacyText:
-      "Jeg forstar at opplysningene og eventuelle dokumenter brukes til a registrere og behandle henvendelsen min. Tilgang loggfores, og data kan eksporteres, anonymiseres eller slettes etter kommunens retensjonsregler.",
+      "Jeg forstår at opplysningene og eventuelle dokumenter brukes til å registrere og behandle henvendelsen min. Tilgang loggføres, og data kan eksporteres eller håndteres etter kommunens retensjonsregler.",
     submit: "Send inn",
     submitting: "Sender inn...",
     successTitle: "Henvendelsen er registrert",
@@ -93,7 +95,7 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     updatedLabel: "Sist oppdatert",
     departmentLabel: "Avdeling",
     newCase: "Ny henvendelse",
-    error: "Kunne ikke sende inn henvendelsen. Prov igjen.",
+    error: "Kunne ikke sende inn henvendelsen. Prøv igjen.",
   },
   en: {
     languageLabel: "Language",
@@ -103,7 +105,8 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     intro:
       "Describe your case and the municipality will register it for processing.",
     tenantLabel: "Municipality",
-    tenantHelp: "The demo uses Arendal Kommune.",
+    tenantHelp:
+      "Choose the municipality for this case. The request is stored under the selected municipality.",
     nameLabel: "Name",
     emailLabel: "Email",
     phoneLabel: "Phone",
@@ -121,7 +124,7 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     documentsHelp: "Optional. Upload PDF, PNG, or JPG. Maximum 10 MB per file.",
     privacyLabel: "Privacy",
     privacyText:
-      "I understand that my information and any documents are used to register and process this request. Access is audited, and data may be exported, anonymized, or deleted according to the municipality's retention policy.",
+      "I understand that my information and any documents are used to register and process this request. Access is audited, and data may be exported or handled according to the municipality's retention policy.",
     submit: "Submit",
     submitting: "Submitting...",
     successTitle: "Request registered",
