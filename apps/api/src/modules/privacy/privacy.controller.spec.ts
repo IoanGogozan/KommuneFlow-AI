@@ -95,6 +95,21 @@ describe('PrivacyController', () => {
     });
   });
 
+  it('returns 403 when a user without audit read permission requests privacy status', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      id: 'user_1',
+      tenantId: 'tenant_1',
+      departmentId: 'department_1',
+      email: 'worker@example.local',
+      role: 'case_worker',
+    });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/privacy/status')
+      .set('Cookie', [`${AUTH_COOKIE_NAME}=valid-token`])
+      .expect(403);
+  });
+
   it('returns 403 when a user without privacy export permission requests export', async () => {
     jwtService.verifyAsync.mockResolvedValue({
       id: 'user_1',
@@ -227,6 +242,84 @@ describe('PrivacyController', () => {
     });
   });
 
+  it('returns 403 when a user without privacy export permission requests retention policy', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      id: 'user_1',
+      tenantId: 'tenant_1',
+      departmentId: null,
+      email: 'auditor@example.local',
+      role: 'auditor',
+    });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/privacy/retention-policy')
+      .set('Cookie', [`${AUTH_COOKIE_NAME}=valid-token`])
+      .expect(403);
+  });
+
+  it('updates retention policy for super admins', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      id: 'user_1',
+      tenantId: 'tenant_1',
+      departmentId: null,
+      email: 'admin@example.local',
+      role: 'super_admin',
+    });
+    privacyService.updateRetentionPolicy.mockResolvedValue({
+      tenantId: 'tenant_1',
+      closedCaseRetentionDays: 3650,
+      deletedDocumentRetentionDays: 120,
+      auditEventRetentionDays: 3650,
+      analyticsRetentionDays: 1095,
+    });
+
+    const response = await request(app.getHttpServer())
+      .patch('/api/v1/privacy/retention-policy')
+      .set('Origin', process.env.APP_BASE_URL ?? 'http://localhost:3000')
+      .set('Cookie', [`${AUTH_COOKIE_NAME}=valid-token`])
+      .send({
+        closedCaseRetentionDays: 3650,
+        deletedDocumentRetentionDays: 120,
+        auditEventRetentionDays: 3650,
+        analyticsRetentionDays: 1095,
+      })
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantId: 'tenant_1',
+      deletedDocumentRetentionDays: 120,
+    });
+    expect(privacyService.updateRetentionPolicy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant_1',
+        role: 'super_admin',
+      }),
+      {
+        closedCaseRetentionDays: 3650,
+        deletedDocumentRetentionDays: 120,
+        auditEventRetentionDays: 3650,
+        analyticsRetentionDays: 1095,
+      },
+    );
+  });
+
+  it('returns 403 when a user without privacy anonymize permission updates retention policy', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      id: 'user_1',
+      tenantId: 'tenant_1',
+      departmentId: null,
+      email: 'auditor@example.local',
+      role: 'auditor',
+    });
+
+    await request(app.getHttpServer())
+      .patch('/api/v1/privacy/retention-policy')
+      .set('Origin', process.env.APP_BASE_URL ?? 'http://localhost:3000')
+      .set('Cookie', [`${AUTH_COOKIE_NAME}=valid-token`])
+      .send({ deletedDocumentRetentionDays: 120 })
+      .expect(403);
+  });
+
   it('runs retention cleanup dry-run for super admins', async () => {
     jwtService.verifyAsync.mockResolvedValue({
       id: 'user_1',
@@ -258,6 +351,40 @@ describe('PrivacyController', () => {
         role: 'super_admin',
       }),
       { confirm: false },
+    );
+  });
+
+  it('runs confirmed retention cleanup for super admins', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      id: 'user_1',
+      tenantId: 'tenant_1',
+      departmentId: null,
+      email: 'admin@example.local',
+      role: 'super_admin',
+    });
+    privacyService.runRetentionCleanup.mockResolvedValue({
+      mode: 'delete',
+      deleted: {
+        closedCases: 1,
+      },
+    });
+
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/privacy/retention-cleanup')
+      .set('Origin', process.env.APP_BASE_URL ?? 'http://localhost:3000')
+      .set('Cookie', [`${AUTH_COOKIE_NAME}=valid-token`])
+      .send({ confirm: true })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      mode: 'delete',
+    });
+    expect(privacyService.runRetentionCleanup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant_1',
+        role: 'super_admin',
+      }),
+      { confirm: true },
     );
   });
 });

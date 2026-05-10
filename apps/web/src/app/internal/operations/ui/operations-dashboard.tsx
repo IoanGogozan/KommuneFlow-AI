@@ -114,6 +114,12 @@ export function OperationsDashboard() {
             >
               {t.nav.cases}
             </Link>
+            <Link
+              href="/internal/privacy"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
+            >
+              {t.nav.privacy}
+            </Link>
           </div>
         </header>
 
