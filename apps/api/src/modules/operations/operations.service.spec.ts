@@ -1,19 +1,28 @@
+import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { OperationsService } from './operations.service';
 
 describe('OperationsService', () => {
   it('summarizes operational metrics from persisted events', async () => {
+    const user = {
+      id: 'user_1',
+      tenantId: 'tenant_1',
+      departmentId: null,
+      email: 'auditor@example.local',
+      role: UserRole.auditor,
+    } as const;
+    const operationalEventInputs: Array<{ where: { tenantId?: string } }> = [];
+    const operationalEventResults = [2, 3, 4, 1, 6, 1, 0];
+    const operationalEventCount = jest.fn(
+      (input: { where: { tenantId?: string } }) => {
+        operationalEventInputs.push(input);
+
+        return Promise.resolve(operationalEventResults.shift() ?? 0);
+      },
+    );
     const service = new OperationsService({
       operationalEvent: {
-        count: jest
-          .fn()
-          .mockResolvedValueOnce(2)
-          .mockResolvedValueOnce(3)
-          .mockResolvedValueOnce(4)
-          .mockResolvedValueOnce(1)
-          .mockResolvedValueOnce(6)
-          .mockResolvedValueOnce(1)
-          .mockResolvedValueOnce(0),
+        count: operationalEventCount,
       },
       integrationHealthEvent: {
         count: jest.fn().mockResolvedValueOnce(7).mockResolvedValueOnce(2),
@@ -51,7 +60,7 @@ describe('OperationsService', () => {
       },
     } as unknown as PrismaService);
 
-    await expect(service.getMetricsSummary()).resolves.toMatchObject({
+    await expect(service.getMetricsSummary(user)).resolves.toMatchObject({
       apiErrorsLast24h: 2,
       failedLoginsLast24h: 3,
       permissionDeniedLast24h: 4,
@@ -70,5 +79,6 @@ describe('OperationsService', () => {
       backupLastRunStatus: 'completed',
       backupLastRunAt: '2026-05-09T13:00:00.000Z',
     });
+    expect(operationalEventInputs[0]?.where.tenantId).toBe('tenant_1');
   });
 });

@@ -6,6 +6,65 @@ ENV_FILE="${ENV_FILE:-.env.production}"
 BACKUP_DIR="${BACKUP_DIR:-backups/uploads}"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 
+require_command() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "Missing required command: $1" >&2
+    exit 1
+  fi
+}
+
+write_checksum() {
+  file="$1"
+  sha256sum "$file" > "$file.sha256"
+  echo "Created checksum: $file.sha256"
+}
+
+encrypt_if_configured() {
+  file="$1"
+
+  if [ -n "${BACKUP_GPG_RECIPIENT:-}" ]; then
+    require_command gpg
+    encrypted_file="$file.gpg"
+    gpg --batch --yes --recipient "$BACKUP_GPG_RECIPIENT" --encrypt --output "$encrypted_file" "$file"
+    write_checksum "$encrypted_file"
+
+    if [ "${BACKUP_KEEP_PLAINTEXT:-no}" != "yes" ]; then
+      rm -f "$file" "$file.sha256"
+    fi
+
+    echo "Created encrypted backup: $encrypted_file"
+    return 0
+  fi
+
+  if [ -n "${BACKUP_GPG_PASSPHRASE:-}" ]; then
+    require_command gpg
+    encrypted_file="$file.gpg"
+    gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_GPG_PASSPHRASE" \
+      --symmetric --cipher-algo AES256 --output "$encrypted_file" "$file"
+    write_checksum "$encrypted_file"
+
+    if [ "${BACKUP_KEEP_PLAINTEXT:-no}" != "yes" ]; then
+      rm -f "$file" "$file.sha256"
+    fi
+
+    echo "Created encrypted backup: $encrypted_file"
+  fi
+}
+
+assert_archive_has_no_env_files() {
+  file="$1"
+
+  if tar -tzf "$file" | grep -E '(^|/)\.env([^/]*$)' >/dev/null 2>&1; then
+    echo "Refusing uploads backup because archive contains .env* files: $file" >&2
+    rm -f "$file" "$file.sha256" "$file.gpg" "$file.gpg.sha256"
+    exit 1
+  fi
+}
+
+require_command docker
+require_command grep
+require_command sha256sum
+require_command tar
 mkdir -p "$BACKUP_DIR"
 
 if [ ! -f "$ENV_FILE" ]; then
@@ -18,9 +77,10 @@ BACKUP_NAME="$(basename "$BACKUP_FILE")"
 
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run --rm --no-deps \
   -v "$(pwd)/$BACKUP_DIR:/backup" api \
-  sh -c "cd /app/uploads && tar -czf /backup/$BACKUP_NAME ."
+  sh -c "cd /app/uploads && tar --exclude='.env' --exclude='.env.*' --exclude='*/.env' --exclude='*/.env.*' -czf /backup/$BACKUP_NAME ."
 
-sha256sum "$BACKUP_FILE" > "$BACKUP_FILE.sha256"
+assert_archive_has_no_env_files "$BACKUP_FILE"
+write_checksum "$BACKUP_FILE"
+encrypt_if_configured "$BACKUP_FILE"
 
 echo "Created uploads backup: $BACKUP_FILE"
-echo "Created checksum: $BACKUP_FILE.sha256"

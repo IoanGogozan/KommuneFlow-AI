@@ -5,6 +5,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
+import type { CurrentUser } from '../auth/current-user';
+import { CurrentUserParam } from '../auth/current-user.decorator';
 import { RequirePermissions } from '../auth/permissions.decorator';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { OperationsService } from './operations.service';
@@ -46,7 +48,7 @@ export class OperationsController {
   @Get('operations/metrics-summary')
   @UseGuards(AuthGuard, PermissionsGuard)
   @RequirePermissions('operations:read')
-  metricsSummary() {
-    return this.operationsService.getMetricsSummary();
+  metricsSummary(@CurrentUserParam() user: CurrentUser) {
+    return this.operationsService.getMetricsSummary(user);
   }
 }

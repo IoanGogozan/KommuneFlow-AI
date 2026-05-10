@@ -11,7 +11,14 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 	}
 
+	basic_auth {
+		{$DEMO_BASIC_AUTH_USER} {$DEMO_BASIC_AUTH_HASH}
+	}
+
 	handle /api/* {
+		request_body {
+			max_size 60MB
+		}
 		reverse_proxy api:3101
 	}
 

@@ -118,6 +118,13 @@ describe('OperationsController', () => {
       .set('Cookie', [`${AUTH_COOKIE_NAME}=valid-token`])
       .expect(200);
 
+    expect(operationsService.getMetricsSummary).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'user_1',
+        tenantId: 'tenant_1',
+        role: 'auditor',
+      }),
+    );
     expect(response.body).toMatchObject({
       failedLoginsLast24h: 1,
       rateLimitBlocksLast24h: 4,

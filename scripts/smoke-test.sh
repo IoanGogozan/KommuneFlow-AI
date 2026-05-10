@@ -9,13 +9,29 @@ if [ -z "$BASE_URL" ]; then
 fi
 
 BASE_URL="${BASE_URL%/}"
+SMOKE_BASIC_AUTH_USER="${SMOKE_BASIC_AUTH_USER:-}"
+SMOKE_BASIC_AUTH_PASSWORD="${SMOKE_BASIC_AUTH_PASSWORD:-}"
+
+if [ -n "$SMOKE_BASIC_AUTH_USER" ] && [ -z "$SMOKE_BASIC_AUTH_PASSWORD" ]; then
+  echo "SMOKE_BASIC_AUTH_PASSWORD is required when SMOKE_BASIC_AUTH_USER is set" >&2
+  exit 1
+fi
+
+if [ -z "$SMOKE_BASIC_AUTH_USER" ] && [ -n "$SMOKE_BASIC_AUTH_PASSWORD" ]; then
+  echo "SMOKE_BASIC_AUTH_USER is required when SMOKE_BASIC_AUTH_PASSWORD is set" >&2
+  exit 1
+fi
 
 check() {
   name="$1"
   url="$2"
   expected="$3"
 
-  status="$(curl -fsS -o /dev/null -w "%{http_code}" "$url")"
+  if [ -n "$SMOKE_BASIC_AUTH_USER" ]; then
+    status="$(curl -fsS -u "$SMOKE_BASIC_AUTH_USER:$SMOKE_BASIC_AUTH_PASSWORD" -o /dev/null -w "%{http_code}" "$url")"
+  else
+    status="$(curl -fsS -o /dev/null -w "%{http_code}" "$url")"
+  fi
   if [ "$status" != "$expected" ]; then
     echo "FAIL $name: expected HTTP $expected, got $status for $url" >&2
     exit 1

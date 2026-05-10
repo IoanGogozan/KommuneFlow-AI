@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CaseStatus, Prisma, UserRole } from '@prisma/client';
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, extname } from 'node:path';
 import { PrismaService } from '../../database/prisma.service';
@@ -652,11 +652,28 @@ function generateCaseReference() {
 }
 
 function generateStatusAccessCode() {
-  return randomBytes(6).toString('base64url').toUpperCase();
+  return randomBytes(16).toString('base64url').toUpperCase();
 }
 
 function hashStatusAccessCode(statusAccessCode: string) {
-  return createHash('sha256')
+  return createHmac('sha256', getStatusCodePepper())
     .update(statusAccessCode.trim().toUpperCase())
     .digest('hex');
+}
+
+function getStatusCodePepper() {
+  const pepper =
+    process.env.STATUS_CODE_PEPPER ??
+    process.env.SESSION_SECRET ??
+    process.env.JWT_SECRET;
+
+  if (pepper && pepper.trim().length > 0) {
+    return pepper;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('STATUS_CODE_PEPPER must be configured in production.');
+  }
+
+  return 'kommuneflow-local-development-status-code-pepper';
 }

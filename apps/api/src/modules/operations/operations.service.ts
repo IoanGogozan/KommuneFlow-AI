@@ -3,6 +3,7 @@ import { constants } from 'node:fs';
 import { access, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { PrismaService } from '../../database/prisma.service';
+import type { CurrentUser } from '../auth/current-user';
 
 type ReadinessCheck = {
   status: 'ok' | 'warning' | 'error';
@@ -61,8 +62,14 @@ export class OperationsService {
     };
   }
 
-  async getMetricsSummary(): Promise<OperationsMetricsSummary> {
+  async getMetricsSummary(
+    user: CurrentUser,
+  ): Promise<OperationsMetricsSummary> {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const tenantScopedWhere = {
+      tenantId: user.tenantId,
+      createdAt: { gte: since },
+    };
     const [
       apiErrorsLast24h,
       failedLoginsLast24h,
@@ -81,30 +88,38 @@ export class OperationsService {
       retentionCleanupLastRun,
       backupLastRun,
     ] = await Promise.all([
-      this.countOperationalEvents(['api.error'], since),
-      this.countOperationalEvents(['auth.login_failed'], since),
-      this.countOperationalEvents(['security.permission_denied'], since),
+      this.countOperationalEvents(['api.error'], since, user.tenantId),
+      this.countOperationalEvents(['auth.login_failed'], since, user.tenantId),
+      this.countOperationalEvents(
+        ['security.permission_denied'],
+        since,
+        user.tenantId,
+      ),
       this.countOperationalEvents(
         ['security.cross_tenant_access_attempt'],
         since,
+        user.tenantId,
       ),
       this.countOperationalEvents(
         ['public.rate_limited', 'security.rate_limited'],
         since,
+        user.tenantId,
       ),
       this.prisma.aIObservabilityEvent.count({
-        where: { createdAt: { gte: since } },
+        where: tenantScopedWhere,
       }),
-      this.countOperationalEvents(['ai.triage_failed'], since),
+      this.countOperationalEvents(['ai.triage_failed'], since, user.tenantId),
       this.prisma.aIObservabilityEvent.findMany({
-        where: {
-          createdAt: { gte: since },
-        },
+        where: tenantScopedWhere,
         select: {
           durationMs: true,
         },
       }),
-      this.countOperationalEvents(['document.upload_failed'], since),
+      this.countOperationalEvents(
+        ['document.upload_failed'],
+        since,
+        user.tenantId,
+      ),
       this.prisma.integrationHealthEvent.count({
         where: {
           integrationName: 'kartverket_address',
@@ -136,7 +151,10 @@ export class OperationsService {
         },
       }),
       this.prisma.analyticsDailySnapshot.findFirst({
-        where: { analyticsRebuiltAt: { not: null } },
+        where: {
+          tenantId: user.tenantId,
+          analyticsRebuiltAt: { not: null },
+        },
         orderBy: { analyticsRebuiltAt: 'desc' },
         select: { analyticsRebuiltAt: true },
       }),
@@ -178,9 +196,14 @@ export class OperationsService {
     };
   }
 
-  private countOperationalEvents(eventTypes: string[], since: Date) {
+  private countOperationalEvents(
+    eventTypes: string[],
+    since: Date,
+    tenantId: string,
+  ) {
     return this.prisma.operationalEvent.count({
       where: {
+        tenantId,
         eventType: { in: eventTypes },
         createdAt: { gte: since },
       },

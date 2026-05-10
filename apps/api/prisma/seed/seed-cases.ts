@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { createHash } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 import { tenants } from './data/tenants';
 import { DemoCase, SeedContext } from './types';
 import { addHours, addMinutes, daysAgo } from './time';
@@ -100,9 +100,26 @@ function caseReferenceForDemoCase(caseId: string) {
 }
 
 function statusAccessCodeHashForDemoCase(caseId: string) {
-  return createHash('sha256')
+  return createHmac('sha256', getStatusCodePepper())
     .update(`DEMO-${caseId}`.toUpperCase())
     .digest('hex');
+}
+
+function getStatusCodePepper() {
+  const pepper =
+    process.env.STATUS_CODE_PEPPER ??
+    process.env.SESSION_SECRET ??
+    process.env.JWT_SECRET;
+
+  if (pepper && pepper.trim().length > 0) {
+    return pepper;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('STATUS_CODE_PEPPER must be configured in production.');
+  }
+
+  return 'kommuneflow-local-development-status-code-pepper';
 }
 
 async function seedAddress(

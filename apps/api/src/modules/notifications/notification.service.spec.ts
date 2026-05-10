@@ -1,16 +1,21 @@
 import { CaseStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import { MockEmailProvider } from './mock-email.provider';
+import { MockEmailMessage, MockEmailProvider } from './mock-email.provider';
 import { NotificationService } from './notification.service';
 
 describe('NotificationService', () => {
   it('logs confirmation email through the mock provider', async () => {
     let capturedCreateInput: unknown;
-    const sendMock = jest.fn().mockResolvedValue({
-      provider: 'mock',
-      status: 'logged',
-      sentAt: null,
-      messageId: 'mock_case_confirmation_1',
+    const sentMessages: MockEmailMessage[] = [];
+    const sendMock = jest.fn((message: MockEmailMessage) => {
+      sentMessages.push(message);
+
+      return Promise.resolve({
+        provider: 'mock',
+        status: 'logged',
+        sentAt: null,
+        messageId: 'mock_case_confirmation_1',
+      });
     });
     const provider = {
       send: sendMock,
@@ -52,6 +57,8 @@ describe('NotificationService', () => {
         template: 'case_confirmation',
       }),
     );
+    const sentEmail = sentMessages[0];
+    expect(sentEmail.bodyText).toContain('ABC123XYZ');
     expect(capturedCreateInput).toMatchObject({
       data: {
         tenantId: 'tenant_1',
@@ -62,6 +69,17 @@ describe('NotificationService', () => {
         status: 'logged',
       },
     });
+    const storedEmail = capturedCreateInput as {
+      data: {
+        bodyText: string;
+        metadataJson: { statusAccessCodeMasked?: string };
+      };
+    };
+    expect(storedEmail.data.bodyText).toContain('ABC1-*****');
+    expect(storedEmail.data.metadataJson.statusAccessCodeMasked).toBe(
+      'ABC1-*****',
+    );
+    expect(JSON.stringify(capturedCreateInput)).not.toContain('ABC123XYZ');
   });
 
   it('logs status-change email through the mock provider', async () => {

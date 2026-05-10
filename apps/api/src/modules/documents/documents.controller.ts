@@ -24,6 +24,8 @@ import { PermissionsGuard } from '../auth/permissions.guard';
 import { DocumentsService } from './documents.service';
 import { uploadDocumentBodySchema } from './documents.schemas';
 
+const MAX_DOCUMENT_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+
 @Controller('cases/:caseId/documents')
 @UseGuards(AuthGuard, PermissionsGuard)
 export class DocumentsController {
@@ -63,7 +65,14 @@ export class DocumentsController {
 
   @Post()
   @RequirePermissions('document:upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: MAX_DOCUMENT_FILE_SIZE_BYTES,
+        files: 1,
+      },
+    }),
+  )
   async uploadForCase(
     @Param('caseId') caseId: string,
     @CurrentUserParam() user: CurrentUser,

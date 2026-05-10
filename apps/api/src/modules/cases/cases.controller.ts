@@ -28,13 +28,23 @@ import {
   updateCaseStatusSchema,
 } from './cases.schemas';
 
+const MAX_PUBLIC_DOCUMENT_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_PUBLIC_DOCUMENT_FILES = 5;
+
 @Controller('public/tenants/:tenantSlug/cases')
 export class PublicCasesController {
   constructor(private readonly casesService: CasesService) {}
 
   @Post()
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @UseInterceptors(FilesInterceptor('documents', 5))
+  @UseInterceptors(
+    FilesInterceptor('documents', MAX_PUBLIC_DOCUMENT_FILES, {
+      limits: {
+        fileSize: MAX_PUBLIC_DOCUMENT_FILE_SIZE_BYTES,
+        files: MAX_PUBLIC_DOCUMENT_FILES,
+      },
+    }),
+  )
   async createPublicCase(
     @Param('tenantSlug') tenantSlug: string,
     @Body() body: unknown,

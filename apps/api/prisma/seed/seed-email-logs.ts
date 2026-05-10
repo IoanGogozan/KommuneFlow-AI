@@ -17,13 +17,18 @@ export async function seedEmailLogs(
     bodyText: [
       `Your request "${demoCase.title}" has been registered.`,
       `Case reference: ${caseReferenceForDemoCase(demoCase.id)}`,
-      `Status access code: ${statusAccessCodeForDemoCase(demoCase.id)}`,
+      `Status access code: ${maskStatusAccessCode(
+        statusAccessCodeForDemoCase(demoCase.id),
+      )}`,
       'Keep this code to check status later.',
     ].join('\n'),
     template: 'case_confirmation',
     createdAt: addMinutes(createdAt, 4),
     metadataJson: {
       caseReference: caseReferenceForDemoCase(demoCase.id),
+      statusAccessCodeMasked: maskStatusAccessCode(
+        statusAccessCodeForDemoCase(demoCase.id),
+      ),
       source: 'prisma_seed',
     },
   });
@@ -100,4 +105,16 @@ function caseReferenceForDemoCase(caseId: string) {
 
 function statusAccessCodeForDemoCase(caseId: string) {
   return `DEMO-${caseId}`.toUpperCase();
+}
+
+function maskStatusAccessCode(statusAccessCode: string) {
+  const normalized = statusAccessCode.trim().toUpperCase();
+
+  if (normalized.length <= 4) {
+    return '****';
+  }
+
+  return `${normalized.slice(0, 4)}-${'*'.repeat(
+    Math.min(8, normalized.length - 4),
+  )}`;
 }

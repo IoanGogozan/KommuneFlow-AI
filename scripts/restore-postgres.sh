@@ -20,6 +20,12 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 1
 fi
 
+if [ -f "$BACKUP_FILE.sha256" ]; then
+  sha256sum -c "$BACKUP_FILE.sha256"
+else
+  echo "Warning: checksum file not found for $BACKUP_FILE" >&2
+fi
+
 set -a
 . "$ENV_FILE"
 set +a

@@ -25,6 +25,12 @@ export class NotificationService {
       `Status access code: ${input.statusAccessCode}`,
       'Keep this code to check status later.',
     ].join('\n');
+    const storedBodyText = [
+      `Your request "${input.title}" has been registered.`,
+      `Case reference: ${input.caseReference}`,
+      `Status access code: ${maskStatusAccessCode(input.statusAccessCode)}`,
+      'Keep this code to check status later.',
+    ].join('\n');
 
     return this.logEmail({
       tenantId: input.tenantId,
@@ -32,9 +38,11 @@ export class NotificationService {
       recipientEmail: input.recipientEmail,
       subject,
       bodyText,
+      storedBodyText,
       template: 'case_confirmation',
       metadata: {
         caseReference: input.caseReference,
+        statusAccessCodeMasked: maskStatusAccessCode(input.statusAccessCode),
       },
     });
   }
@@ -72,6 +80,7 @@ export class NotificationService {
     recipientEmail: string;
     subject: string;
     bodyText: string;
+    storedBodyText?: string;
     template: string;
     metadata: Record<string, unknown>;
   }) {
@@ -89,7 +98,7 @@ export class NotificationService {
         caseId: input.caseId,
         recipientEmail: input.recipientEmail.toLowerCase(),
         subject: input.subject,
-        bodyText: input.bodyText,
+        bodyText: input.storedBodyText ?? input.bodyText,
         template: input.template,
         provider: delivery.provider,
         status: delivery.status,
@@ -108,4 +117,16 @@ export class NotificationService {
       },
     });
   }
+}
+
+function maskStatusAccessCode(statusAccessCode: string) {
+  const normalized = statusAccessCode.trim().toUpperCase();
+
+  if (normalized.length <= 4) {
+    return '****';
+  }
+
+  return `${normalized.slice(0, 4)}-${'*'.repeat(
+    Math.min(8, normalized.length - 4),
+  )}`;
 }
