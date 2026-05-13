@@ -16,7 +16,7 @@
     "screenshots:demo": "node scripts/capture-demo-screenshots.mjs"
   },
   "devDependencies": {
-    "playwright": "1.51.1",
+    "playwright": "1.55.1",
     "prettier": "^3.4.2",
     "typescript": "^5.9.3"
   }
