@@ -5,10 +5,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
-import {
-  InternalLanguageToggle,
-  useInternalI18n,
-} from "@/lib/internal-locale";
+import { useInternalI18n } from "@/lib/internal-locale";
+import { InternalShell } from "../../../ui/internal-shell";
 
 type CaseDetailResponse = {
   id: string;
@@ -346,383 +344,400 @@ export function CaseDetail({ caseId }: { caseId: string }) {
 
   if (!caseRecord) {
     return (
-      <main className="min-h-screen bg-slate-100 px-5 py-8">
+      <InternalShell
+        locale={locale}
+        maxWidth="5xl"
+        setLocale={setLocale}
+        t={t}
+        title={t.cases.loading}
+      >
         <p className="text-sm text-slate-600">{error ?? t.cases.loading}</p>
-      </main>
+      </InternalShell>
     );
   }
 
   const caseAddress = caseRecord.addresses[0] ?? null;
 
   return (
-    <main className="min-h-screen bg-slate-100">
-      <div className="mx-auto max-w-5xl px-5 py-6">
-        <div className="flex items-center justify-between gap-3">
-          <Link
-            href="/internal/cases"
-            className="text-sm font-medium text-slate-600"
-          >
-            {t.cases.back}
-          </Link>
-          <InternalLanguageToggle locale={locale} setLocale={setLocale} />
+    <InternalShell
+      breadcrumb={
+        <ol className="flex flex-wrap items-center gap-2">
+          <li>
+            <Link
+              href="/internal/cases"
+              className="font-medium text-slate-600 hover:text-slate-950"
+            >
+              {t.nav.cases}
+            </Link>
+          </li>
+          <li aria-hidden="true">/</li>
+          <li aria-current="page" className="text-slate-700">
+            {t.nav.caseDetail}
+          </li>
+        </ol>
+      }
+      locale={locale}
+      maxWidth="5xl"
+      setLocale={setLocale}
+      t={t}
+      title={caseRecord.title}
+    >
+      <Link
+        href="/internal/cases"
+        className="mt-5 inline-flex text-sm font-medium text-slate-600 hover:text-slate-950"
+      >
+        {t.cases.back}
+      </Link>
+
+      <section className="mt-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm text-slate-500">{caseRecord.id}</p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-950">
+              {caseRecord.title}
+            </h1>
+          </div>
+          <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-800">
+            {caseRecord.status}
+          </span>
         </div>
 
-        <section className="mt-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-sm text-slate-500">{caseRecord.id}</p>
-              <h1 className="mt-2 text-3xl font-semibold text-slate-950">
-                {caseRecord.title}
-              </h1>
-            </div>
-            <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-800">
-              {caseRecord.status}
-            </span>
-          </div>
+        <dl className="mt-6 grid gap-4 sm:grid-cols-3">
+          <Info
+            label={t.cases.citizen}
+            value={caseRecord.citizenProfile.name}
+          />
+          <Info
+            label={t.cases.department}
+            value={caseRecord.assignedDepartment?.name ?? t.common.unassigned}
+          />
+          <Info label={t.cases.urgency} value={caseRecord.urgency} />
+        </dl>
 
-          <dl className="mt-6 grid gap-4 sm:grid-cols-3">
-            <Info label={t.cases.citizen} value={caseRecord.citizenProfile.name} />
+        <p className="mt-6 whitespace-pre-wrap leading-7 text-slate-700">
+          {caseRecord.description}
+        </p>
+      </section>
+
+      <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-slate-950">
+          {t.cases.address}
+        </h2>
+        {caseAddress ? (
+          <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Info
-              label={t.cases.department}
-              value={caseRecord.assignedDepartment?.name ?? t.common.unassigned}
+              label={t.cases.originalAddress}
+              value={caseAddress.originalInput}
             />
-            <Info label={t.cases.urgency} value={caseRecord.urgency} />
+            <Info
+              label={t.cases.normalizedAddress}
+              value={caseAddress.normalizedAddress ?? t.cases.notAvailable}
+            />
+            <Info
+              label={t.cases.municipality}
+              value={
+                caseAddress.municipalityName && caseAddress.municipalityCode
+                  ? `${caseAddress.municipalityName} (${caseAddress.municipalityCode})`
+                  : t.cases.notAvailable
+              }
+            />
+            <Info
+              label={t.cases.postalCode}
+              value={caseAddress.postalCode ?? t.cases.notAvailable}
+            />
+            <Info
+              label={t.cases.coordinates}
+              value={
+                caseAddress.latitude !== null && caseAddress.longitude !== null
+                  ? `${caseAddress.latitude}, ${caseAddress.longitude}`
+                  : t.cases.notAvailable
+              }
+            />
+            <Info
+              label={t.cases.validation}
+              value={`${caseAddress.validationStatus} via ${caseAddress.source}`}
+            />
           </dl>
+        ) : (
+          <p className="mt-3 text-sm text-slate-500">{t.cases.noAddress}</p>
+        )}
+      </section>
 
-          <p className="mt-6 whitespace-pre-wrap leading-7 text-slate-700">
-            {caseRecord.description}
-          </p>
-        </section>
-
-        <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="mt-5 grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+        <form
+          onSubmit={updateStatus}
+          className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+        >
           <h2 className="text-lg font-semibold text-slate-950">
-            {t.cases.address}
+            {t.cases.status}
           </h2>
-          {caseAddress ? (
-            <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Info
-                label={t.cases.originalAddress}
-                value={caseAddress.originalInput}
-              />
-              <Info
-                label={t.cases.normalizedAddress}
-                value={caseAddress.normalizedAddress ?? t.cases.notAvailable}
-              />
-              <Info
-                label={t.cases.municipality}
-                value={
-                  caseAddress.municipalityName && caseAddress.municipalityCode
-                    ? `${caseAddress.municipalityName} (${caseAddress.municipalityCode})`
-                    : t.cases.notAvailable
-                }
-              />
-              <Info
-                label={t.cases.postalCode}
-                value={caseAddress.postalCode ?? t.cases.notAvailable}
-              />
-              <Info
-                label={t.cases.coordinates}
-                value={
-                  caseAddress.latitude !== null &&
-                  caseAddress.longitude !== null
-                    ? `${caseAddress.latitude}, ${caseAddress.longitude}`
-                    : t.cases.notAvailable
-                }
-              />
-              <Info
-                label={t.cases.validation}
-                value={`${caseAddress.validationStatus} via ${caseAddress.source}`}
-              />
-            </dl>
-          ) : (
-            <p className="mt-3 text-sm text-slate-500">
-              {t.cases.noAddress}
-            </p>
-          )}
-        </section>
-
-        <section className="mt-5 grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
-          <form
-            onSubmit={updateStatus}
-            className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            className="mt-4 w-full rounded-md border border-slate-300 px-3 py-2"
           >
-            <h2 className="text-lg font-semibold text-slate-950">
-              {t.cases.status}
-            </h2>
-            <select
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-              className="mt-4 w-full rounded-md border border-slate-300 px-3 py-2"
-            >
-              {caseStatuses.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="mt-4 rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
-            >
-              {t.cases.updateStatus}
-            </button>
-          </form>
-
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-950">
-              {t.cases.notes}
-            </h2>
-            <form onSubmit={addNote} className="mt-4 grid gap-3">
-              <textarea
-                name="body"
-                rows={4}
-                className="rounded-md border border-slate-300 px-3 py-2"
-                required
-              />
-              <button
-                type="submit"
-                className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
-              >
-                {t.cases.addNote}
-              </button>
-            </form>
-
-            {error ? (
-              <p className="mt-4 text-sm text-red-700">{error}</p>
-            ) : null}
-
-            <div className="mt-5 grid gap-3">
-              {caseRecord.internalNotes.map((note) => (
-                <article key={note.id} className="rounded-md bg-slate-50 p-4">
-                  <p className="text-sm leading-6 text-slate-700">
-                    {note.body}
-                  </p>
-                  <p className="mt-2 text-xs text-slate-500">
-                    {note.author.name} ·{" "}
-                    {new Date(note.createdAt).toLocaleString()}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </section>
-        </section>
-
-        <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-slate-950">
-              {t.ai.title}
-            </h2>
-            <button
-              type="button"
-              onClick={runAITriage}
-              className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
-            >
-              {t.ai.generate}
-            </button>
-          </div>
-          <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm leading-6 text-amber-900">
-            {t.ai.notice}
-          </p>
-
-          {!aiResult ? (
-            <p className="mt-4 text-sm text-slate-500">
-              {t.ai.empty}
-            </p>
-          ) : null}
-
-          {aiResult?.status === "failed" ? (
-            <p className="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-800">
-              {t.ai.failed}: {aiResult.failureReason ?? t.common.unknown}
-            </p>
-          ) : null}
-
-          {aiResult && aiResult.status !== "failed" ? (
-            <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_0.9fr]">
-              <div className="grid gap-3">
-                <Info
-                  label={t.ai.category}
-                  value={aiResult.suggestedCategory ?? t.common.unknown}
-                />
-                <Info
-                  label={t.ai.department}
-                  value={aiResult.suggestedDepartment?.name ?? t.common.unassigned}
-                />
-                <Info
-                  label={t.ai.urgency}
-                  value={aiResult.suggestedUrgency ?? "normal"}
-                />
-                <Info
-                  label={t.ai.confidence}
-                  value={
-                    aiResult.confidenceScore === null
-                      ? t.common.unknown
-                      : `${Math.round(aiResult.confidenceScore * 100)}%`
-                  }
-                />
-                <div className="rounded-md bg-slate-50 p-4">
-                  <h3 className="text-sm font-medium text-slate-500">
-                    {t.ai.summary}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
-                    {aiResult.summary}
-                  </p>
-                </div>
-                <div className="rounded-md bg-slate-50 p-4">
-                  <h3 className="text-sm font-medium text-slate-500">
-                    {t.ai.missingInfo}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
-                    {aiResult.missingInformationJson.length > 0
-                      ? aiResult.missingInformationJson.join(", ")
-                      : t.common.none}
-                  </p>
-                </div>
-                <div className="rounded-md bg-slate-50 p-4">
-                  <h3 className="text-sm font-medium text-slate-500">
-                    {t.ai.reason}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
-                    {aiResult.reasoningSummary}
-                  </p>
-                </div>
-              </div>
-
-              <form
-                onSubmit={reviewAITriage}
-                className="grid content-start gap-3 rounded-md bg-slate-50 p-4"
-              >
-                <h3 className="text-sm font-semibold text-slate-950">
-                  {t.ai.humanReview}
-                </h3>
-                <label className="grid gap-1 text-sm text-slate-700">
-                  {t.ai.category}
-                  <select
-                    value={reviewCategory}
-                    onChange={(event) => setReviewCategory(event.target.value)}
-                    className="rounded-md border border-slate-300 bg-white px-3 py-2"
-                  >
-                    {caseCategories.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid gap-1 text-sm text-slate-700">
-                  {t.ai.departmentSlug}
-                  <input
-                    value={reviewDepartmentSlug}
-                    onChange={(event) =>
-                      setReviewDepartmentSlug(event.target.value)
-                    }
-                    className="rounded-md border border-slate-300 bg-white px-3 py-2"
-                  />
-                </label>
-                <label className="grid gap-1 text-sm text-slate-700">
-                  {t.ai.urgency}
-                  <select
-                    value={reviewUrgency}
-                    onChange={(event) => setReviewUrgency(event.target.value)}
-                    className="rounded-md border border-slate-300 bg-white px-3 py-2"
-                  >
-                    {caseUrgencies.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => submitAIReview(true)}
-                    className="rounded-md bg-emerald-700 px-4 py-3 text-sm font-semibold text-white"
-                  >
-                    {t.ai.accept}
-                  </button>
-                  <button
-                    type="submit"
-                    className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
-                  >
-                    {t.ai.saveCorrection}
-                  </button>
-                </div>
-              </form>
-            </div>
-          ) : null}
-        </section>
-
-        <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-slate-950">
-              {t.documents.title}
-            </h2>
-            <p className="text-sm text-slate-500">{t.documents.help}</p>
-          </div>
-
-          <form
-            onSubmit={uploadDocument}
-            className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]"
+            {caseStatuses.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="mt-4 rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
           >
-            <input
-              name="file"
-              type="file"
-              accept="application/pdf,image/png,image/jpeg"
+            {t.cases.updateStatus}
+          </button>
+        </form>
+
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-950">
+            {t.cases.notes}
+          </h2>
+          <form onSubmit={addNote} className="mt-4 grid gap-3">
+            <textarea
+              name="body"
+              rows={4}
+              className="rounded-md border border-slate-300 px-3 py-2"
               required
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
             />
             <button
               type="submit"
               className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
             >
-              {t.documents.upload}
+              {t.cases.addNote}
             </button>
-            <label className="flex items-center gap-2 text-sm text-slate-700">
-              <input name="isSensitive" type="checkbox" value="true" />
-              {t.documents.sensitiveDocument}
-            </label>
           </form>
+
+          {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
 
           <div className="mt-5 grid gap-3">
-            {documents.length === 0 ? (
-              <p className="text-sm text-slate-500">{t.documents.empty}</p>
-            ) : null}
-            {documents.map((document) => (
-              <article key={document.id} className="rounded-md bg-slate-50 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-950">
-                      {document.originalFileName}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {document.mimeType} | {formatFileSize(document.sizeBytes)}{" "}
-                      | {new Date(document.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                  {document.isSensitive ? (
-                    <span className="rounded-md bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">
-                      {t.documents.sensitive}
-                    </span>
-                  ) : null}
-                  <a
-                    href={`${getApiBaseUrl()}/cases/${caseId}/documents/${document.id}/download`}
-                    className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-800"
-                  >
-                    {t.documents.download}
-                  </a>
-                </div>
+            {caseRecord.internalNotes.map((note) => (
+              <article key={note.id} className="rounded-md bg-slate-50 p-4">
+                <p className="text-sm leading-6 text-slate-700">{note.body}</p>
                 <p className="mt-2 text-xs text-slate-500">
-                  {t.documents.uploadedBy}{" "}
-                  {document.uploadedBy?.name ??
-                    document.uploadedByCitizenProfile?.name ??
-                    t.common.unknown}
+                  {note.author.name} ·{" "}
+                  {new Date(note.createdAt).toLocaleString()}
                 </p>
               </article>
             ))}
           </div>
         </section>
-      </div>
-    </main>
+      </section>
+
+      <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-slate-950">{t.ai.title}</h2>
+          <button
+            type="button"
+            onClick={runAITriage}
+            className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+          >
+            {t.ai.generate}
+          </button>
+        </div>
+        <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+          {t.ai.notice}
+        </p>
+
+        {!aiResult ? (
+          <p className="mt-4 text-sm text-slate-500">{t.ai.empty}</p>
+        ) : null}
+
+        {aiResult?.status === "failed" ? (
+          <p className="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-800">
+            {t.ai.failed}: {aiResult.failureReason ?? t.common.unknown}
+          </p>
+        ) : null}
+
+        {aiResult && aiResult.status !== "failed" ? (
+          <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_0.9fr]">
+            <div className="grid gap-3">
+              <Info
+                label={t.ai.category}
+                value={aiResult.suggestedCategory ?? t.common.unknown}
+              />
+              <Info
+                label={t.ai.department}
+                value={
+                  aiResult.suggestedDepartment?.name ?? t.common.unassigned
+                }
+              />
+              <Info
+                label={t.ai.urgency}
+                value={aiResult.suggestedUrgency ?? "normal"}
+              />
+              <Info
+                label={t.ai.confidence}
+                value={
+                  aiResult.confidenceScore === null
+                    ? t.common.unknown
+                    : `${Math.round(aiResult.confidenceScore * 100)}%`
+                }
+              />
+              <div className="rounded-md bg-slate-50 p-4">
+                <h3 className="text-sm font-medium text-slate-500">
+                  {t.ai.summary}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-700">
+                  {aiResult.summary}
+                </p>
+              </div>
+              <div className="rounded-md bg-slate-50 p-4">
+                <h3 className="text-sm font-medium text-slate-500">
+                  {t.ai.missingInfo}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-700">
+                  {aiResult.missingInformationJson.length > 0
+                    ? aiResult.missingInformationJson.join(", ")
+                    : t.common.none}
+                </p>
+              </div>
+              <div className="rounded-md bg-slate-50 p-4">
+                <h3 className="text-sm font-medium text-slate-500">
+                  {t.ai.reason}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-700">
+                  {aiResult.reasoningSummary}
+                </p>
+              </div>
+            </div>
+
+            <form
+              onSubmit={reviewAITriage}
+              className="grid content-start gap-3 rounded-md bg-slate-50 p-4"
+            >
+              <h3 className="text-sm font-semibold text-slate-950">
+                {t.ai.humanReview}
+              </h3>
+              <label className="grid gap-1 text-sm text-slate-700">
+                {t.ai.category}
+                <select
+                  value={reviewCategory}
+                  onChange={(event) => setReviewCategory(event.target.value)}
+                  className="rounded-md border border-slate-300 bg-white px-3 py-2"
+                >
+                  {caseCategories.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-1 text-sm text-slate-700">
+                {t.ai.departmentSlug}
+                <input
+                  value={reviewDepartmentSlug}
+                  onChange={(event) =>
+                    setReviewDepartmentSlug(event.target.value)
+                  }
+                  className="rounded-md border border-slate-300 bg-white px-3 py-2"
+                />
+              </label>
+              <label className="grid gap-1 text-sm text-slate-700">
+                {t.ai.urgency}
+                <select
+                  value={reviewUrgency}
+                  onChange={(event) => setReviewUrgency(event.target.value)}
+                  className="rounded-md border border-slate-300 bg-white px-3 py-2"
+                >
+                  {caseUrgencies.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => submitAIReview(true)}
+                  className="rounded-md bg-emerald-700 px-4 py-3 text-sm font-semibold text-white"
+                >
+                  {t.ai.accept}
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+                >
+                  {t.ai.saveCorrection}
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-slate-950">
+            {t.documents.title}
+          </h2>
+          <p className="text-sm text-slate-500">{t.documents.help}</p>
+        </div>
+
+        <form
+          onSubmit={uploadDocument}
+          className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]"
+        >
+          <input
+            name="file"
+            type="file"
+            accept="application/pdf,image/png,image/jpeg"
+            required
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          />
+          <button
+            type="submit"
+            className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+          >
+            {t.documents.upload}
+          </button>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input name="isSensitive" type="checkbox" value="true" />
+            {t.documents.sensitiveDocument}
+          </label>
+        </form>
+
+        <div className="mt-5 grid gap-3">
+          {documents.length === 0 ? (
+            <p className="text-sm text-slate-500">{t.documents.empty}</p>
+          ) : null}
+          {documents.map((document) => (
+            <article key={document.id} className="rounded-md bg-slate-50 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-950">
+                    {document.originalFileName}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {document.mimeType} | {formatFileSize(document.sizeBytes)} |{" "}
+                    {new Date(document.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                {document.isSensitive ? (
+                  <span className="rounded-md bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">
+                    {t.documents.sensitive}
+                  </span>
+                ) : null}
+                <a
+                  href={`${getApiBaseUrl()}/cases/${caseId}/documents/${document.id}/download`}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-800"
+                >
+                  {t.documents.download}
+                </a>
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                {t.documents.uploadedBy}{" "}
+                {document.uploadedBy?.name ??
+                  document.uploadedByCitizenProfile?.name ??
+                  t.common.unknown}
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+    </InternalShell>
   );
 }
 

@@ -1,9 +1,14 @@
 export const internalDictionaryNb = {
   nav: {
     analytics: "Analyse",
+    backToPublic: "Til innbyggerskjema",
+    dashboard: "Dashboard",
     cases: "Saker",
+    caseDetail: "Saksdetalj",
+    internalArea: "Intern sone",
     operations: "Drift",
     privacy: "Personvern",
+    publicIntake: "Innbyggerskjema",
     signOut: "Logg ut",
   },
   common: {

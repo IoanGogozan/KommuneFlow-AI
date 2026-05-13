@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
-import { InternalLanguageToggle, useInternalI18n } from "@/lib/internal-locale";
+import { useInternalI18n } from "@/lib/internal-locale";
+import { InternalShell } from "../../ui/internal-shell";
 
 type AnalyticsSummary = {
   from: string;
@@ -126,287 +126,262 @@ export function AnalyticsDashboard() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-slate-100">
-      <div className="mx-auto max-w-6xl px-5 py-6">
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-300 pb-4">
+    <InternalShell
+      locale={locale}
+      setLocale={setLocale}
+      t={t}
+      title={t.analytics.title}
+    >
+      <section className="mt-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[1fr_1fr_auto]">
+        <DateField label={t.analytics.from} value={from} onChange={setFrom} />
+        <DateField label={t.analytics.to} value={to} onChange={setTo} />
+        <button
+          type="button"
+          onClick={aggregate}
+          disabled={isAggregating}
+          className="self-end rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          {isAggregating ? t.analytics.aggregating : t.analytics.aggregate}
+        </button>
+      </section>
+
+      {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
+
+      <section className="mt-5 grid gap-4 md:grid-cols-4">
+        <Metric
+          label={t.analytics.cases}
+          value={summary ? summary.totals.totalCases : "..."}
+        />
+        <Metric
+          label={t.analytics.aiReviews}
+          value={summary ? summary.totals.aiReviewsTotal : "..."}
+        />
+        <Metric
+          label={t.analytics.aiCorrections}
+          value={summary ? summary.totals.aiCorrectionsTotal : "..."}
+        />
+        <Metric
+          label={t.analytics.aiCorrectionRate}
+          value={
+            summary ? formatPercent(summary.totals.aiCorrectionRate) : "..."
+          }
+        />
+        <Metric
+          label={t.analytics.aiAcceptanceRate}
+          value={
+            summary
+              ? formatPercent(summary.totals.aiSuggestionAcceptanceRate)
+              : "..."
+          }
+        />
+        <Metric
+          label={t.analytics.aiTriageFailures}
+          value={
+            summary
+              ? `${summary.totals.aiTriageFailureCount} (${formatPercent(
+                  summary.totals.aiTriageFailureRate,
+                )})`
+              : "..."
+          }
+        />
+        <Metric
+          label={t.analytics.waitingForCitizen}
+          value={summary ? summary.totals.casesWaitingForCitizen : "..."}
+        />
+        <Metric
+          label={t.analytics.minutesSaved}
+          value={summary ? summary.totals.estimatedManualMinutesSaved : "..."}
+        />
+        <Metric
+          label={t.analytics.avgTriage}
+          value={
+            summary
+              ? `${formatNullableNumber(
+                  summary.totals.averageTimeToTriageMinutes,
+                  t.common.missing,
+                )} min`
+              : "..."
+          }
+        />
+        <Metric
+          label={t.analytics.medianTriage}
+          value={
+            summary
+              ? `${formatNullableNumber(
+                  summary.totals.medianTimeToTriageMinutes,
+                  t.common.missing,
+                )} min`
+              : "..."
+          }
+        />
+        <Metric
+          label={t.analytics.avgClose}
+          value={
+            summary
+              ? `${formatNullableNumber(
+                  summary.totals.averageTimeToCloseHours,
+                  t.common.missing,
+                )} h`
+              : "..."
+          }
+        />
+        <Metric
+          label={t.analytics.medianClose}
+          value={
+            summary
+              ? `${formatNullableNumber(
+                  summary.totals.medianTimeToCloseHours,
+                  t.common.missing,
+                )} h`
+              : "..."
+          }
+        />
+        <Metric
+          label={t.analytics.per1000}
+          value={
+            summary
+              ? formatNullableNumber(
+                  summary.totals.casesPer1000Inhabitants,
+                  t.common.missing,
+                )
+              : "..."
+          }
+        />
+        <Metric
+          label={t.analytics.population}
+          value={
+            summary
+              ? (summary.ssbEnrichment.populationUsed?.toLocaleString() ??
+                t.common.missing)
+              : "..."
+          }
+        />
+        <Metric
+          label={t.analytics.ssbYear}
+          value={
+            summary
+              ? (summary.ssbEnrichment.populationYear ?? t.common.missing)
+              : "..."
+          }
+        />
+        <Metric
+          label={t.analytics.ssbStatus}
+          value={summary ? summary.ssbEnrichment.status : "..."}
+        />
+      </section>
+
+      <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-medium text-slate-500">{t.common.app}</p>
-            <h1 className="text-3xl font-semibold text-slate-950">
-              {t.analytics.title}
-            </h1>
+            <h2 className="text-lg font-semibold text-slate-950">
+              {t.analytics.effectTitle}
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              {t.analytics.effectText}
+            </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <InternalLanguageToggle locale={locale} setLocale={setLocale} />
-            <Link
-              href="/internal/cases"
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
-            >
-              {t.nav.cases}
-            </Link>
-            <Link
-              href="/internal/privacy"
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
-            >
-              {t.nav.privacy}
-            </Link>
+          <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
+            {t.analytics.lastRebuild}:{" "}
+            {summary?.analyticsLastRebuiltAt
+              ? new Date(summary.analyticsLastRebuiltAt).toLocaleString()
+              : t.common.missing}
+          </span>
+        </div>
+        <p className="mt-4 text-sm text-slate-600">
+          {t.analytics.assumption}: {t.analytics.acceptedSave}{" "}
+          {summary?.assumptions.acceptedAiSuggestionMinutesSaved ?? 5}{" "}
+          {t.analytics.minutes}; {t.analytics.correctedSave}{" "}
+          {summary?.assumptions.correctedAiSuggestionMinutesSaved ?? 2}{" "}
+          {t.analytics.minutes}.
+        </p>
+      </section>
+
+      <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">
+              {t.analytics.ssbTitle}
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">{t.analytics.ssbText}</p>
           </div>
-        </header>
-
-        <section className="mt-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[1fr_1fr_auto]">
-          <DateField label={t.analytics.from} value={from} onChange={setFrom} />
-          <DateField label={t.analytics.to} value={to} onChange={setTo} />
-          <button
-            type="button"
-            onClick={aggregate}
-            disabled={isAggregating}
-            className="self-end rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
-          >
-            {isAggregating ? t.analytics.aggregating : t.analytics.aggregate}
-          </button>
-        </section>
-
-        {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
-
-        <section className="mt-5 grid gap-4 md:grid-cols-4">
-          <Metric
-            label={t.analytics.cases}
-            value={summary ? summary.totals.totalCases : "..."}
-          />
-          <Metric
-            label={t.analytics.aiReviews}
-            value={summary ? summary.totals.aiReviewsTotal : "..."}
-          />
-          <Metric
-            label={t.analytics.aiCorrections}
-            value={summary ? summary.totals.aiCorrectionsTotal : "..."}
-          />
-          <Metric
-            label={t.analytics.aiCorrectionRate}
-            value={
-              summary ? formatPercent(summary.totals.aiCorrectionRate) : "..."
-            }
-          />
-          <Metric
-            label={t.analytics.aiAcceptanceRate}
-            value={
-              summary
-                ? formatPercent(summary.totals.aiSuggestionAcceptanceRate)
-                : "..."
-            }
-          />
-          <Metric
-            label={t.analytics.aiTriageFailures}
-            value={
-              summary
-                ? `${summary.totals.aiTriageFailureCount} (${formatPercent(
-                    summary.totals.aiTriageFailureRate,
-                  )})`
-                : "..."
-            }
-          />
-          <Metric
-            label={t.analytics.waitingForCitizen}
-            value={summary ? summary.totals.casesWaitingForCitizen : "..."}
-          />
-          <Metric
-            label={t.analytics.minutesSaved}
-            value={summary ? summary.totals.estimatedManualMinutesSaved : "..."}
-          />
-          <Metric
-            label={t.analytics.avgTriage}
-            value={
-              summary
-                ? `${formatNullableNumber(
-                    summary.totals.averageTimeToTriageMinutes,
-                    t.common.missing,
-                  )} min`
-                : "..."
-            }
-          />
-          <Metric
-            label={t.analytics.medianTriage}
-            value={
-              summary
-                ? `${formatNullableNumber(
-                    summary.totals.medianTimeToTriageMinutes,
-                    t.common.missing,
-                  )} min`
-                : "..."
-            }
-          />
-          <Metric
-            label={t.analytics.avgClose}
-            value={
-              summary
-                ? `${formatNullableNumber(
-                    summary.totals.averageTimeToCloseHours,
-                    t.common.missing,
-                  )} h`
-                : "..."
-            }
-          />
-          <Metric
-            label={t.analytics.medianClose}
-            value={
-              summary
-                ? `${formatNullableNumber(
-                    summary.totals.medianTimeToCloseHours,
-                    t.common.missing,
-                  )} h`
-                : "..."
-            }
-          />
-          <Metric
-            label={t.analytics.per1000}
-            value={
-              summary
-                ? formatNullableNumber(
-                    summary.totals.casesPer1000Inhabitants,
-                    t.common.missing,
-                  )
-                : "..."
-            }
-          />
-          <Metric
-            label={t.analytics.population}
-            value={
-              summary
-                ? (summary.ssbEnrichment.populationUsed?.toLocaleString() ??
-                  t.common.missing)
-                : "..."
-            }
-          />
-          <Metric
-            label={t.analytics.ssbYear}
-            value={
-              summary
-                ? (summary.ssbEnrichment.populationYear ?? t.common.missing)
-                : "..."
-            }
-          />
-          <Metric
-            label={t.analytics.ssbStatus}
-            value={summary ? summary.ssbEnrichment.status : "..."}
-          />
-        </section>
-
-        <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">
-                {t.analytics.effectTitle}
-              </h2>
-              <p className="mt-1 text-sm text-slate-600">
-                {t.analytics.effectText}
-              </p>
-            </div>
-            <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
-              {t.analytics.lastRebuild}:{" "}
-              {summary?.analyticsLastRebuiltAt
-                ? new Date(summary.analyticsLastRebuiltAt).toLocaleString()
-                : t.common.missing}
-            </span>
-          </div>
-          <p className="mt-4 text-sm text-slate-600">
-            {t.analytics.assumption}: {t.analytics.acceptedSave}{" "}
-            {summary?.assumptions.acceptedAiSuggestionMinutesSaved ?? 5}{" "}
-            {t.analytics.minutes}; {t.analytics.correctedSave}{" "}
-            {summary?.assumptions.correctedAiSuggestionMinutesSaved ?? 2}{" "}
-            {t.analytics.minutes}.
+          <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
+            {t.analytics.source}: SSB
+          </span>
+        </div>
+        {summary?.ssbEnrichment.status === "missing" ? (
+          <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
+            {t.analytics.ssbMissing}
           </p>
-        </section>
+        ) : null}
+        {summary?.ssbEnrichment.status === "stale" ? (
+          <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
+            {t.analytics.ssbStale}
+          </p>
+        ) : null}
+        {summary?.ssbEnrichment.lastImportedAt ? (
+          <p className="mt-4 text-sm text-slate-600">
+            {t.analytics.imported}:{" "}
+            {new Date(summary.ssbEnrichment.lastImportedAt).toLocaleString()}
+          </p>
+        ) : null}
+      </section>
 
-        <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">
-                {t.analytics.ssbTitle}
-              </h2>
-              <p className="mt-1 text-sm text-slate-600">
-                {t.analytics.ssbText}
-              </p>
+      <section className="mt-5 grid gap-5 lg:grid-cols-3">
+        <Breakdown
+          title={t.analytics.byDepartment}
+          values={summary?.totals.casesByDepartment ?? {}}
+          emptyLabel={t.analytics.noData}
+        />
+        <Breakdown
+          title={t.analytics.byCategory}
+          values={summary?.totals.casesByCategory ?? {}}
+          emptyLabel={t.analytics.noData}
+        />
+        <Breakdown
+          title={t.analytics.byStatus}
+          values={summary?.totals.casesByStatus ?? {}}
+          emptyLabel={t.analytics.noData}
+        />
+      </section>
+
+      <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-slate-950">
+          {t.analytics.daily}
+        </h2>
+        <div className="mt-4 grid gap-2">
+          {(summary?.daily ?? []).map((day) => (
+            <div
+              key={day.date}
+              className="grid gap-2 rounded-md bg-slate-50 px-3 py-2 text-sm md:grid-cols-[1fr_auto_auto_auto_auto_auto]"
+            >
+              <span className="font-medium text-slate-700">{day.date}</span>
+              <span className="text-slate-700">
+                {day.totalCases} {t.analytics.cases.toLowerCase()}
+              </span>
+              <span className="text-slate-500">
+                {formatPercent(day.aiCorrectionRate)} {t.analytics.aiCorrection}
+              </span>
+              <span className="text-slate-500">
+                {formatPercent(day.aiTriageFailureRate)} {t.analytics.aiFailure}
+              </span>
+              <span className="text-slate-500">
+                {day.estimatedManualMinutesSaved} {t.analytics.minSaved}
+              </span>
+              <span className="text-slate-500">
+                {formatNullableNumber(
+                  day.casesPer1000Inhabitants,
+                  t.common.missing,
+                )}{" "}
+                per 1,000
+              </span>
             </div>
-            <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
-              {t.analytics.source}: SSB
-            </span>
-          </div>
-          {summary?.ssbEnrichment.status === "missing" ? (
-            <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
-              {t.analytics.ssbMissing}
-            </p>
+          ))}
+          {summary?.daily.length === 0 ? (
+            <p className="text-sm text-slate-500">{t.analytics.noDaily}</p>
           ) : null}
-          {summary?.ssbEnrichment.status === "stale" ? (
-            <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
-              {t.analytics.ssbStale}
-            </p>
-          ) : null}
-          {summary?.ssbEnrichment.lastImportedAt ? (
-            <p className="mt-4 text-sm text-slate-600">
-              {t.analytics.imported}:{" "}
-              {new Date(summary.ssbEnrichment.lastImportedAt).toLocaleString()}
-            </p>
-          ) : null}
-        </section>
-
-        <section className="mt-5 grid gap-5 lg:grid-cols-3">
-          <Breakdown
-            title={t.analytics.byDepartment}
-            values={summary?.totals.casesByDepartment ?? {}}
-            emptyLabel={t.analytics.noData}
-          />
-          <Breakdown
-            title={t.analytics.byCategory}
-            values={summary?.totals.casesByCategory ?? {}}
-            emptyLabel={t.analytics.noData}
-          />
-          <Breakdown
-            title={t.analytics.byStatus}
-            values={summary?.totals.casesByStatus ?? {}}
-            emptyLabel={t.analytics.noData}
-          />
-        </section>
-
-        <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-950">
-            {t.analytics.daily}
-          </h2>
-          <div className="mt-4 grid gap-2">
-            {(summary?.daily ?? []).map((day) => (
-              <div
-                key={day.date}
-                className="grid gap-2 rounded-md bg-slate-50 px-3 py-2 text-sm md:grid-cols-[1fr_auto_auto_auto_auto_auto]"
-              >
-                <span className="font-medium text-slate-700">{day.date}</span>
-                <span className="text-slate-700">
-                  {day.totalCases} {t.analytics.cases.toLowerCase()}
-                </span>
-                <span className="text-slate-500">
-                  {formatPercent(day.aiCorrectionRate)}{" "}
-                  {t.analytics.aiCorrection}
-                </span>
-                <span className="text-slate-500">
-                  {formatPercent(day.aiTriageFailureRate)}{" "}
-                  {t.analytics.aiFailure}
-                </span>
-                <span className="text-slate-500">
-                  {day.estimatedManualMinutesSaved} {t.analytics.minSaved}
-                </span>
-                <span className="text-slate-500">
-                  {formatNullableNumber(
-                    day.casesPer1000Inhabitants,
-                    t.common.missing,
-                  )}{" "}
-                  per 1,000
-                </span>
-              </div>
-            ))}
-            {summary?.daily.length === 0 ? (
-              <p className="text-sm text-slate-500">{t.analytics.noDaily}</p>
-            ) : null}
-          </div>
-        </section>
-      </div>
-    </main>
+        </div>
+      </section>
+    </InternalShell>
   );
 }
 
