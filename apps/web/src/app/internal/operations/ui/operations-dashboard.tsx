@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
 import { useInternalI18n } from "@/lib/internal-locale";
+import { useInternalSession } from "@/lib/use-internal-session";
+import { AccessDenied } from "../../ui/access-denied";
 import { InternalShell } from "../../ui/internal-shell";
 
 type HealthResponse = {
@@ -41,35 +43,64 @@ type MetricsSummary = {
   backupLastRunAt: string | null;
 };
 
+type AIStatusResponse = {
+  provider: "mock" | "openai";
+  model: string | null;
+  configured: boolean;
+  timeoutMs: number;
+  maxAttempts: number;
+  ciDisabled: boolean;
+};
+
 export function OperationsDashboard() {
   const router = useRouter();
   const { locale, setLocale, t } = useInternalI18n();
+  const {
+    currentUser,
+    error: sessionError,
+    loading: sessionLoading,
+    hasPermission,
+  } = useInternalSession();
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [readiness, setReadiness] = useState<ReadinessResponse | null>(null);
   const [metrics, setMetrics] = useState<MetricsSummary | null>(null);
+  const [aiStatus, setAiStatus] = useState<AIStatusResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const canReadOperations = hasPermission("operations:read");
 
   useEffect(() => {
     async function loadOperations() {
+      if (sessionLoading || !currentUser || !canReadOperations) {
+        return;
+      }
+
       setError(null);
 
       try {
-        const [healthResponse, readinessResponse, metricsResponse] =
+        const [
+          healthResponse,
+          readinessResponse,
+          metricsResponse,
+          aiStatusResponse,
+        ] =
           await Promise.all([
             fetch(`${getApiBaseUrl()}/health`, { credentials: "include" }),
             fetch(`${getApiBaseUrl()}/readiness`, { credentials: "include" }),
             fetch(`${getApiBaseUrl()}/operations/metrics-summary`, {
               credentials: "include",
             }),
+            fetch(`${getApiBaseUrl()}/ai/status`, {
+              credentials: "include",
+            }),
           ]);
 
-        if (metricsResponse.status === 401) {
+        if (metricsResponse.status === 401 || aiStatusResponse.status === 401) {
           await clearSession();
           router.push("/internal/login");
           return;
         }
 
-        if (!metricsResponse.ok) {
+        if (!metricsResponse.ok || !aiStatusResponse.ok) {
           setError(t.operations.loadMetricsError);
           return;
         }
@@ -77,16 +108,58 @@ export function OperationsDashboard() {
         setHealth((await healthResponse.json()) as HealthResponse);
         setReadiness((await readinessResponse.json()) as ReadinessResponse);
         setMetrics((await metricsResponse.json()) as MetricsSummary);
+        setAiStatus((await aiStatusResponse.json()) as AIStatusResponse);
       } catch {
         setError(t.operations.loadDashboardError);
       }
     }
 
     void loadOperations();
-  }, [router, t.operations.loadDashboardError, t.operations.loadMetricsError]);
+  }, [
+    canReadOperations,
+    currentUser,
+    router,
+    sessionLoading,
+    t.operations.loadDashboardError,
+    t.operations.loadMetricsError,
+  ]);
+
+  if (sessionLoading || !currentUser) {
+    return (
+      <InternalShell
+        currentUser={currentUser ?? undefined}
+        locale={locale}
+        setLocale={setLocale}
+        t={t}
+        title={t.operations.title}
+      >
+        <p className="mt-6 text-sm text-slate-600">
+          {sessionError ? t.operations.loadDashboardError : t.cases.loading}
+        </p>
+      </InternalShell>
+    );
+  }
+
+  if (!canReadOperations) {
+    return (
+      <InternalShell
+        currentUser={currentUser}
+        locale={locale}
+        setLocale={setLocale}
+        t={t}
+        title={t.operations.title}
+      >
+        <AccessDenied
+          currentRole={currentUser.role}
+          requiredPermission="operations:read"
+        />
+      </InternalShell>
+    );
+  }
 
   return (
     <InternalShell
+      currentUser={currentUser}
       locale={locale}
       setLocale={setLocale}
       t={t}
@@ -123,6 +196,10 @@ export function OperationsDashboard() {
           ))}
         </Panel>
 
+        <AIStatusPanel aiStatus={aiStatus} missingLabel={t.common.missing} />
+      </section>
+
+      <section className="mt-5 grid gap-4 md:grid-cols-2">
         <Panel title={t.operations.integrations}>
           <Row
             label={t.operations.kartverketLookups}
@@ -145,6 +222,20 @@ export function OperationsDashboard() {
               metrics?.ssbImportLastRunAt,
               t.common.missing,
             )}`}
+          />
+        </Panel>
+
+        <Panel title={t.operations.apiErrors}>
+          <Row
+            label={t.operations.apiErrors24h}
+            value={String(metrics?.apiErrorsLast24h ?? 0)}
+          />
+          <Row
+            label={t.operations.aiLatency}
+            value={formatMs(
+              metrics?.averageAiLatencyMsLast24h,
+              t.common.missing,
+            )}
           />
         </Panel>
       </section>
@@ -198,19 +289,6 @@ export function OperationsDashboard() {
           />
         </Panel>
 
-        <Panel title={t.operations.apiErrors}>
-          <Row
-            label={t.operations.apiErrors24h}
-            value={String(metrics?.apiErrorsLast24h ?? 0)}
-          />
-          <Row
-            label={t.operations.aiLatency}
-            value={formatMs(
-              metrics?.averageAiLatencyMsLast24h,
-              t.common.missing,
-            )}
-          />
-        </Panel>
       </section>
     </InternalShell>
   );
@@ -240,6 +318,53 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
       <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
       <div className="mt-4 grid gap-2">{children}</div>
     </section>
+  );
+}
+
+function AIStatusPanel({
+  aiStatus,
+  missingLabel,
+}: {
+  aiStatus: AIStatusResponse | null;
+  missingLabel: string;
+}) {
+  const isMock = aiStatus?.provider === "mock";
+  const isOpenAIUnconfigured =
+    aiStatus?.provider === "openai" && !aiStatus.configured;
+
+  return (
+    <Panel title="AI Configuration">
+      <Row label="Provider" value={aiStatus?.provider ?? missingLabel} />
+      <Row label="Model" value={aiStatus?.model ?? missingLabel} />
+      <Row
+        label="Configured"
+        value={aiStatus ? (aiStatus.configured ? "Yes" : "No") : missingLabel}
+      />
+      <Row
+        label="Timeout"
+        value={aiStatus ? formatMs(aiStatus.timeoutMs, missingLabel) : missingLabel}
+      />
+      <Row
+        label="Max attempts"
+        value={aiStatus ? String(aiStatus.maxAttempts) : missingLabel}
+      />
+      <Row
+        label="CI disabled"
+        value={aiStatus ? (aiStatus.ciDisabled ? "Yes" : "No") : missingLabel}
+      />
+      {isOpenAIUnconfigured ? (
+        <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+          OpenAI is selected but not configured. Set OPENAI_API_KEY before
+          production use.
+        </p>
+      ) : null}
+      {isMock ? (
+        <p className="rounded-md border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-sky-900">
+          Mock AI provider is active. This is suitable for demos without API
+          cost.
+        </p>
+      ) : null}
+    </Panel>
   );
 }
 

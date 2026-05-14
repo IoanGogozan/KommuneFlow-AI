@@ -127,10 +127,21 @@ Seeded demo users use this password for local development and controlled demos o
 DemoPassword123!
 ```
 
+Override seed passwords before running `pnpm --filter @kommuneflow/api prisma:seed`:
+
+```bash
+SEED_DEMO_PASSWORD='<demo-only internal password>'
+SEED_RECRUITER_PASSWORD='<recruiter review password>'
+```
+
+`SEED_RECRUITER_PASSWORD` falls back to `SEED_DEMO_PASSWORD` when it is not set. Do not commit real deployment
+passwords.
+
 | Role                          | Email                                 | Notes                                                         |
 | ----------------------------- | ------------------------------------- | ------------------------------------------------------------- |
 | Super admin                   | `super.admin@kommuneflow.local`       | Tenant-wide admin and privacy actions                         |
 | Kristiansand department admin | `department.admin@kristiansand.local` | Main demo account with case, analytics, and operations access |
+| Recruiter demo reviewer       | `recruiter.demo@kristiansand.local`   | Protected portfolio review account with synthetic data only   |
 | Kristiansand case worker      | `case.worker@kristiansand.local`      | Department-scoped case handling                               |
 | Kristiansand auditor          | `auditor@kristiansand.local`          | Read-only audit/privacy visibility                            |
 | Grimstad case worker          | `case.worker@grimstad.local`          | Cross-tenant isolation demo                                   |
@@ -143,7 +154,7 @@ The seed creates a realistic local portfolio dataset:
 
 - tenants: Kristiansand Kommune, Arendal Kommune, Grimstad Kommune
 - five departments per tenant
-- 20 realistic cases across statuses, categories, and urgencies
+- 22 realistic cases across statuses, categories, and urgencies
 - Norwegian and English case descriptions
 - validated address rows with municipality codes
 - demo documents
@@ -279,8 +290,27 @@ SMOKE_BASIC_AUTH_PASSWORD=demo-password \
 sh scripts/smoke-test.sh https://your-domain.example
 ```
 
+Authenticated smoke checks are optional. Add internal demo credentials only when the deployed environment has been
+seeded with synthetic demo users:
+
+```bash
+SMOKE_BASIC_AUTH_USER=demo-user \
+SMOKE_BASIC_AUTH_PASSWORD=demo-password \
+SMOKE_INTERNAL_EMAIL=department.admin@kristiansand.local \
+SMOKE_INTERNAL_PASSWORD='<demo internal password>' \
+sh scripts/smoke-test.sh https://your-domain.example
+```
+
 See [Hetzner Deployment](./docs/07_DEPLOYMENT_HETZNER.md) for firewall, HTTPS, backup, restore, and smoke-test details.
 See [Production Security Hardening](./docs/security/PRODUCTION_SECURITY_HARDENING.md) for the distinction between implemented demo controls, known production gaps, and target controls for real municipal use.
+
+AI deployment mode is controlled server-side:
+
+- use `AI_PROVIDER=mock` for no-cost portfolio demos
+- use `AI_PROVIDER=openai` with `OPENAI_API_KEY`, `OPENAI_MODEL`, and `OPENAI_TIMEOUT_MS` for real OpenAI triage
+- never commit `OPENAI_API_KEY` or include it in logs, screenshots, backups, or documentation
+
+After deploy, log in internally, open Operations, verify the AI Configuration panel, then run AI triage on a seeded or synthetic case.
 
 Deployment status: production assets are implemented and locally verified. Public Hetzner HTTPS deployment still needs to be executed and verified on a real host.
 
@@ -298,23 +328,103 @@ python -m pytest -q in apps/etl PASS
 
 The API test suite includes unit, service, controller, auth, RBAC, tenant isolation, file upload abuse, AI safety, analytics, privacy, operations, and retention tests. API e2e covers health/security checks and a full business flow from citizen intake to AI review, status update, analytics, operations metrics, and audit evidence.
 
-## Demo Flow
+## How to Demo
+
+Use synthetic data only. For public portfolio deployments, keep the app behind separate access control such as Caddy
+Basic Auth and use a temporary recruiter/interview password.
+
+### Demo User Table
+
+| Demo path             | Email                                 | Role               | What to show                                                       |
+| --------------------- | ------------------------------------- | ------------------ | ------------------------------------------------------------------ |
+| Main internal demo    | `department.admin@kristiansand.local` | `department_admin` | Cases, AI triage, analytics, operations, admin read-only views     |
+| Recruiter review demo | `recruiter.demo@kristiansand.local`   | `department_admin` | Protected portfolio review account with Kristiansand demo data     |
+| Case worker scope     | `case.worker@kristiansand.local`      | `case_worker`      | Department-scoped case queue and hidden analytics/operations/admin |
+| Auditor/read-only     | `auditor@kristiansand.local`          | `auditor`          | Tenant-wide read-only case access, audit visibility, no mutation   |
+| Tenant isolation demo | `case.worker@grimstad.local`          | `case_worker`      | Cross-tenant isolation compared with Kristiansand data             |
+| Full admin demo       | `super.admin@kommuneflow.local`       | `super_admin`      | Tenant-level admin, privacy export/anonymization, diagnostics      |
+
+Local seeded demos use `DemoPassword123!` unless you override `SEED_DEMO_PASSWORD` or `SEED_RECRUITER_PASSWORD` before
+running the seed. Do not publish production passwords in screenshots, docs, or the login UI.
+
+### Public Citizen Flow
 
 1. Open `http://localhost:3000/nb` or `http://localhost:3000/en`.
-2. Submit a citizen case with an address and optional PDF/PNG/JPG document.
-3. Log in at `http://localhost:3000/internal/login`.
-4. Switch the internal UI between Norwegian Bokmal and English.
-5. Open the case dashboard and inspect seeded cases.
-6. Open a case detail page.
-7. Review Kartverket address enrichment and download documents.
-8. Run AI triage.
-9. Accept or correct the AI suggestion.
-10. Update case status and add an internal note.
-11. Open analytics and run aggregation for the current date range.
-12. Open operations and review health, readiness, integration, AI, document, rate-limit, and operational event metrics.
-13. Open privacy and run a citizen data export or retention dry run.
+2. Use **Submit new request**.
+3. Select a municipality, enter contact details, search/confirm an address, add request details, and attach a small PDF/PNG/JPG.
+4. Submit the case.
+5. Save the displayed case reference and access code.
+6. Switch to **Check existing case** and verify the status lookup with the saved values.
 
-See [Demo Script](./docs/DEMO_SCRIPT.md) for an interview-ready walkthrough.
+### Internal Employee Flow
+
+1. Open `http://localhost:3000/internal/login`.
+2. Log in as `department.admin@kristiansand.local` or `recruiter.demo@kristiansand.local`.
+3. Confirm the header shows the user role, tenant, and department.
+4. Open **Dashboard** and review case counts by workflow status.
+5. Open **Cases**, use status filters/search, and inspect realistic seeded scenarios.
+6. Open a case detail page.
+7. Show address enrichment, official case values, workflow timeline, internal notes, documents, and recent activity.
+8. Upload/download a document, add an internal note, and update status when permissions allow.
+
+### AI Triage Flow
+
+1. Open a case with status `triage_pending` or a newly submitted case assigned to the department.
+2. Run AI triage.
+3. Show that AI suggested category, department, urgency, confidence, missing information, and reasoning are separate from official case values.
+4. Accept or correct the suggestion as a human reviewer.
+5. Confirm official case values update only after review.
+6. Use seeded Kristiansand cases for edge cases:
+   - `seed_kristiansand_case_blocked_access` for low-confidence AI.
+   - `seed_kristiansand_case_unclear_attachment` for failed AI.
+
+### Role-Based Access Demo
+
+1. Log in as `case.worker@kristiansand.local` and show a narrow navigation surface focused on Dashboard and Cases.
+2. Log in as `auditor@kristiansand.local` and show read-only case access with mutation controls hidden/blocked.
+3. Log in as `department.admin@kristiansand.local` and show analytics, operations, users, departments, and routing rules.
+4. Log in as `case.worker@grimstad.local` and show that Kristiansand cases are not visible.
+5. Log in as `super.admin@kommuneflow.local` only when you need to demonstrate tenant-level admin or privacy actions.
+
+### Analytics, Operations, Privacy, And Audit
+
+1. Open **Analytics** and aggregate the current seeded date range if needed.
+2. Show case volume, AI review/correction metrics, AI failures, estimated minutes saved, and SSB population enrichment.
+3. Open **Operations** and show health/readiness, integration metrics, upload failures, rate-limit blocks, operational events, and AI provider status.
+4. Open **Privacy** as a super admin to demonstrate export, anonymization, retention policy, and cleanup dry-run.
+5. Open **Audit** as auditor or super admin to show tenant-scoped audit events and safe metadata summaries.
+
+### OpenAI Mode Vs Mock Mode
+
+- Local and no-cost demos should use `AI_PROVIDER=mock`.
+- Real OpenAI triage requires `AI_PROVIDER=openai`, `OPENAI_API_KEY`, `OPENAI_MODEL`, and `OPENAI_TIMEOUT_MS`.
+- Verify the active provider in **Operations** before demoing AI.
+- Never commit, print, screenshot, or document `OPENAI_API_KEY`.
+
+### Deployment Verification
+
+After a deployed update:
+
+```bash
+SMOKE_BASIC_AUTH_USER=<demo gate username> \
+SMOKE_BASIC_AUTH_PASSWORD=<demo gate password> \
+sh scripts/smoke-test.sh https://your-domain.example
+```
+
+For seeded protected demos, also verify authenticated internal APIs:
+
+```bash
+SMOKE_BASIC_AUTH_USER=<demo gate username> \
+SMOKE_BASIC_AUTH_PASSWORD=<demo gate password> \
+SMOKE_INTERNAL_EMAIL=recruiter.demo@kristiansand.local \
+SMOKE_INTERNAL_PASSWORD='<demo internal password>' \
+sh scripts/smoke-test.sh https://your-domain.example
+```
+
+The smoke test checks web root, public intake, API health/readiness, internal login, and optionally `/auth/me`, `/cases`,
+and `/ai/status`.
+
+See [Demo Script](./docs/DEMO_SCRIPT.md) for a shorter live walkthrough.
 
 ## Known Limitations
 

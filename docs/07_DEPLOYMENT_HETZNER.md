@@ -89,9 +89,33 @@ JWT_SECRET=<long random secret>
 SESSION_SECRET=<long random secret>
 STATUS_CODE_PEPPER=<separate long random secret>
 AI_PROVIDER=mock
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_TIMEOUT_MS=15000
+# Optional only when seeding protected synthetic demo users
+SEED_DEMO_PASSWORD=<demo-only internal password>
+SEED_RECRUITER_PASSWORD=<recruiter review password>
 ```
 
-Use `AI_PROVIDER=openai` only after `OPENAI_API_KEY` is configured.
+For no-cost portfolio demos, keep:
+
+```txt
+AI_PROVIDER=mock
+OPENAI_API_KEY=
+```
+
+This uses deterministic mock triage and avoids real OpenAI API cost.
+
+For real OpenAI triage, set:
+
+```txt
+AI_PROVIDER=openai
+OPENAI_API_KEY=<server-side secret>
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_TIMEOUT_MS=15000
+```
+
+`OPENAI_API_KEY` must never be committed, pasted into screenshots, included in logs, or stored in backup artifacts. Keep it only in the server-side `.env.production` or a real secret manager. Use `AI_PROVIDER=openai` only after `OPENAI_API_KEY` is configured.
 
 Generate the Basic Auth hash with Caddy:
 
@@ -134,6 +158,10 @@ docker compose -f docker-compose.prod.yml --env-file .env.production run --rm --
 docker compose -f docker-compose.prod.yml --env-file .env.production run --rm --entrypoint sh api -lc "./node_modules/.bin/tsx prisma/seed.ts"
 ```
 
+The seed is idempotent and includes `recruiter.demo@kristiansand.local` as a Kristiansand `department_admin` account
+for protected portfolio review. Set `SEED_RECRUITER_PASSWORD` in `.env.production` before seeding; do not document or
+display that password publicly.
+
 12. Start the full stack:
 
 ```bash
@@ -154,22 +182,42 @@ SMOKE_BASIC_AUTH_PASSWORD=<demo gate password> \
 sh scripts/smoke-test.sh https://your-domain.example
 ```
 
+If the deployment has seeded synthetic internal users, run the authenticated smoke checks as well:
+
+```bash
+SMOKE_BASIC_AUTH_USER=<demo gate username> \
+SMOKE_BASIC_AUTH_PASSWORD=<demo gate password> \
+SMOKE_INTERNAL_EMAIL=department.admin@kristiansand.local \
+SMOKE_INTERNAL_PASSWORD=<demo internal password> \
+sh scripts/smoke-test.sh https://your-domain.example
+```
+
 ## Post-Deploy Smoke Test
 
 The smoke test checks:
 
 - web home page returns HTTP `200`
+- public intake page `/nb` returns HTTP `200` by default
 - API health returns HTTP `200`
 - API readiness returns HTTP `200`
 - internal login page returns HTTP `200`
+- when `SMOKE_INTERNAL_EMAIL` and `SMOKE_INTERNAL_PASSWORD` are set:
+  - internal login succeeds
+  - `GET /api/v1/auth/me` returns HTTP `200`
+  - `GET /api/v1/cases` returns HTTP `200`
+  - `GET /api/v1/ai/status` returns HTTP `200`
 
 Manual checks after the script:
 
 - authenticate through the Caddy Basic Auth prompt
 - log in with a demo user
+- open `/internal/operations`
+- verify the AI Configuration panel shows the expected provider
+- if `AI_PROVIDER=openai`, verify it shows configured `Yes`
 - create a citizen case
 - upload a document
-- run AI triage with the configured provider
+- run AI triage on a seeded or synthetic case
+- confirm AI review still requires human accept/correction before official case values change
 - verify Caddy issued a valid HTTPS certificate
 
 ## Security Release Gate

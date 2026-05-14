@@ -30,7 +30,7 @@ DemoPassword123!
 
 These credentials are for local or separately protected demos only. Do not expose them in an open public deployment.
 
-The seed includes Kristiansand, Arendal, and Grimstad tenants, five departments per tenant, 20 realistic cases, documents, AI reviews, SSB population records, analytics snapshots, audit events, operational events, and email logs.
+The seed includes Kristiansand, Arendal, and Grimstad tenants, five departments per tenant, 22 realistic cases, documents, AI reviews, SSB population records, analytics snapshots, audit events, operational events, and email logs.
 
 ## Walkthrough
 

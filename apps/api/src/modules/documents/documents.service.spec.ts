@@ -276,6 +276,68 @@ describe('DocumentsService', () => {
     expect(findManyInput.where.deletedAt).toBeNull();
   });
 
+  it('allows auditors to list sensitive tenant documents and records sensitive access', async () => {
+    let capturedFindManyInput: unknown;
+    const recordMock = jest.fn().mockResolvedValue(undefined);
+    const service = createService(
+      {
+        case: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'case_1',
+            assignedDepartmentId: 'department_2',
+          }),
+        },
+        caseDocument: {
+          findMany: jest.fn((input: unknown) => {
+            capturedFindManyInput = input;
+            return Promise.resolve([
+              {
+                id: 'sensitive_document',
+                originalFileName: 'care-request.pdf',
+                mimeType: 'application/pdf',
+                sizeBytes: 512,
+                checksumSha256: 'checksum',
+                isSensitive: true,
+                createdAt: new Date('2026-05-14T10:00:00.000Z'),
+                deletedAt: null,
+                uploadedBy: null,
+                uploadedByCitizenProfile: {
+                  id: 'citizen_1',
+                  name: 'Demo Citizen',
+                },
+              },
+            ]);
+          }),
+        },
+      },
+      { record: recordMock } as unknown as AuditService,
+    );
+
+    await expect(service.listForCase('case_1', auditor())).resolves.toEqual([
+      expect.objectContaining({
+        id: 'sensitive_document',
+        isSensitive: true,
+      }),
+    ]);
+
+    const findManyInput = capturedFindManyInput as {
+      where: { isSensitive?: boolean; tenantId: string; caseId: string };
+    };
+    expect(findManyInput.where).toMatchObject({
+      tenantId: 'tenant_1',
+      caseId: 'case_1',
+    });
+    expect(findManyInput.where.isSensitive).toBeUndefined();
+    expect(recordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant_1',
+        action: 'document.sensitive_accessed',
+        entityType: 'case',
+        entityId: 'case_1',
+      }),
+    );
+  });
+
   it('soft-deletes a document and records an audit event', async () => {
     const recordMock = jest.fn().mockResolvedValue(undefined);
     let capturedDocumentFindFirstInput: unknown;

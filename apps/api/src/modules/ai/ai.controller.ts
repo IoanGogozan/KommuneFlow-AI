@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   Post,
@@ -13,6 +14,7 @@ import { CurrentUserParam } from '../auth/current-user.decorator';
 import type { CurrentUser } from '../auth/current-user';
 import { RequirePermissions } from '../auth/permissions.decorator';
 import { PermissionsGuard } from '../auth/permissions.guard';
+import { roleHasPermission } from '../auth/permissions';
 import { AIService } from './ai.service';
 import { reviewAITriageSchema } from './ai.schemas';
 
@@ -72,5 +74,23 @@ export class AIDiagnosticsController {
   @RequirePermissions('ai:diagnostics:read')
   getProviderDiagnostics() {
     return this.aiService.getProviderDiagnostics();
+  }
+}
+
+@Controller('ai')
+@UseGuards(AuthGuard)
+export class AIStatusController {
+  constructor(private readonly aiService: AIService) {}
+
+  @Get('status')
+  getProviderStatus(@CurrentUserParam() user: CurrentUser) {
+    if (
+      !roleHasPermission(user.role, 'ai:diagnostics:read') &&
+      !roleHasPermission(user.role, 'operations:read')
+    ) {
+      throw new ForbiddenException('Permission denied.');
+    }
+
+    return this.aiService.getProviderStatus();
   }
 }

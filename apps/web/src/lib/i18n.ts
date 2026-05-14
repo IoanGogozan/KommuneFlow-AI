@@ -10,6 +10,21 @@ export type IntakeDictionary = {
   intro: string;
   tenantLabel: string;
   tenantHelp: string;
+  submitNewRequestTab: string;
+  checkExistingCaseTab: string;
+  sectionMunicipalityHelp: string;
+  sectionContactTitle: string;
+  sectionContactHelp: string;
+  sectionAddressTitle: string;
+  sectionAddressHelp: string;
+  sectionRequestTitle: string;
+  sectionRequestHelp: string;
+  sectionDocumentsTitle: string;
+  sectionDocumentsHelp: string;
+  sectionPrivacyTitle: string;
+  sectionPrivacyHelp: string;
+  sectionSubmitTitle: string;
+  sectionSubmitHelp: string;
   nameLabel: string;
   emailLabel: string;
   phoneLabel: string;
@@ -31,11 +46,16 @@ export type IntakeDictionary = {
   submitting: string;
   successTitle: string;
   successText: string;
+  successSaveCodeWarning: string;
+  successMunicipalityLabel: string;
+  successNextStepsLabel: string;
+  successNextStepsText: string;
   caseIdLabel: string;
   caseReferenceLabel: string;
   statusAccessCodeLabel: string;
   statusLookupTitle: string;
   statusLookupText: string;
+  statusLookupRequirements: string;
   statusLookupSubmit: string;
   statusLookupLoading: string;
   statusLookupError: string;
@@ -58,6 +78,28 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     tenantLabel: "Kommune",
     tenantHelp:
       "Velg kommunen saken gjelder. Henvendelsen lagres hos valgt kommune.",
+    submitNewRequestTab: "Send ny henvendelse",
+    checkExistingCaseTab: "Sjekk eksisterende sak",
+    sectionMunicipalityHelp:
+      "Velg riktig kommune slik at saken registreres hos riktig mottaker.",
+    sectionContactTitle: "Kontaktinformasjon",
+    sectionContactHelp:
+      "Oppgi kontaktinformasjon kommunen kan bruke ved oppfolging.",
+    sectionAddressTitle: "Adresse",
+    sectionAddressHelp:
+      "Sok og bekreft adressen hvis saken gjelder et bestemt sted.",
+    sectionRequestTitle: "Detaljer om henvendelsen",
+    sectionRequestHelp:
+      "Beskriv hva saken gjelder. Jo tydeligere beskrivelse, desto enklere er det a behandle saken.",
+    sectionDocumentsTitle: "Dokumenter",
+    sectionDocumentsHelp:
+      "Legg ved relevante filer hvis de hjelper kommunen a forsta saken.",
+    sectionPrivacyTitle: "Personvernbekreftelse",
+    sectionPrivacyHelp:
+      "Bekreft at kommunen kan bruke opplysningene til a registrere og behandle saken.",
+    sectionSubmitTitle: "Send inn",
+    sectionSubmitHelp:
+      "Kontroller informasjonen og send inn henvendelsen nar alt er klart.",
     nameLabel: "Navn",
     emailLabel: "E-post",
     phoneLabel: "Telefon",
@@ -81,12 +123,20 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     submitting: "Sender inn...",
     successTitle: "Henvendelsen er registrert",
     successText: "Kommunen har mottatt saken og vil behandle den videre.",
+    successSaveCodeWarning:
+      "Lagre denne tilgangskoden. Du trenger den for a sjekke saksstatus.",
+    successMunicipalityLabel: "Kommune",
+    successNextStepsLabel: "Neste steg",
+    successNextStepsText:
+      "Bruk saksreferansen og tilgangskoden i fanen Sjekk eksisterende sak for a teste statusoppslag med en gang.",
     caseIdLabel: "Saks-ID",
     caseReferenceLabel: "Saksreferanse",
     statusAccessCodeLabel: "Tilgangskode",
     statusLookupTitle: "Sjekk saksstatus",
     statusLookupText:
       "Bruk saksreferansen og tilgangskoden du fikk da saken ble sendt inn.",
+    statusLookupRequirements:
+      "Du trenger både saksreferanse og tilgangskode for a se status.",
     statusLookupSubmit: "Sjekk status",
     statusLookupLoading: "Sjekker...",
     statusLookupError: "Fant ikke saken med denne kombinasjonen.",
@@ -107,6 +157,28 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     tenantLabel: "Municipality",
     tenantHelp:
       "Choose the municipality for this case. The request is stored under the selected municipality.",
+    submitNewRequestTab: "Submit new request",
+    checkExistingCaseTab: "Check existing case",
+    sectionMunicipalityHelp:
+      "Choose the correct municipality so the request is registered with the right recipient.",
+    sectionContactTitle: "Contact information",
+    sectionContactHelp:
+      "Provide contact details the municipality can use for follow-up.",
+    sectionAddressTitle: "Address",
+    sectionAddressHelp:
+      "Search and confirm the address if the request concerns a specific place.",
+    sectionRequestTitle: "Request details",
+    sectionRequestHelp:
+      "Describe what the case is about. Clear details make the request easier to process.",
+    sectionDocumentsTitle: "Documents",
+    sectionDocumentsHelp:
+      "Attach relevant files if they help the municipality understand the case.",
+    sectionPrivacyTitle: "Privacy confirmation",
+    sectionPrivacyHelp:
+      "Confirm that the municipality may use the information to register and process the request.",
+    sectionSubmitTitle: "Submit",
+    sectionSubmitHelp:
+      "Review the information and submit the request when everything is ready.",
     nameLabel: "Name",
     emailLabel: "Email",
     phoneLabel: "Phone",
@@ -129,12 +201,20 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     submitting: "Submitting...",
     successTitle: "Request registered",
     successText: "The municipality has received the case for processing.",
+    successSaveCodeWarning:
+      "Save this access code. It is needed to check your case status.",
+    successMunicipalityLabel: "Municipality",
+    successNextStepsLabel: "Next steps",
+    successNextStepsText:
+      "Use the case reference and access code in the Check existing case tab to test status lookup immediately.",
     caseIdLabel: "Case ID",
     caseReferenceLabel: "Case reference",
     statusAccessCodeLabel: "Access code",
     statusLookupTitle: "Check case status",
     statusLookupText:
       "Use the case reference and access code you received after submission.",
+    statusLookupRequirements:
+      "You need both the case reference and access code to check status.",
     statusLookupSubmit: "Check status",
     statusLookupLoading: "Checking...",
     statusLookupError: "No case was found with that combination.",

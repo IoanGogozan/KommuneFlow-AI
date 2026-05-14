@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { InternalOverview } from "./ui/internal-overview";
 
 export default function InternalHomePage() {
-  redirect("/internal/cases");
+  return <InternalOverview />;
 }

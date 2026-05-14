@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, ReactNode, useState } from "react";
 import { getApiBaseUrl } from "@/lib/api";
 import type { IntakeDictionary, Locale } from "@/lib/i18n";
 
@@ -44,11 +44,13 @@ const demoTenants = [
 ] as const;
 
 type DemoTenant = (typeof demoTenants)[number];
+type PublicPortalTab = "submit" | "status";
 
 export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
   const [selectedTenant, setSelectedTenant] = useState<DemoTenant>(
     demoTenants[2],
   );
+  const [activeTab, setActiveTab] = useState<PublicPortalTab>("submit");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
@@ -68,6 +70,21 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
   >(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [result, setResult] = useState<SubmissionResult | null>(null);
+
+  function selectTenant(slug: string) {
+    const tenant = demoTenants.find((item) => item.slug === slug);
+
+    if (!tenant) {
+      return;
+    }
+
+    setSelectedTenant(tenant);
+    setAddressSuggestion(null);
+    setAddressSearchMessage(null);
+    setIsAddressConfirmed(false);
+    setStatusResult(null);
+    setStatusLookupError(null);
+  }
 
   async function searchAddress() {
     const query = address.trim();
@@ -201,28 +218,59 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
   if (result) {
     return (
       <section className="rounded-lg border border-emerald-200 bg-white p-6 shadow-sm">
-        <h2 className="text-2xl font-semibold text-slate-950">
-          {dictionary.successTitle}
-        </h2>
-        <p className="mt-3 text-slate-600">{dictionary.successText}</p>
-        <dl className="mt-6 rounded-md bg-slate-50 p-4">
-          <dt className="text-sm font-medium text-slate-500">
-            {dictionary.caseReferenceLabel}
-          </dt>
-          <dd className="mt-1 break-all font-mono text-sm text-slate-950">
-            {result.caseReference}
-          </dd>
-          <dt className="mt-4 text-sm font-medium text-slate-500">
-            {dictionary.statusAccessCodeLabel}
-          </dt>
-          <dd className="mt-1 break-all font-mono text-sm text-slate-950">
-            {result.statusAccessCode}
-          </dd>
+        <div className="rounded-md bg-emerald-50 p-4">
+          <h2 className="text-2xl font-semibold text-emerald-950">
+            {dictionary.successTitle}
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-emerald-900">
+            {dictionary.successText}
+          </p>
+        </div>
+
+        <dl className="mt-6 grid gap-3 rounded-md bg-slate-50 p-4 sm:grid-cols-2">
+          <InfoItem
+            label={dictionary.caseReferenceLabel}
+            value={result.caseReference}
+          />
+          <InfoItem
+            label={dictionary.statusAccessCodeLabel}
+            value={result.statusAccessCode}
+            valueClassName="font-mono"
+          />
+          <InfoItem
+            label={dictionary.successMunicipalityLabel}
+            value={selectedTenant.name}
+          />
+          <InfoItem label={dictionary.statusLabel} value={result.status} />
         </dl>
+
+        <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-900">
+          {dictionary.successSaveCodeWarning}
+        </p>
+
+        <div className="mt-4 rounded-md border border-slate-200 bg-white p-4">
+          <h3 className="text-sm font-semibold text-slate-950">
+            {dictionary.successNextStepsLabel}
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {dictionary.successNextStepsText}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setResult(null);
+            setActiveTab("status");
+          }}
+          className="mt-6 rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+        >
+          {dictionary.statusLookupSubmit}
+        </button>
         <button
           type="button"
           onClick={() => setResult(null)}
-          className="mt-6 rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+          className="ml-3 mt-6 rounded-md border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
         >
           {dictionary.newCase}
         </button>
@@ -232,32 +280,55 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
 
   return (
     <div className="grid gap-5">
-      <form
-        onSubmit={handleSubmit}
-        className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+      <div
+        className="grid gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm sm:grid-cols-2"
+        role="tablist"
+        aria-label={dictionary.title}
       >
-        <div className="mb-5 rounded-md border border-slate-200 bg-slate-50 p-4">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "submit"}
+          onClick={() => setActiveTab("submit")}
+          className={
+            activeTab === "submit"
+              ? "rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+              : "rounded-md px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          }
+        >
+          {dictionary.submitNewRequestTab}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "status"}
+          onClick={() => setActiveTab("status")}
+          className={
+            activeTab === "status"
+              ? "rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+              : "rounded-md px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          }
+        >
+          {dictionary.checkExistingCaseTab}
+        </button>
+      </div>
+
+      {activeTab === "submit" ? (
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+        >
+        <FormSection
+          help={dictionary.sectionMunicipalityHelp}
+          number={1}
+          title={dictionary.tenantLabel}
+        >
           <label className="text-sm font-medium text-slate-700">
             {dictionary.tenantLabel}
           </label>
           <select
             value={selectedTenant.slug}
-            onChange={(event) => {
-              const tenant = demoTenants.find(
-                (item) => item.slug === event.target.value,
-              );
-
-              if (!tenant) {
-                return;
-              }
-
-              setSelectedTenant(tenant);
-              setAddressSuggestion(null);
-              setAddressSearchMessage(null);
-              setIsAddressConfirmed(false);
-              setStatusResult(null);
-              setStatusLookupError(null);
-            }}
+            onChange={(event) => selectTenant(event.target.value)}
             className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-slate-950 outline-none focus:border-slate-600"
           >
             {demoTenants.map((tenant) => (
@@ -267,17 +338,30 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
             ))}
           </select>
           <p className="mt-1 text-sm text-slate-500">{dictionary.tenantHelp}</p>
-        </div>
+        </FormSection>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={dictionary.nameLabel} name="name" required />
-          <Field
-            label={dictionary.emailLabel}
-            name="email"
-            type="email"
-            required
-          />
-          <Field label={dictionary.phoneLabel} name="phone" />
+        <FormSection
+          help={dictionary.sectionContactHelp}
+          number={2}
+          title={dictionary.sectionContactTitle}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={dictionary.nameLabel} name="name" required />
+            <Field
+              label={dictionary.emailLabel}
+              name="email"
+              type="email"
+              required
+            />
+            <Field label={dictionary.phoneLabel} name="phone" />
+          </div>
+        </FormSection>
+
+        <FormSection
+          help={dictionary.sectionAddressHelp}
+          number={3}
+          title={dictionary.sectionAddressTitle}
+        >
           <label className="grid gap-2">
             <span className="text-sm font-medium text-slate-700">
               {dictionary.addressLabel}
@@ -304,33 +388,39 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
               </button>
             </div>
           </label>
-        </div>
 
-        {addressSuggestion ? (
-          <section className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4">
-            <p className="text-sm font-medium text-emerald-950">
-              {dictionary.addressSuggestionLabel}
+          {addressSuggestion ? (
+            <section className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-sm font-medium text-emerald-950">
+                {dictionary.addressSuggestionLabel}
+              </p>
+              <p className="mt-1 text-sm text-emerald-900">
+                {addressSuggestion.normalizedAddress}
+              </p>
+              <button
+                type="button"
+                onClick={confirmAddress}
+                className="mt-3 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
+              >
+                {isAddressConfirmed
+                  ? dictionary.addressConfirmed
+                  : dictionary.addressConfirm}
+              </button>
+            </section>
+          ) : null}
+
+          {addressSearchMessage ? (
+            <p className="rounded-md bg-slate-50 p-3 text-sm text-slate-600">
+              {addressSearchMessage}
             </p>
-            <p className="mt-1 text-sm text-emerald-900">
-              {addressSuggestion.normalizedAddress}
-            </p>
-            <button
-              type="button"
-              onClick={confirmAddress}
-              className="mt-3 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
-            >
-              {isAddressConfirmed
-                ? dictionary.addressConfirmed
-                : dictionary.addressConfirm}
-            </button>
-          </section>
-        ) : null}
+          ) : null}
+        </FormSection>
 
-        {addressSearchMessage ? (
-          <p className="mt-3 text-sm text-slate-600">{addressSearchMessage}</p>
-        ) : null}
-
-        <div className="mt-4 grid gap-4">
+        <FormSection
+          help={dictionary.sectionRequestHelp}
+          number={4}
+          title={dictionary.sectionRequestTitle}
+        >
           <Field label={dictionary.caseTitleLabel} name="title" required />
           <label className="grid gap-2">
             <span className="text-sm font-medium text-slate-700">
@@ -344,62 +434,105 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
               className="min-h-40 rounded-md border border-slate-300 px-3 py-2 text-slate-950 outline-none focus:border-slate-600"
             />
           </label>
-        </div>
+        </FormSection>
 
-        <label className="mt-4 grid gap-2">
-          <span className="text-sm font-medium text-slate-700">
-            {dictionary.documentsLabel}
-          </span>
-          <input
-            name="documents"
-            type="file"
-            multiple
-            accept="application/pdf,image/png,image/jpeg"
-            className="rounded-md border border-slate-300 px-3 py-2 text-slate-950 outline-none focus:border-slate-600"
-          />
-          <span className="text-sm text-slate-500">
-            {dictionary.documentsHelp}
-          </span>
-        </label>
-
-        <label className="mt-5 flex gap-3 rounded-md border border-slate-200 bg-slate-50 p-4">
-          <input
-            name="privacyAccepted"
-            type="checkbox"
-            required
-            className="mt-1 h-4 w-4"
-          />
-          <span>
-            <span className="block text-sm font-medium text-slate-800">
-              {dictionary.privacyLabel}
-            </span>
-            <span className="mt-1 block text-sm leading-6 text-slate-600">
-              {dictionary.privacyText}
-            </span>
-          </span>
-        </label>
-
-        {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="mt-6 w-full rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+        <FormSection
+          help={dictionary.sectionDocumentsHelp}
+          number={5}
+          title={dictionary.sectionDocumentsTitle}
         >
-          {isSubmitting ? dictionary.submitting : dictionary.submit}
-        </button>
-      </form>
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-slate-700">
+              {dictionary.documentsLabel}
+            </span>
+            <input
+              name="documents"
+              type="file"
+              multiple
+              accept="application/pdf,image/png,image/jpeg"
+              className="rounded-md border border-slate-300 px-3 py-2 text-slate-950 outline-none focus:border-slate-600"
+            />
+            <span className="text-sm text-slate-500">
+              {dictionary.documentsHelp}
+            </span>
+          </label>
+        </FormSection>
 
-      <form
-        onSubmit={handleStatusLookup}
-        className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
-      >
+        <FormSection
+          help={dictionary.sectionPrivacyHelp}
+          number={6}
+          title={dictionary.sectionPrivacyTitle}
+        >
+          <label className="flex gap-3 rounded-md border border-slate-200 bg-slate-50 p-4">
+            <input
+              name="privacyAccepted"
+              type="checkbox"
+              required
+              className="mt-1 h-4 w-4"
+            />
+            <span>
+              <span className="block text-sm font-medium text-slate-800">
+                {dictionary.privacyLabel}
+              </span>
+              <span className="mt-1 block text-sm leading-6 text-slate-600">
+                {dictionary.privacyText}
+              </span>
+            </span>
+          </label>
+        </FormSection>
+
+        <FormSection
+          help={dictionary.sectionSubmitHelp}
+          number={7}
+          title={dictionary.sectionSubmitTitle}
+        >
+          {error ? (
+            <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </p>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {isSubmitting ? dictionary.submitting : dictionary.submit}
+          </button>
+        </FormSection>
+        </form>
+      ) : null}
+
+      {activeTab === "status" ? (
+        <form
+          onSubmit={handleStatusLookup}
+          className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+        >
         <h2 className="text-xl font-semibold text-slate-950">
           {dictionary.statusLookupTitle}
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">
           {dictionary.statusLookupText}
         </p>
+        <p className="mt-3 rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-700">
+          {dictionary.statusLookupRequirements}
+        </p>
+        <label className="mt-4 grid gap-2">
+          <span className="text-sm font-medium text-slate-700">
+            {dictionary.tenantLabel}
+          </span>
+          <select
+            value={selectedTenant.slug}
+            onChange={(event) => selectTenant(event.target.value)}
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-slate-950 outline-none focus:border-slate-600"
+          >
+            {demoTenants.map((tenant) => (
+              <option key={tenant.slug} value={tenant.slug}>
+                {tenant.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Field
             label={dictionary.caseReferenceLabel}
@@ -427,6 +560,14 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
         {statusResult ? (
           <dl className="mt-5 grid gap-3 rounded-md bg-slate-50 p-4 text-sm">
             <div className="flex justify-between gap-4">
+              <dt className="text-slate-500">
+                {dictionary.caseReferenceLabel}
+              </dt>
+              <dd className="break-all text-right font-medium text-slate-950">
+                {statusResult.caseReference}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
               <dt className="text-slate-500">{dictionary.statusLabel}</dt>
               <dd className="font-medium text-slate-950">
                 {statusResult.status}
@@ -452,7 +593,59 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
             </div>
           </dl>
         ) : null}
-      </form>
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
+function FormSection({
+  children,
+  help,
+  number,
+  title,
+}: {
+  children: ReactNode;
+  help: string;
+  number: number;
+  title: string;
+}) {
+  return (
+    <section className="mt-5 border-t border-slate-200 pt-5 first:mt-0 first:border-t-0 first:pt-0">
+      <div className="mb-4 flex items-start gap-3">
+        <span
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-sm font-semibold text-white"
+          aria-hidden="true"
+        >
+          {number}
+        </span>
+        <div>
+          <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{help}</p>
+        </div>
+      </div>
+      <div className="grid gap-4">{children}</div>
+    </section>
+  );
+}
+
+function InfoItem({
+  label,
+  value,
+  valueClassName = "",
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="rounded-md bg-white p-3">
+      <dt className="text-sm font-medium text-slate-500">{label}</dt>
+      <dd
+        className={`mt-1 break-all text-sm font-semibold text-slate-950 ${valueClassName}`}
+      >
+        {value}
+      </dd>
     </div>
   );
 }

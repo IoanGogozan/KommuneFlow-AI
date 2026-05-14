@@ -4,6 +4,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { UserRole, UserStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AuthService } from './auth.service';
+import { ROLE_PERMISSIONS } from './permissions';
 
 describe('AuthService', () => {
   it('logs in an active seeded-style user with valid credentials', async () => {
@@ -110,6 +111,122 @@ describe('AuthService', () => {
         password: 'DemoPassword123!',
       }),
     ).rejects.toThrow(new UnauthorizedException('Invalid credentials.'));
+  });
+
+  it('returns the current active user profile with tenant, department and permissions', async () => {
+    const user = {
+      id: 'user_1',
+      tenantId: 'tenant_1',
+      departmentId: 'department_1',
+      email: 'case.worker@arendal.local',
+      name: 'Arendal Case Worker',
+      role: UserRole.case_worker,
+      tenant: {
+        id: 'tenant_1',
+        name: 'Arendal Kommune',
+        slug: 'arendal',
+      },
+      department: {
+        id: 'department_1',
+        name: 'Plan og bygg',
+        slug: 'planning-building',
+      },
+    };
+    const findFirstMock = jest.fn().mockResolvedValue(user);
+    const prisma = {
+      user: {
+        findFirst: findFirstMock,
+      },
+    } as unknown as PrismaService;
+    const service = new AuthService(
+      prisma,
+      {} as JwtService,
+      operationalEvents(),
+    );
+
+    await expect(
+      service.getCurrentUserProfile({
+        id: 'user_1',
+        tenantId: 'tenant_1',
+        departmentId: 'department_1',
+        email: 'case.worker@arendal.local',
+        role: UserRole.case_worker,
+      }),
+    ).resolves.toEqual({
+      ...user,
+      permissions: ROLE_PERMISSIONS.case_worker,
+    });
+    expect(findFirstMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'user_1',
+          status: UserStatus.active,
+        },
+      }),
+    );
+  });
+
+  it('does not select or return passwordHash in the current user profile', async () => {
+    const findFirstMock = jest.fn().mockResolvedValue({
+      id: 'user_1',
+      tenantId: 'tenant_1',
+      departmentId: null,
+      email: 'auditor@arendal.local',
+      name: 'Arendal Auditor',
+      role: UserRole.auditor,
+      tenant: {
+        id: 'tenant_1',
+        name: 'Arendal Kommune',
+        slug: 'arendal',
+      },
+      department: null,
+    });
+    const prisma = {
+      user: {
+        findFirst: findFirstMock,
+      },
+    } as unknown as PrismaService;
+    const service = new AuthService(
+      prisma,
+      {} as JwtService,
+      operationalEvents(),
+    );
+
+    const profile = await service.getCurrentUserProfile({
+      id: 'user_1',
+      tenantId: 'tenant_1',
+      departmentId: null,
+      email: 'auditor@arendal.local',
+      role: UserRole.auditor,
+    });
+
+    expect(JSON.stringify(findFirstMock.mock.calls)).not.toContain(
+      'passwordHash',
+    );
+    expect(profile).not.toHaveProperty('passwordHash');
+  });
+
+  it('returns 401 when the current user no longer exists or is inactive', async () => {
+    const prisma = {
+      user: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+    } as unknown as PrismaService;
+    const service = new AuthService(
+      prisma,
+      {} as JwtService,
+      operationalEvents(),
+    );
+
+    await expect(
+      service.getCurrentUserProfile({
+        id: 'user_1',
+        tenantId: 'tenant_1',
+        departmentId: null,
+        email: 'auditor@arendal.local',
+        role: UserRole.auditor,
+      }),
+    ).rejects.toThrow(new UnauthorizedException('Authentication required.'));
   });
 });
 

@@ -60,6 +60,28 @@ type AiTriageResponseBody = {
   suggestedUrgency: string;
 };
 
+type InternalCaseListItem = {
+  id: string;
+  title: string;
+  status: string;
+  assignedDepartment: {
+    id: string;
+    slug: string;
+  } | null;
+};
+
+type InternalNoteResponseBody = {
+  id: string;
+  body: string;
+};
+
+type DocumentResponseBody = {
+  id: string;
+  originalFileName: string;
+  mimeType: string;
+  sizeBytes: number;
+};
+
 type AnalyticsSummaryResponseBody = {
   totals: {
     totalCases: number;
@@ -509,6 +531,23 @@ describe('AppController (e2e)', () => {
     expect(loginBody.user.tenantId).toBe(tenant.id);
     expect(loginBody.user.departmentId).toBe(department.id);
 
+    const caseListResponse = await agent.get('/api/v1/cases').expect(200);
+    const caseListBody =
+      caseListResponse.body as unknown as InternalCaseListItem[];
+
+    const listedCase = caseListBody.find(
+      (caseItem) => caseItem.id === publicCaseBody.caseId,
+    );
+
+    expect(listedCase).toBeDefined();
+    expect(listedCase).toMatchObject({
+      id: publicCaseBody.caseId,
+      title: 'Water leak near school entrance',
+      status: 'triage_pending',
+    });
+    expect(listedCase?.assignedDepartment?.id).toBe(department.id);
+    expect(listedCase?.assignedDepartment?.slug).toBe(department.slug);
+
     const caseDetailResponse = await agent
       .get(`/api/v1/cases/${publicCaseBody.caseId}`)
       .expect(200);
@@ -534,11 +573,47 @@ describe('AppController (e2e)', () => {
         contentType: 'application/pdf',
       })
       .expect(201);
+    const internalUploadBody =
+      internalUploadResponse.body as unknown as DocumentResponseBody;
 
-    expect(internalUploadResponse.body).toMatchObject({
+    expect(internalUploadBody).toMatchObject({
       originalFileName: 'internal-upload.pdf',
       mimeType: 'application/pdf',
     });
+
+    const documentListResponse = await agent
+      .get(`/api/v1/cases/${publicCaseBody.caseId}/documents`)
+      .expect(200);
+    const documentListBody =
+      documentListResponse.body as unknown as DocumentResponseBody[];
+
+    expect(documentListBody).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: internalUploadBody.id,
+          originalFileName: 'internal-upload.pdf',
+          mimeType: 'application/pdf',
+        }),
+        expect.objectContaining({
+          originalFileName: 'citizen-upload.pdf',
+          mimeType: 'application/pdf',
+        }),
+      ]),
+    );
+
+    const downloadResponse = await agent
+      .get(
+        `/api/v1/cases/${publicCaseBody.caseId}/documents/${internalUploadBody.id}/download`,
+      )
+      .expect(200);
+
+    expect(downloadResponse.headers['content-type']).toBe('application/pdf');
+    expect(downloadResponse.headers['content-disposition']).toContain(
+      'internal-upload.pdf',
+    );
+    expect(Number(downloadResponse.headers['content-length'])).toBe(
+      internalUploadBody.sizeBytes,
+    );
 
     const aiTriageResponse = await agent
       .post(`/api/v1/cases/${publicCaseBody.caseId}/ai-triage`)
@@ -564,11 +639,40 @@ describe('AppController (e2e)', () => {
       })
       .expect(201);
 
+    const internalNoteResponse = await agent
+      .post(`/api/v1/cases/${publicCaseBody.caseId}/internal-notes`)
+      .set('Origin', allowedOrigin)
+      .send({
+        body: 'Citizen should confirm whether the entrance is still slippery.',
+      })
+      .expect(201);
+    const internalNoteBody =
+      internalNoteResponse.body as unknown as InternalNoteResponseBody;
+
+    expect(internalNoteBody).toMatchObject({
+      body: 'Citizen should confirm whether the entrance is still slippery.',
+    });
+
     await agent
       .patch(`/api/v1/cases/${publicCaseBody.caseId}/status`)
       .set('Origin', allowedOrigin)
       .send({ status: 'waiting_for_citizen' })
       .expect(200);
+
+    const updatedCaseDetailResponse = await agent
+      .get(`/api/v1/cases/${publicCaseBody.caseId}`)
+      .expect(200);
+
+    expect(updatedCaseDetailResponse.body).toMatchObject({
+      id: publicCaseBody.caseId,
+      status: 'waiting_for_citizen',
+      internalNotes: [
+        expect.objectContaining({
+          id: internalNoteBody.id,
+          body: 'Citizen should confirm whether the entrance is still slippery.',
+        }),
+      ],
+    });
 
     const publicStatusResponse = await request(app.getHttpServer())
       .get(`/api/v1/public/tenants/${tenantSlug}/cases/status`)
@@ -659,6 +763,7 @@ describe('AppController (e2e)', () => {
       expect.arrayContaining([
         'case.created_by_citizen',
         'ai.triage_result_created',
+        'case.internal_note_created',
         'case.status_updated',
       ]),
     );
@@ -675,6 +780,14 @@ describe('AppController (e2e)', () => {
         where: {
           tenantId: tenant.id,
           action: 'document.uploaded',
+        },
+      }),
+    ).resolves.toBeTruthy();
+    await expect(
+      prisma.auditEvent.findFirstOrThrow({
+        where: {
+          tenantId: tenant.id,
+          action: 'document.downloaded',
         },
       }),
     ).resolves.toBeTruthy();

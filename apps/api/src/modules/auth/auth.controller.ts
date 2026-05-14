@@ -2,9 +2,11 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   Post,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
@@ -14,6 +16,9 @@ import { AuthService } from './auth.service';
 import { loginSchema } from './auth.schemas';
 import { AUTH_COOKIE_NAME, AUTH_TOKEN_TTL_SECONDS } from './auth.constants';
 import { RequestWithId } from '../../shared/middleware/request-id.middleware';
+import { AuthGuard } from './auth.guard';
+import { CurrentUserParam } from './current-user.decorator';
+import type { CurrentUser } from './current-user';
 
 @Controller('auth')
 export class AuthController {
@@ -61,5 +66,11 @@ export class AuthController {
     });
 
     return { ok: true };
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard)
+  me(@CurrentUserParam() user: CurrentUser) {
+    return this.authService.getCurrentUserProfile(user);
   }
 }

@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
 import { useInternalI18n } from "@/lib/internal-locale";
+import { useInternalSession } from "@/lib/use-internal-session";
+import { AccessDenied } from "../../ui/access-denied";
 import { InternalShell } from "../../ui/internal-shell";
 
 type CaseListItem = {
@@ -24,30 +26,78 @@ type CaseListItem = {
   };
 };
 
-const statuses = [
-  "all",
-  "new",
-  "triage_pending",
-  "triaged",
-  "in_progress",
-  "waiting_for_citizen",
-  "closed",
-  "rejected",
-];
+const statusFilters = [
+  { label: "All", value: "all" },
+  { label: "New", value: "new" },
+  { label: "Triage pending", value: "triage_pending" },
+  { label: "Triaged", value: "triaged" },
+  { label: "In progress", value: "in_progress" },
+  { label: "Waiting for citizen", value: "waiting_for_citizen" },
+  { label: "Closed", value: "closed" },
+  { label: "Rejected", value: "rejected" },
+] as const;
 
 export function CasesDashboard() {
   const router = useRouter();
   const { locale, setLocale, t } = useInternalI18n();
+  const {
+    currentUser,
+    error: sessionError,
+    loading: sessionLoading,
+    hasPermission,
+  } = useInternalSession();
   const [cases, setCases] = useState<CaseListItem[]>([]);
+  const [allCases, setAllCases] = useState<CaseListItem[]>([]);
+  const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [error, setError] = useState<string | null>(null);
 
   const query = useMemo(() => {
     return status === "all" ? "" : `?status=${status}`;
   }, [status]);
+  const statusCounts = useMemo(() => {
+    return allCases.reduce<Record<string, number>>(
+      (accumulator, caseItem) => {
+        accumulator[caseItem.status] =
+          (accumulator[caseItem.status] ?? 0) + 1;
+        return accumulator;
+      },
+      { all: allCases.length },
+    );
+  }, [allCases]);
+  const filteredCases = useMemo(() => {
+    const queryText = search.trim().toLowerCase();
+
+    if (!queryText) {
+      return cases;
+    }
+
+    return cases.filter((caseItem) => {
+      const searchableValues = [
+        caseItem.title,
+        caseItem.citizenProfile.name,
+        caseItem.citizenProfile.email,
+        caseItem.category,
+        caseItem.status,
+        caseItem.assignedDepartment?.name ?? "",
+      ];
+
+      return searchableValues.some((value) =>
+        value.toLowerCase().includes(queryText),
+      );
+    });
+  }, [cases, search]);
+  const canReadCases =
+    hasPermission("case:read:own") ||
+    hasPermission("case:read:department") ||
+    hasPermission("case:read:all_tenant");
 
   useEffect(() => {
     async function loadCases() {
+      if (sessionLoading || !currentUser || !canReadCases) {
+        return;
+      }
+
       try {
         const response = await fetch(`${getApiBaseUrl()}/cases${query}`, {
           credentials: "include",
@@ -70,70 +120,320 @@ export function CasesDashboard() {
     }
 
     void loadCases();
-  }, [query, router, t.cases.loadError]);
+  }, [
+    canReadCases,
+    currentUser,
+    query,
+    router,
+    sessionLoading,
+    t.cases.loadError,
+  ]);
+
+  useEffect(() => {
+    async function loadCaseCounts() {
+      if (sessionLoading || !currentUser || !canReadCases) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${getApiBaseUrl()}/cases`, {
+          credentials: "include",
+        });
+
+        if (response.status === 401) {
+          await clearSession();
+          router.push("/internal/login");
+          return;
+        }
+
+        if (!response.ok) {
+          return;
+        }
+
+        setAllCases((await response.json()) as CaseListItem[]);
+      } catch {
+        setAllCases([]);
+      }
+    }
+
+    void loadCaseCounts();
+  }, [canReadCases, currentUser, router, sessionLoading]);
+
+  if (sessionLoading || !currentUser) {
+    return (
+      <InternalShell
+        currentUser={currentUser ?? undefined}
+        locale={locale}
+        setLocale={setLocale}
+        t={t}
+        title={t.cases.title}
+      >
+        <p className="mt-6 text-sm text-slate-600">
+          {sessionError ? t.cases.loadError : t.cases.loading}
+        </p>
+      </InternalShell>
+    );
+  }
+
+  if (!canReadCases) {
+    return (
+      <InternalShell
+        currentUser={currentUser}
+        locale={locale}
+        setLocale={setLocale}
+        t={t}
+        title={t.cases.title}
+      >
+        <AccessDenied
+          currentRole={currentUser.role}
+          requiredPermission="case:read:own or case:read:department or case:read:all_tenant"
+        />
+      </InternalShell>
+    );
+  }
 
   return (
     <InternalShell
+      currentUser={currentUser}
       locale={locale}
       setLocale={setLocale}
       t={t}
       title={t.cases.title}
     >
       <section className="mt-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <label className="grid max-w-xs gap-2">
-          <span className="text-sm font-medium text-slate-700">
-            {t.cases.status}
-          </span>
-          <select
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-slate-950"
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-base font-semibold text-slate-950">
+              {t.cases.status}
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+              These are the cases you are allowed to access based on your role,
+              tenant and department.
+            </p>
+          </div>
+          <label className="grid min-w-48 gap-2 sm:hidden">
+            <span className="text-sm font-medium text-slate-700">
+              {t.cases.status}
+            </span>
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+              className="rounded-md border border-slate-300 px-3 py-2 text-slate-950"
+            >
+              {statusFilters.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="mt-4 hidden flex-wrap gap-2 sm:flex">
+          {statusFilters.map((item) => {
+            const isActive = status === item.value;
+            const count = statusCounts[item.value] ?? 0;
+
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setStatus(item.value)}
+                className={
+                  isActive
+                    ? "rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white"
+                    : "rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                }
+              >
+                {item.label}{" "}
+                <span
+                  className={
+                    isActive
+                      ? "ml-1 text-slate-200"
+                      : "ml-1 text-slate-500"
+                  }
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-slate-700">Search</span>
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search title, citizen, category, status or department"
+              className="rounded-md border border-slate-300 px-3 py-2 text-slate-950 outline-none focus:border-slate-600"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            disabled={!search}
+            className="self-end rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
           >
-            {statuses.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
+            Clear
+          </button>
+        </div>
       </section>
 
       {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
 
       <section className="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="grid grid-cols-[1.3fr_0.7fr_0.7fr_0.8fr] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">
+        <div className="hidden grid-cols-[1.5fr_0.85fr_0.75fr_0.85fr_1fr_0.75fr] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600 lg:grid">
           <span>{t.cases.case}</span>
           <span>{t.cases.status}</span>
+          <span>{t.cases.urgency}</span>
+          <span>{t.ai.category}</span>
           <span>{t.cases.department}</span>
           <span>{t.cases.created}</span>
         </div>
-        {cases.map((caseItem) => (
-          <Link
+        {filteredCases.map((caseItem) => (
+          <CaseListRow
             key={caseItem.id}
-            href={`/internal/cases/${caseItem.id}`}
-            className="grid grid-cols-[1.3fr_0.7fr_0.7fr_0.8fr] gap-4 border-b border-slate-100 px-4 py-4 text-sm hover:bg-slate-50"
-          >
-            <span>
-              <span className="block font-medium text-slate-950">
-                {caseItem.title}
-              </span>
-              <span className="mt-1 block text-slate-500">
-                {caseItem.citizenProfile.name}
-              </span>
-            </span>
-            <span className="text-slate-700">{caseItem.status}</span>
-            <span className="text-slate-700">
-              {caseItem.assignedDepartment?.name ?? t.common.unassigned}
-            </span>
-            <span className="text-slate-700">
-              {new Date(caseItem.createdAt).toLocaleDateString()}
-            </span>
-          </Link>
+            caseItem={caseItem}
+            unassignedLabel={t.common.unassigned}
+          />
         ))}
-        {cases.length === 0 ? (
-          <p className="px-4 py-8 text-sm text-slate-500">{t.cases.empty}</p>
+        {filteredCases.length === 0 ? (
+          <div className="px-4 py-10">
+            <p className="text-sm font-medium text-slate-700">
+              {t.cases.empty}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Try another status filter, clear the search, or check whether
+              your role, tenant and department scope includes matching cases.
+            </p>
+          </div>
         ) : null}
       </section>
     </InternalShell>
   );
+}
+
+function CaseListRow({
+  caseItem,
+  unassignedLabel,
+}: {
+  caseItem: CaseListItem;
+  unassignedLabel: string;
+}) {
+  const department = caseItem.assignedDepartment?.name ?? unassignedLabel;
+
+  return (
+    <Link
+      href={`/internal/cases/${caseItem.id}`}
+      className="block border-b border-slate-100 px-4 py-4 text-sm hover:bg-slate-50"
+    >
+      <div className="grid gap-3 lg:grid-cols-[1.5fr_0.85fr_0.75fr_0.85fr_1fr_0.75fr] lg:items-center lg:gap-4">
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-slate-950">
+            {caseItem.title}
+          </p>
+          <p className="mt-1 truncate text-slate-500">
+            {caseItem.citizenProfile.name}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2 lg:block">
+          <Badge tone={statusTone(caseItem.status)}>{caseItem.status}</Badge>
+          <span className="lg:hidden">
+            <Badge tone={urgencyTone(caseItem.urgency)}>
+              {caseItem.urgency}
+            </Badge>
+          </span>
+        </div>
+
+        <div className="hidden lg:block">
+          <Badge tone={urgencyTone(caseItem.urgency)}>{caseItem.urgency}</Badge>
+        </div>
+
+        <p className="text-slate-700">
+          <span className="font-medium text-slate-500 lg:hidden">
+            Category:{" "}
+          </span>
+          {formatLabel(caseItem.category)}
+        </p>
+
+        <p className="text-slate-700">
+          <span className="font-medium text-slate-500 lg:hidden">
+            Department:{" "}
+          </span>
+          {department}
+        </p>
+
+        <p className="text-slate-700">
+          <span className="font-medium text-slate-500 lg:hidden">
+            Created:{" "}
+          </span>
+          {new Date(caseItem.createdAt).toLocaleDateString()}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+function Badge({
+  children,
+  tone,
+}: {
+  children: string;
+  tone: "amber" | "emerald" | "red" | "slate" | "sky";
+}) {
+  const className = {
+    amber: "bg-amber-100 text-amber-900",
+    emerald: "bg-emerald-100 text-emerald-900",
+    red: "bg-red-100 text-red-900",
+    sky: "bg-sky-100 text-sky-900",
+    slate: "bg-slate-100 text-slate-800",
+  }[tone];
+
+  return (
+    <span
+      className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ${className}`}
+    >
+      {formatLabel(children)}
+    </span>
+  );
+}
+
+function statusTone(status: string) {
+  if (status === "closed") {
+    return "emerald";
+  }
+
+  if (status === "rejected") {
+    return "red";
+  }
+
+  if (status === "new" || status === "triage_pending") {
+    return "amber";
+  }
+
+  if (status === "in_progress" || status === "waiting_for_citizen") {
+    return "sky";
+  }
+
+  return "slate";
+}
+
+function urgencyTone(urgency: string) {
+  if (urgency === "urgent" || urgency === "high") {
+    return "red";
+  }
+
+  if (urgency === "normal") {
+    return "sky";
+  }
+
+  return "slate";
+}
+
+function formatLabel(value: string) {
+  return value.replaceAll("_", " ");
 }

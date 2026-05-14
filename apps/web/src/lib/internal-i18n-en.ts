@@ -1,6 +1,10 @@
 export const internalDictionaryEn = {
   nav: {
+    adminDepartments: "Departments",
+    adminRoutingRules: "Routing rules",
+    adminUsers: "Users",
     analytics: "Analytics",
+    audit: "Audit",
     backToPublic: "Back to public intake",
     dashboard: "Dashboard",
     cases: "Cases",

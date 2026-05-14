@@ -62,6 +62,20 @@ export class AIService {
     };
   }
 
+  getProviderStatus() {
+    const diagnostics = this.getProviderDiagnostics();
+
+    return {
+      provider: diagnostics.provider,
+      model:
+        diagnostics.provider === 'openai' ? diagnostics.openai.model : null,
+      configured: diagnostics.status === 'ready',
+      timeoutMs: diagnostics.openai.timeoutMs,
+      maxAttempts: diagnostics.openai.maxAttempts,
+      ciDisabled: diagnostics.openai.externalCallsDisabledInCi,
+    };
+  }
+
   async runCaseTriage(caseId: string, user: CurrentUser) {
     const caseRecord = await this.findAccessibleCase(caseId, user);
     const departments = await this.prisma.department.findMany({

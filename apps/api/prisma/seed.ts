@@ -32,9 +32,19 @@ async function main() {
     departmentMap: new Map(),
     adminByTenant: new Map(),
   };
-  const passwordHash = await hash('DemoPassword123!', 12);
+  const demoPasswordHash = await hash(
+    getSeedPassword('SEED_DEMO_PASSWORD'),
+    12,
+  );
+  const recruiterPasswordHash = await hash(
+    getSeedPassword('SEED_RECRUITER_PASSWORD', 'SEED_DEMO_PASSWORD'),
+    12,
+  );
 
-  await seedTenantsDepartmentsAndUsers(prisma, context, passwordHash);
+  await seedTenantsDepartmentsAndUsers(prisma, context, {
+    demoPasswordHash,
+    recruiterPasswordHash,
+  });
   await seedSsbStatistics(prisma, context);
   await seedCases(prisma, cases, context);
   await seedAnalytics(prisma, context);
@@ -50,3 +60,11 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
+
+function getSeedPassword(primaryName: string, fallbackName?: string) {
+  return (
+    process.env[primaryName] ??
+    (fallbackName ? process.env[fallbackName] : undefined) ??
+    'DemoPassword123!'
+  );
+}

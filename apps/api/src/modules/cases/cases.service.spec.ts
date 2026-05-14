@@ -1,4 +1,8 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CaseStatus, UserRole } from '@prisma/client';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -609,6 +613,189 @@ describe('CasesService', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
+  it('lets auditors read tenant cases without department mutation access', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          tenantId: 'tenant_1',
+          assignedDepartmentId: 'department_2',
+          title: 'Tenant-level audit case',
+          internalNotes: [],
+          addresses: [],
+          citizenProfile: {
+            id: 'citizen_1',
+            name: 'Demo Citizen',
+            email: 'citizen@example.local',
+            address: 'Demo address',
+          },
+          assignedDepartment: {
+            id: 'department_2',
+            name: 'Other Department',
+            slug: 'other_department',
+          },
+        }),
+      },
+    });
+
+    await expect(service.findById('case_1', auditor())).resolves.toMatchObject({
+      id: 'case_1',
+      assignedDepartmentId: 'department_2',
+      title: 'Tenant-level audit case',
+    });
+  });
+
+  it('returns recent case activity with safe metadata summaries', async () => {
+    let capturedAuditFindManyInput: unknown;
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          tenantId: 'tenant_1',
+          assignedDepartmentId: 'department_1',
+        }),
+      },
+      auditEvent: {
+        findMany: jest.fn((input: unknown) => {
+          capturedAuditFindManyInput = input;
+          return Promise.resolve([
+            {
+              id: 'audit_1',
+              action: 'document.downloaded',
+              entityType: 'case_document',
+              entityId: 'document_1',
+              actorRole: UserRole.case_worker,
+              metadataJson: {
+                caseId: 'case_1',
+                mimeType: 'application/pdf',
+                sizeBytes: 5120,
+                isSensitive: true,
+                checksumSha256: 'do-not-return',
+              },
+              createdAt: new Date('2026-05-13T10:00:00.000Z'),
+              actorUser: {
+                id: 'user_1',
+                name: 'Arendal Case Worker',
+                email: 'case.worker@arendal.local',
+              },
+            },
+            {
+              id: 'audit_2',
+              action: 'ai.triage_result_failed',
+              entityType: 'ai_triage_result',
+              entityId: 'ai_result_1',
+              actorRole: UserRole.case_worker,
+              metadataJson: {
+                caseId: 'case_1',
+                classification: 'timeout',
+                reason: 'upstream provider error with technical detail',
+              },
+              createdAt: new Date('2026-05-13T09:00:00.000Z'),
+              actorUser: null,
+            },
+          ]);
+        }),
+      },
+    });
+
+    const result = await service.listActivity('case_1', caseWorker());
+
+    expect(result).toEqual([
+      {
+        id: 'audit_1',
+        action: 'document.downloaded',
+        entityType: 'case_document',
+        entityId: 'document_1',
+        createdAt: new Date('2026-05-13T10:00:00.000Z'),
+        actor: {
+          id: 'user_1',
+          name: 'Arendal Case Worker',
+          email: 'case.worker@arendal.local',
+          role: UserRole.case_worker,
+        },
+        metadataSummary: {
+          mimeType: 'application/pdf',
+          sizeBytes: 5120,
+          isSensitive: true,
+        },
+      },
+      {
+        id: 'audit_2',
+        action: 'ai.triage_result_failed',
+        entityType: 'ai_triage_result',
+        entityId: 'ai_result_1',
+        createdAt: new Date('2026-05-13T09:00:00.000Z'),
+        actor: null,
+        metadataSummary: {
+          classification: 'timeout',
+        },
+      },
+    ]);
+    expect(JSON.stringify(result)).not.toContain('do-not-return');
+    expect(JSON.stringify(result)).not.toContain('upstream provider error');
+    expect(capturedAuditFindManyInput).toMatchObject({
+      where: {
+        tenantId: 'tenant_1',
+        OR: [
+          {
+            entityType: 'case',
+            entityId: 'case_1',
+          },
+          {
+            metadataJson: {
+              path: ['caseId'],
+              equals: 'case_1',
+            },
+          },
+        ],
+      },
+      take: 25,
+    });
+  });
+
+  it('enforces case read visibility for case activity', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          tenantId: 'tenant_1',
+          assignedDepartmentId: 'department_2',
+        }),
+      },
+      auditEvent: {
+        findMany: jest.fn(),
+      },
+    });
+
+    await expect(
+      service.listActivity('case_1', caseWorker()),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('blocks cross-tenant case activity reads by requiring tenant filtering', async () => {
+    let capturedFindFirstInput: unknown;
+    const service = createService({
+      case: {
+        findFirst: jest.fn((input: unknown) => {
+          capturedFindFirstInput = input;
+          return Promise.resolve(null);
+        }),
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+    });
+
+    await expect(
+      service.listActivity('guessed_case_id', caseWorker()),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(capturedFindFirstInput).toMatchObject({
+      where: {
+        id: 'guessed_case_id',
+        tenantId: 'tenant_1',
+      },
+    });
+  });
+
   it('lists only department cases for case workers', async () => {
     let capturedFindManyInput: unknown;
     const findManyMock = jest.fn((input: unknown) => {
@@ -761,7 +948,7 @@ describe('CasesService', () => {
           }),
           update: jest.fn().mockResolvedValue({
             id: 'case_1',
-            status: CaseStatus.in_progress,
+            status: CaseStatus.triage_pending,
           }),
         },
       },
@@ -770,11 +957,11 @@ describe('CasesService', () => {
 
     await expect(
       service.updateStatus('case_1', caseWorker(), {
-        status: CaseStatus.in_progress,
+        status: CaseStatus.triage_pending,
       }),
     ).resolves.toMatchObject({
       id: 'case_1',
-      status: CaseStatus.in_progress,
+      status: CaseStatus.triage_pending,
     });
     expect(recordMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -782,6 +969,88 @@ describe('CasesService', () => {
         tenantId: 'tenant_1',
       }),
     );
+  });
+
+  it('blocks invalid status transitions', async () => {
+    const updateMock = jest.fn();
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          tenantId: 'tenant_1',
+          status: CaseStatus.new,
+          caseReference: 'KF-2026-ABCD1234',
+          assignedDepartmentId: 'department_1',
+          citizenProfile: {
+            email: 'citizen@example.local',
+          },
+        }),
+        update: updateMock,
+      },
+    });
+
+    await expect(
+      service.updateStatus('case_1', caseWorker(), {
+        status: CaseStatus.in_progress,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('blocks transitions from closed and rejected terminal statuses', async () => {
+    const updateMock = jest.fn();
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          tenantId: 'tenant_1',
+          status: CaseStatus.closed,
+          caseReference: 'KF-2026-ABCD1234',
+          assignedDepartmentId: 'department_1',
+          citizenProfile: {
+            email: 'citizen@example.local',
+          },
+        }),
+        update: updateMock,
+      },
+    });
+
+    await expect(
+      service.updateStatus('case_1', caseWorker(), {
+        status: CaseStatus.in_progress,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('allows rejected as an alternative terminal transition', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          tenantId: 'tenant_1',
+          status: CaseStatus.triage_pending,
+          caseReference: 'KF-2026-ABCD1234',
+          assignedDepartmentId: 'department_1',
+          citizenProfile: {
+            email: 'citizen@example.local',
+          },
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          status: CaseStatus.rejected,
+        }),
+      },
+    });
+
+    await expect(
+      service.updateStatus('case_1', caseWorker(), {
+        status: CaseStatus.rejected,
+      }),
+    ).resolves.toMatchObject({
+      id: 'case_1',
+      status: CaseStatus.rejected,
+    });
   });
 
   it('logs status-change email when a case status changes', async () => {
@@ -801,7 +1070,7 @@ describe('CasesService', () => {
           }),
           update: jest.fn().mockResolvedValue({
             id: 'case_1',
-            status: CaseStatus.in_progress,
+            status: CaseStatus.triage_pending,
           }),
         },
       },
@@ -814,7 +1083,7 @@ describe('CasesService', () => {
     );
 
     await service.updateStatus('case_1', caseWorker(), {
-      status: CaseStatus.in_progress,
+      status: CaseStatus.triage_pending,
     });
 
     expect(logStatusChangedMock).toHaveBeenCalledWith({
@@ -824,7 +1093,7 @@ describe('CasesService', () => {
       recipientEmail: 'citizen@example.local',
       caseReference: 'KF-2026-ABCD1234',
       previousStatus: CaseStatus.new,
-      nextStatus: CaseStatus.in_progress,
+      nextStatus: CaseStatus.triage_pending,
     });
   });
 
@@ -845,7 +1114,7 @@ describe('CasesService', () => {
           }),
           update: jest.fn().mockResolvedValue({
             id: 'case_1',
-            status: CaseStatus.in_progress,
+            status: CaseStatus.triage_pending,
           }),
         },
       },
@@ -864,11 +1133,11 @@ describe('CasesService', () => {
 
     await expect(
       service.updateStatus('case_1', caseWorker(), {
-        status: CaseStatus.in_progress,
+        status: CaseStatus.triage_pending,
       }),
     ).resolves.toMatchObject({
       id: 'case_1',
-      status: CaseStatus.in_progress,
+      status: CaseStatus.triage_pending,
     });
     expect(operationalRecordMock).toHaveBeenCalledWith(
       expect.objectContaining({

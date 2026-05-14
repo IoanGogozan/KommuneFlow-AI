@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
 import { useInternalI18n } from "@/lib/internal-locale";
+import { useInternalSession } from "@/lib/use-internal-session";
+import { AccessDenied } from "../../ui/access-denied";
 import { InternalShell } from "../../ui/internal-shell";
 
 type Result = Record<string, unknown> | null;
@@ -25,11 +27,19 @@ type RetentionPolicy = {
 export function PrivacyDashboard() {
   const router = useRouter();
   const { locale, setLocale, t } = useInternalI18n();
+  const {
+    currentUser,
+    error: sessionError,
+    loading: sessionLoading,
+    hasPermission,
+  } = useInternalSession();
   const [status, setStatus] = useState<PrivacyStatus | null>(null);
   const [policy, setPolicy] = useState<RetentionPolicy | null>(null);
   const [result, setResult] = useState<Result>(null);
   const [error, setError] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
+  const canAccessPrivacy =
+    hasPermission("privacy:export") || hasPermission("privacy:anonymize");
 
   async function callPrivacy(
     path: string,
@@ -83,10 +93,14 @@ export function PrivacyDashboard() {
   }
 
   useEffect(() => {
+    if (sessionLoading || !currentUser || !canAccessPrivacy) {
+      return;
+    }
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadPrivacyContext();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [canAccessPrivacy, currentUser, sessionLoading]);
 
   async function exportData(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -154,8 +168,42 @@ export function PrivacyDashboard() {
     );
   }
 
+  if (sessionLoading || !currentUser) {
+    return (
+      <InternalShell
+        currentUser={currentUser ?? undefined}
+        locale={locale}
+        setLocale={setLocale}
+        t={t}
+        title={t.privacy.title}
+      >
+        <p className="mt-6 text-sm text-slate-600">
+          {sessionError ? t.privacy.error : t.privacy.loadingStatus}
+        </p>
+      </InternalShell>
+    );
+  }
+
+  if (!canAccessPrivacy) {
+    return (
+      <InternalShell
+        currentUser={currentUser}
+        locale={locale}
+        setLocale={setLocale}
+        t={t}
+        title={t.privacy.title}
+      >
+        <AccessDenied
+          currentRole={currentUser.role}
+          requiredPermission="privacy:export or privacy:anonymize"
+        />
+      </InternalShell>
+    );
+  }
+
   return (
     <InternalShell
+      currentUser={currentUser}
       locale={locale}
       setLocale={setLocale}
       t={t}

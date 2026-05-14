@@ -120,6 +120,14 @@ export class CasesController {
     }
   }
 
+  @Get(':id/activity')
+  async listActivity(
+    @Param('id') id: string,
+    @CurrentUserParam() user: CurrentUser,
+  ) {
+    return this.casesService.listActivity(id, user);
+  }
+
   @Get(':id')
   async findById(
     @Param('id') id: string,

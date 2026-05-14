@@ -9,12 +9,14 @@ import { AIService } from './ai.service';
 
 const originalAIProvider = process.env.AI_PROVIDER;
 const originalOpenAIAPIKey = process.env.OPENAI_API_KEY;
+const originalOpenAIModel = process.env.OPENAI_MODEL;
 const originalCI = process.env.CI;
 
 describe('AIService', () => {
   afterEach(() => {
     restoreEnv('AI_PROVIDER', originalAIProvider);
     restoreEnv('OPENAI_API_KEY', originalOpenAIAPIKey);
+    restoreEnv('OPENAI_MODEL', originalOpenAIModel);
     restoreEnv('CI', originalCI);
   });
 
@@ -34,6 +36,42 @@ describe('AIService', () => {
         available: true,
       },
     });
+  });
+
+  it('reports safe mock AI provider status', () => {
+    process.env.AI_PROVIDER = 'mock';
+    process.env.CI = 'false';
+    delete process.env.OPENAI_API_KEY;
+    const service = createService({});
+
+    expect(service.getProviderStatus()).toMatchObject({
+      provider: 'mock',
+      model: null,
+      configured: true,
+      ciDisabled: false,
+    });
+    expect(JSON.stringify(service.getProviderStatus())).not.toContain(
+      'OPENAI_API_KEY',
+    );
+  });
+
+  it('reports safe OpenAI provider status', () => {
+    process.env.AI_PROVIDER = 'openai';
+    process.env.OPENAI_API_KEY = 'test-openai-key';
+    process.env.OPENAI_MODEL = 'gpt-test-model';
+    process.env.CI = 'false';
+    const service = createService({});
+    const status = service.getProviderStatus();
+
+    expect(status).toMatchObject({
+      provider: 'openai',
+      model: 'gpt-test-model',
+      configured: true,
+      ciDisabled: false,
+    });
+    expect(typeof status.timeoutMs).toBe('number');
+    expect(typeof status.maxAttempts).toBe('number');
+    expect(JSON.stringify(status)).not.toContain('test-openai-key');
   });
 
   it('reports OpenAI diagnostics as not ready when the key is missing', () => {

@@ -1,6 +1,6 @@
 # KommuneFlow AI Documentation Index
 
-This directory contains the active documentation for KommuneFlow AI. Older planning/checklist documents have been removed when their content was superseded by the professional upgrade tracker, focused integration docs, or the README.
+This directory contains the active documentation for KommuneFlow AI. Older planning, checklist, tracker, and one-off implementation documents have been removed when their content was superseded by focused integration docs, the runbook, deployment docs, or the README.
 
 All technical documentation, code, database entities, API routes, comments, commit messages, issue titles, pull requests, environment variables, and internal developer-facing text must be written in English.
 
@@ -11,13 +11,12 @@ The application UI must support:
 
 ## Start Here
 
-| Document                                                                   | Purpose                                                                                                                  |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| [15_PROFESSIONAL_UPGRADE_TRACKER.md](./15_PROFESSIONAL_UPGRADE_TRACKER.md) | Current implementation tracker and next phase.                                                                           |
-| [API_REFERENCE.md](./API_REFERENCE.md)                                     | Current REST API endpoint groups and auth requirements.                                                                  |
-| [RUNBOOK.md](./RUNBOOK.md)                                                 | Operational procedures for restart, logs, migrations, backup, restore, AI provider failure, and database failure.        |
-| [07_DEPLOYMENT_HETZNER.md](./07_DEPLOYMENT_HETZNER.md)                     | Hetzner deployment plan. Deployment is still the final phase and must not be treated as complete before explicit review. |
-| [12_PROFESSIONAL_QUALITY_BAR.md](./12_PROFESSIONAL_QUALITY_BAR.md)         | Portfolio quality bar for repository polish, demo quality, documentation, deployment, and interview readiness.           |
+| Document                                                           | Purpose                                                                                                           |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| [API_REFERENCE.md](./API_REFERENCE.md)                             | Current REST API endpoint groups and auth requirements.                                                           |
+| [RUNBOOK.md](./RUNBOOK.md)                                         | Operational procedures for restart, logs, migrations, backup, restore, AI provider failure, and database failure. |
+| [07_DEPLOYMENT_HETZNER.md](./07_DEPLOYMENT_HETZNER.md)             | Hetzner deployment plan and verification checklist.                                                               |
+| [12_PROFESSIONAL_QUALITY_BAR.md](./12_PROFESSIONAL_QUALITY_BAR.md) | Portfolio quality bar for repository polish, demo quality, documentation, deployment, and interview readiness.    |
 
 ## Product And Architecture
 
@@ -58,13 +57,12 @@ The application UI must support:
 Before implementing a feature:
 
 1. Read the relevant source-of-truth document.
-2. Check the professional upgrade tracker for phase order and current status.
+2. Check the README, API reference, runbook, and focused docs for the current implementation status.
 3. Confirm the feature's definition of done.
-4. Update the professional upgrade tracker after each completed phase.
+4. Update the relevant source-of-truth document when behavior, commands, environment variables, or deployment steps change.
 5. Implement in a small, reviewable step.
 6. Add tests for security, authorization, tenant isolation, and important workflows.
-7. Update documentation when architecture, commands, environment variables, or behavior changes.
-8. Check observability, security release-gate, and professional quality requirements before marking a phase complete.
+7. Check observability, security release-gate, and professional quality requirements before marking a phase complete.
 
 ## Product Positioning
 

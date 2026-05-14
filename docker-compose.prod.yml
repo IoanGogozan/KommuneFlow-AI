@@ -26,6 +26,8 @@ services:
       API_PORT: 3101
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       APP_BASE_URL: ${APP_BASE_URL:?APP_BASE_URL is required}
+      API_BASE_URL: ${API_BASE_URL:?API_BASE_URL is required}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS is required}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
       STATUS_CODE_PEPPER: ${STATUS_CODE_PEPPER:?STATUS_CODE_PEPPER is required}
@@ -36,13 +38,18 @@ services:
       AI_PROVIDER: ${AI_PROVIDER:-mock}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_TIMEOUT_MS: ${OPENAI_TIMEOUT_MS:-15000}
     volumes:
       - uploads_data:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3101/api/v1/health >/dev/null || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:3101/api/v1/health >/dev/null || exit 1",
+        ]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -61,7 +68,8 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 >/dev/null || exit 1"]
+      test:
+        ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 >/dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5

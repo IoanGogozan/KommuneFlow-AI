@@ -6,7 +6,10 @@ import { SeedContext } from './types';
 export async function seedTenantsDepartmentsAndUsers(
   prisma: PrismaClient,
   context: SeedContext,
-  passwordHash: string,
+  passwordHashes: {
+    demoPasswordHash: string;
+    recruiterPasswordHash: string;
+  },
 ) {
   for (const tenantSpec of tenants) {
     const tenant = await prisma.tenant.upsert({
@@ -70,9 +73,22 @@ export async function seedTenantsDepartmentsAndUsers(
       departmentId: context.departmentMap.get(
         `${tenantSpec.slug}:technical_department`,
       )!.id,
-      passwordHash,
+      passwordHash: passwordHashes.demoPasswordHash,
     });
     context.adminByTenant.set(tenantSpec.slug, admin);
+
+    if (tenantSpec.slug === 'kristiansand') {
+      await createUser(prisma, {
+        email: 'recruiter.demo@kristiansand.local',
+        name: 'Kristiansand Recruiter Demo',
+        role: 'department_admin',
+        tenantId: tenant.id,
+        departmentId: context.departmentMap.get(
+          'kristiansand:technical_department',
+        )!.id,
+        passwordHash: passwordHashes.recruiterPasswordHash,
+      });
+    }
 
     await createUser(prisma, {
       email: `case.worker@${tenantSpec.slug}.local`,
@@ -82,7 +98,7 @@ export async function seedTenantsDepartmentsAndUsers(
       departmentId: context.departmentMap.get(
         `${tenantSpec.slug}:technical_department`,
       )!.id,
-      passwordHash,
+      passwordHash: passwordHashes.demoPasswordHash,
     });
 
     await createUser(prisma, {
@@ -91,7 +107,7 @@ export async function seedTenantsDepartmentsAndUsers(
       role: 'auditor',
       tenantId: tenant.id,
       departmentId: null,
-      passwordHash,
+      passwordHash: passwordHashes.demoPasswordHash,
     });
   }
 }

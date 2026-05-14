@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
 import { useInternalI18n } from "@/lib/internal-locale";
+import { useInternalSession } from "@/lib/use-internal-session";
+import { AccessDenied } from "../../ui/access-denied";
 import { InternalShell } from "../../ui/internal-shell";
 
 type AnalyticsSummary = {
@@ -58,14 +60,25 @@ type AnalyticsSummary = {
 export function AnalyticsDashboard() {
   const router = useRouter();
   const { locale, setLocale, t } = useInternalI18n();
+  const {
+    currentUser,
+    error: sessionError,
+    loading: sessionLoading,
+    hasPermission,
+  } = useInternalSession();
   const defaultRange = useMemo(() => getDefaultRange(), []);
   const [from, setFrom] = useState(defaultRange.from);
   const [to, setTo] = useState(defaultRange.to);
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isAggregating, setIsAggregating] = useState(false);
+  const canReadAnalytics = hasPermission("analytics:read");
 
   async function loadSummary() {
+    if (!currentUser || !canReadAnalytics) {
+      return;
+    }
+
     setError(null);
     const response = await fetch(
       `${getApiBaseUrl()}/analytics/summary?from=${from}&to=${to}`,
@@ -120,13 +133,51 @@ export function AnalyticsDashboard() {
   }
 
   useEffect(() => {
+    if (sessionLoading || !currentUser || !canReadAnalytics) {
+      return;
+    }
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadSummary();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [canReadAnalytics, currentUser, sessionLoading]);
+
+  if (sessionLoading || !currentUser) {
+    return (
+      <InternalShell
+        currentUser={currentUser ?? undefined}
+        locale={locale}
+        setLocale={setLocale}
+        t={t}
+        title={t.analytics.title}
+      >
+        <p className="mt-6 text-sm text-slate-600">
+          {sessionError ? t.analytics.loadError : t.cases.loading}
+        </p>
+      </InternalShell>
+    );
+  }
+
+  if (!canReadAnalytics) {
+    return (
+      <InternalShell
+        currentUser={currentUser}
+        locale={locale}
+        setLocale={setLocale}
+        t={t}
+        title={t.analytics.title}
+      >
+        <AccessDenied
+          currentRole={currentUser.role}
+          requiredPermission="analytics:read"
+        />
+      </InternalShell>
+    );
+  }
 
   return (
     <InternalShell
+      currentUser={currentUser}
       locale={locale}
       setLocale={setLocale}
       t={t}

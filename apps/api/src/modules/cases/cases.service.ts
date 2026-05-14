@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -238,6 +239,81 @@ export class CasesService {
     return caseRecord;
   }
 
+  async listActivity(caseId: string, user: CurrentUser) {
+    const caseRecord = await this.prisma.case.findFirst({
+      where: {
+        id: caseId,
+        tenantId: user.tenantId,
+      },
+      select: {
+        id: true,
+        assignedDepartmentId: true,
+      },
+    });
+
+    if (!caseRecord) {
+      await this.recordCrossTenantCaseAccessIfNeeded(caseId, user);
+      throw new NotFoundException('Case not found.');
+    }
+
+    this.assertCanReadCase(user, caseRecord.assignedDepartmentId);
+
+    const events = await this.prisma.auditEvent.findMany({
+      where: {
+        tenantId: user.tenantId,
+        OR: [
+          {
+            entityType: 'case',
+            entityId: caseRecord.id,
+          },
+          {
+            metadataJson: {
+              path: ['caseId'],
+              equals: caseRecord.id,
+            },
+          },
+        ],
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 25,
+      select: {
+        id: true,
+        action: true,
+        entityType: true,
+        entityId: true,
+        actorRole: true,
+        metadataJson: true,
+        createdAt: true,
+        actorUser: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return events.map((event) => ({
+      id: event.id,
+      action: event.action,
+      entityType: event.entityType,
+      entityId: event.entityId,
+      createdAt: event.createdAt,
+      actor: event.actorUser
+        ? {
+            id: event.actorUser.id,
+            name: event.actorUser.name,
+            email: event.actorUser.email,
+            role: event.actorRole,
+          }
+        : null,
+      metadataSummary: summarizeAuditMetadata(event.action, event.metadataJson),
+    }));
+  }
+
   async list(user: CurrentUser, query: ListCasesQuery) {
     const where: Prisma.CaseWhereInput = {
       tenantId: user.tenantId,
@@ -316,6 +392,7 @@ export class CasesService {
     }
 
     this.assertCanUpdateCase(user, caseRecord.assignedDepartmentId);
+    assertAllowedStatusTransition(caseRecord.status, input.status);
 
     const updatedCase = await this.prisma.case.update({
       where: { id: caseRecord.id },
@@ -659,6 +736,114 @@ function hashStatusAccessCode(statusAccessCode: string) {
   return createHmac('sha256', getStatusCodePepper())
     .update(statusAccessCode.trim().toUpperCase())
     .digest('hex');
+}
+
+const allowedStatusTransitions: Record<CaseStatus, readonly CaseStatus[]> = {
+  [CaseStatus.new]: [CaseStatus.triage_pending, CaseStatus.rejected],
+  [CaseStatus.triage_pending]: [CaseStatus.triaged, CaseStatus.rejected],
+  [CaseStatus.triaged]: [
+    CaseStatus.in_progress,
+    CaseStatus.waiting_for_citizen,
+    CaseStatus.rejected,
+  ],
+  [CaseStatus.in_progress]: [
+    CaseStatus.waiting_for_citizen,
+    CaseStatus.closed,
+    CaseStatus.rejected,
+  ],
+  [CaseStatus.waiting_for_citizen]: [
+    CaseStatus.in_progress,
+    CaseStatus.closed,
+    CaseStatus.rejected,
+  ],
+  [CaseStatus.closed]: [],
+  [CaseStatus.rejected]: [],
+};
+
+function assertAllowedStatusTransition(
+  currentStatus: CaseStatus,
+  nextStatus: CaseStatus,
+) {
+  if (currentStatus === nextStatus) {
+    return;
+  }
+
+  if (allowedStatusTransitions[currentStatus].includes(nextStatus)) {
+    return;
+  }
+
+  throw new BadRequestException(
+    `Invalid status transition from ${currentStatus} to ${nextStatus}.`,
+  );
+}
+
+function summarizeAuditMetadata(
+  action: string,
+  metadataJson: Prisma.JsonValue,
+): Record<string, string | number | boolean | null> {
+  const metadata = isJsonObject(metadataJson) ? metadataJson : {};
+
+  switch (action) {
+    case 'case.created_by_citizen':
+      return pickSafeMetadata(metadata, ['sourceLanguage']);
+    case 'case.status_updated':
+      return pickSafeMetadata(metadata, ['previousStatus', 'nextStatus']);
+    case 'case.internal_note_created':
+      return pickSafeMetadata(metadata, ['noteId']);
+    case 'document.uploaded':
+    case 'document.uploaded_by_citizen':
+    case 'document.downloaded':
+    case 'document.soft_deleted':
+    case 'document.sensitive_accessed':
+      return pickSafeMetadata(metadata, [
+        'mimeType',
+        'sizeBytes',
+        'isSensitive',
+      ]);
+    case 'ai.triage_result_created':
+      return pickSafeMetadata(metadata, ['model', 'promptVersion']);
+    case 'ai.triage_result_failed':
+      return pickSafeMetadata(metadata, ['classification']);
+    case 'ai.triage_review_created':
+      return pickSafeMetadata(metadata, [
+        'aiTriageResultId',
+        'wasAiSuggestionAccepted',
+        'approvedCategory',
+        'approvedDepartmentSlug',
+        'approvedUrgency',
+      ]);
+    default:
+      return {};
+  }
+}
+
+function pickSafeMetadata(
+  metadata: Record<string, Prisma.JsonValue>,
+  keys: string[],
+) {
+  return keys.reduce<Record<string, string | number | boolean | null>>(
+    (summary, key) => {
+      const value = metadata[key];
+
+      if (
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean' ||
+        value === null
+      ) {
+        summary[key] = value;
+      }
+
+      return summary;
+    },
+    {},
+  );
+}
+
+function isJsonObject(
+  value: Prisma.JsonValue,
+): value is Record<string, Prisma.JsonValue> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function getStatusCodePepper() {

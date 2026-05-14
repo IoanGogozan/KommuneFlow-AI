@@ -1,9 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import './config/env';
+import { validateProductionEnvironment } from './config/production-env';
 import { AppModule } from './app.module';
 import { configureApp } from './configure-app';
 
 async function bootstrap() {
+  validateProductionEnvironment();
   const app = await NestFactory.create(AppModule);
   configureApp(app);
 

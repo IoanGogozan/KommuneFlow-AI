@@ -1,6 +1,10 @@
 export const internalDictionaryNb = {
   nav: {
+    adminDepartments: "Avdelinger",
+    adminRoutingRules: "Rutingsregler",
+    adminUsers: "Brukere",
     analytics: "Analyse",
+    audit: "Revisjon",
     backToPublic: "Til innbyggerskjema",
     dashboard: "Dashboard",
     cases: "Saker",

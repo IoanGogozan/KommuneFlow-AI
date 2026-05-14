@@ -6,6 +6,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { OperationalEventService } from '../operations/operational-event.service';
 import { LoginInput } from './auth.schemas';
 import { CurrentUser } from './current-user';
+import { ROLE_PERMISSIONS } from './permissions';
 
 @Injectable()
 export class AuthService {
@@ -68,6 +69,53 @@ export class AuthService {
         name: user.name,
         role: user.role,
       },
+    };
+  }
+
+  async getCurrentUserProfile(currentUser: CurrentUser) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: currentUser.id,
+        status: UserStatus.active,
+      },
+      select: {
+        id: true,
+        tenantId: true,
+        departmentId: true,
+        email: true,
+        name: true,
+        role: true,
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        department: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Authentication required.');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      tenantId: user.tenantId,
+      tenant: user.tenant,
+      departmentId: user.departmentId,
+      department: user.department,
+      permissions: ROLE_PERMISSIONS[user.role],
     };
   }
 
