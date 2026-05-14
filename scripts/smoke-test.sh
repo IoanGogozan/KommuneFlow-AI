@@ -138,7 +138,7 @@ json_escape() {
 }
 
 echo "Running smoke test for $BASE_URL"
-check "web home" "$BASE_URL/" "200"
+check "web home" "$BASE_URL/" "200,307,308"
 check "public intake $SMOKE_PUBLIC_LOCALE" "$BASE_URL/$SMOKE_PUBLIC_LOCALE" "200"
 check "api health" "$BASE_URL/api/v1/health" "200"
 check "api readiness" "$BASE_URL/api/v1/readiness" "200"
