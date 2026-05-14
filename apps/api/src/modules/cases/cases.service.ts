@@ -711,7 +711,8 @@ export class CasesService {
           severity: 'warning',
           source: 'ai',
           tenantId: input.tenantId,
-          safeMessage: 'Automatic AI triage failed after citizen case creation.',
+          safeMessage:
+            'Automatic AI triage failed after citizen case creation.',
           metadata: {
             caseId: input.caseId,
           },
