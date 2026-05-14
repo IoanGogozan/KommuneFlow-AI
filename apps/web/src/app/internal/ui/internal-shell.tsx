@@ -111,7 +111,7 @@ export function InternalShell({
   }
 
   return (
-    <main className="min-h-screen bg-slate-100">
+    <main className="min-h-screen bg-[#f3f7fb]">
       <div
         className={
           maxWidth === "5xl"
@@ -119,24 +119,32 @@ export function InternalShell({
             : "mx-auto max-w-6xl px-5 py-6"
         }
       >
-        <header className="border-b border-slate-300 pb-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+        <header className="border-b border-[#003b71] pb-4">
+          <div className="flex flex-wrap items-start justify-between gap-5">
             <div>
-              <p className="text-sm font-medium text-slate-500">
+              <p className="text-sm font-semibold text-[#55718d]">
                 {t.common.app}
               </p>
-              <h1 className="mt-1 text-3xl font-semibold text-slate-950">
+              <h1 className="mt-1 text-3xl font-semibold text-[#003b71]">
                 {title}
               </h1>
             </div>
-            <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:items-end">
-              {currentUser ? <UserContext currentUser={currentUser} /> : null}
+            <div className="flex w-full flex-col items-stretch gap-3 lg:w-auto lg:items-end">
+              {currentUser ? (
+                <UserContext currentUser={currentUser} t={t} />
+              ) : null}
               <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                <Link
+                  href={`/${locale}`}
+                  className="border border-[#c8d9e8] bg-white px-3 py-2 text-sm font-semibold text-[#003b71] hover:border-[#003b71] hover:bg-[#eaf4fb]"
+                >
+                  {t.nav.publicIntake}
+                </Link>
                 <InternalLanguageToggle locale={locale} setLocale={setLocale} />
                 <button
                   type="button"
                   onClick={() => void signOut()}
-                  className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                  className="border border-[#c8d9e8] bg-white px-3 py-2 text-sm font-semibold text-[#003b71] hover:border-[#003b71] hover:bg-[#eaf4fb]"
                 >
                   {t.nav.signOut}
                 </button>
@@ -144,7 +152,7 @@ export function InternalShell({
             </div>
           </div>
           <nav
-            className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap"
+            className="mt-4 flex gap-1 overflow-x-auto border border-[#c8d9e8] bg-white p-1"
             aria-label="Internal"
           >
             {visibleNavItems.map((item) => {
@@ -157,8 +165,8 @@ export function InternalShell({
                   aria-current={isActive ? "page" : undefined}
                   className={
                     isActive
-                      ? "rounded-md bg-slate-950 px-3 py-2 text-center text-sm font-semibold text-white sm:text-left"
-                      : "rounded-md border border-slate-300 bg-white px-3 py-2 text-center text-sm font-medium text-slate-800 hover:bg-slate-50 sm:text-left"
+                      ? "shrink-0 bg-[#003b71] px-3 py-2 text-center text-sm font-semibold text-white sm:text-left"
+                      : "shrink-0 px-3 py-2 text-center text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb] sm:text-left"
                   }
                 >
                   {t.nav[item.key]}
@@ -169,7 +177,7 @@ export function InternalShell({
         </header>
 
         {breadcrumb ? (
-          <div className="mt-5 text-sm text-slate-500">{breadcrumb}</div>
+          <div className="mt-5 text-sm text-[#55718d]">{breadcrumb}</div>
         ) : null}
 
         {children}
@@ -178,33 +186,41 @@ export function InternalShell({
   );
 }
 
-function UserContext({ currentUser }: { currentUser: InternalCurrentUser }) {
+function UserContext({
+  currentUser,
+  t,
+}: {
+  currentUser: InternalCurrentUser;
+  t: InternalDictionary;
+}) {
+  const scope =
+    currentUser.department?.name ??
+    (currentUser.departmentId === null
+      ? t.common.allTenantAccess
+      : t.common.unassigned);
+
   return (
     <section
       aria-label="Current internal user"
-      className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm"
+      className="border border-[#c8d9e8] bg-white px-3 py-2 text-sm"
     >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="font-semibold text-slate-950">
-          {currentUser.name || currentUser.email}
-        </span>
-        <span className="rounded-sm bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-normal text-slate-700">
-          {formatRole(currentUser.role)}
-        </span>
-      </div>
-      <p className="mt-1 text-xs text-slate-500">
-        {currentUser.tenant.name} |{" "}
-        {currentUser.department?.name ??
-          (currentUser.departmentId === null
-            ? "All tenant access"
-            : "No department")}
+      <p className="font-semibold text-[#003b71]">
+        {currentUser.name || currentUser.email}
+      </p>
+      <p className="mt-1 text-xs text-[#55718d]">
+        <span className="font-semibold text-[#003b71]">{t.common.role}:</span>{" "}
+        {formatRole(currentUser.role, t)}
+      </p>
+      <p className="mt-1 text-xs text-[#55718d]">
+        <span className="font-semibold text-[#003b71]">{t.common.scope}:</span>{" "}
+        {currentUser.tenant.name} / {scope}
       </p>
     </section>
   );
 }
 
-function formatRole(role: string) {
-  return role.replaceAll("_", " ");
+function formatRole(role: string, t: InternalDictionary) {
+  return (t.common.roles as Record<string, string>)[role] ?? role.replaceAll("_", " ");
 }
 
 function canViewNavItem(

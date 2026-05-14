@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
+import { formatDisplayValue } from "@/lib/internal-display";
 import { useInternalI18n } from "@/lib/internal-locale";
 import { useInternalSession } from "@/lib/use-internal-session";
 import { AccessDenied } from "../../../ui/access-denied";
@@ -56,18 +57,24 @@ export function RoutingRulesAdminPage() {
         }
 
         if (!response.ok) {
-          setError("Could not load routing rules.");
+          setError(t.admin.routingRules.loadError);
           return;
         }
 
         setRules((await response.json()) as RoutingRule[]);
       } catch {
-        setError("Could not load routing rules.");
+        setError(t.admin.routingRules.loadError);
       }
     }
 
     void loadRoutingRules();
-  }, [canViewRoutingRules, currentUser, router, sessionLoading]);
+  }, [
+    canViewRoutingRules,
+    currentUser,
+    router,
+    sessionLoading,
+    t.admin.routingRules.loadError,
+  ]);
 
   if (sessionLoading || !currentUser) {
     return (
@@ -76,10 +83,10 @@ export function RoutingRulesAdminPage() {
         locale={locale}
         setLocale={setLocale}
         t={t}
-        title="Routing rules"
+        title={t.admin.routingRules.title}
       >
         <p className="mt-6 text-sm text-slate-600">
-          {sessionError ? "Could not load routing rules." : t.cases.loading}
+          {sessionError ? t.admin.routingRules.loadError : t.cases.loading}
         </p>
       </InternalShell>
     );
@@ -92,7 +99,7 @@ export function RoutingRulesAdminPage() {
         locale={locale}
         setLocale={setLocale}
         t={t}
-        title="Routing rules"
+        title={t.admin.routingRules.title}
       >
         <AccessDenied
           currentRole={currentUser.role}
@@ -108,29 +115,26 @@ export function RoutingRulesAdminPage() {
       locale={locale}
       setLocale={setLocale}
       t={t}
-      title="Routing rules"
+      title={t.admin.routingRules.title}
     >
       <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-950">
-              Tenant routing logic
+              {t.admin.routingRules.sectionTitle}
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Read-only category to department routing for{" "}
-              {currentUser.tenant.name}. AI triage can suggest a department from
-              the tenant department list, but official case values update only
-              after human review.
+              {t.admin.routingRules.descriptionStart}{" "}
+              {currentUser.tenant.name}. {t.admin.routingRules.descriptionEnd}
             </p>
           </div>
           <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700">
-            {rules.length} rules
+            {rules.length} {t.admin.routingRules.count}
           </span>
         </div>
 
         <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
-          These rules document the current static/demo routing conventions. This
-          is not a workflow engine and cannot be edited from the UI yet.
+          {t.admin.routingRules.notice}
         </div>
 
         {error ? (
@@ -141,15 +145,15 @@ export function RoutingRulesAdminPage() {
 
         <div className="mt-5 overflow-hidden rounded-md border border-slate-200">
           <div className="hidden grid-cols-[1fr_1.2fr_1fr_1.8fr] gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-normal text-slate-500 lg:grid">
-            <span>Category</span>
-            <span>Default department</span>
-            <span>Source</span>
-            <span>Urgency guidance</span>
+            <span>{t.admin.routingRules.columns.category}</span>
+            <span>{t.admin.routingRules.columns.defaultDepartment}</span>
+            <span>{t.admin.routingRules.columns.source}</span>
+            <span>{t.admin.routingRules.columns.urgencyGuidance}</span>
           </div>
           <div className="divide-y divide-slate-200">
             {rules.length === 0 && !error ? (
               <p className="p-4 text-sm text-slate-600">
-                No routing rules are documented for this tenant.
+                {t.admin.routingRules.empty}
               </p>
             ) : null}
             {rules.map((rule) => (
@@ -159,10 +163,10 @@ export function RoutingRulesAdminPage() {
               >
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-normal text-slate-500 lg:hidden">
-                    Category
+                    {t.admin.routingRules.columns.category}
                   </p>
                   <p className="font-semibold text-slate-950">
-                    {formatSlug(rule.category)}
+                    {formatDisplayValue(rule.category, "categories", t)}
                   </p>
                   <p className="mt-1 break-all text-xs text-slate-500">
                     {rule.category}
@@ -170,10 +174,16 @@ export function RoutingRulesAdminPage() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-normal text-slate-500 lg:hidden">
-                    Default department
+                    {t.admin.routingRules.columns.defaultDepartment}
                   </p>
                   <p className="font-medium text-slate-800">
-                    {rule.defaultDepartment?.name ?? "Unresolved department"}
+                    {rule.defaultDepartment?.name
+                      ? formatDisplayValue(
+                          rule.defaultDepartment.name,
+                          "departments",
+                          t,
+                        )
+                      : t.admin.routingRules.unresolvedDepartment}
                   </p>
                   <p className="mt-1 break-all text-xs text-slate-500">
                     {rule.defaultDepartmentSlug}
@@ -181,15 +191,15 @@ export function RoutingRulesAdminPage() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-normal text-slate-500 lg:hidden">
-                    Source
+                    {t.admin.routingRules.columns.source}
                   </p>
                   <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold uppercase tracking-normal text-slate-700">
-                    {formatSlug(rule.source)}
+                    {formatDisplayValue(rule.source, "sources", t)}
                   </span>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-normal text-slate-500 lg:hidden">
-                    Urgency guidance
+                    {t.admin.routingRules.columns.urgencyGuidance}
                   </p>
                   <ul className="space-y-1 text-slate-700">
                     {rule.urgencyRules.map((urgencyRule) => (
@@ -204,12 +214,4 @@ export function RoutingRulesAdminPage() {
       </section>
     </InternalShell>
   );
-}
-
-function formatSlug(value: string) {
-  return value
-    .split("_")
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
 }

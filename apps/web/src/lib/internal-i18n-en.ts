@@ -17,12 +17,93 @@ export const internalDictionaryEn = {
   },
   common: {
     app: "KommuneFlow AI",
+    all: "All",
+    allTenantAccess: "All tenant access",
+    clear: "Clear",
+    count: "Count",
+    email: "Email",
     missing: "Missing",
+    name: "Name",
     none: "None",
+    role: "Role",
+    roles: {
+      super_admin: "Super admin",
+      tenant_admin: "Tenant admin",
+      department_admin: "Department admin",
+      case_worker: "Case worker",
+      auditor: "Auditor",
+    },
+    scope: "Scope",
+    search: "Search",
+    source: "Source",
+    status: "Status",
     unknown: "Unknown",
     unassigned: "Unassigned",
     last24h: "last 24h",
     language: "Language",
+    yes: "Yes",
+    no: "No",
+    categories: {
+      building_case: "Building case",
+      kindergarten_school: "Kindergarten and school",
+      health_care: "Health and care",
+      road_transport: "Road transport",
+      tax_finance: "Tax and finance",
+      water_waste: "Water and waste",
+      general_inquiry: "General inquiry",
+      unknown: "Unknown",
+    },
+    departments: {
+      general_administration: "General Administration",
+      health_care: "Health and Care",
+      kindergarten_school: "Kindergarten and School",
+      technical_department: "Technical Department",
+      water_waste: "Water and Waste",
+    },
+    urgencies: {
+      low: "Low",
+      normal: "Normal",
+      high: "High",
+      urgent: "Urgent",
+    },
+    operationStatuses: {
+      ok: "OK",
+      ready: "Ready",
+      completed: "Completed",
+      failed: "Failed",
+      stale: "Stale",
+    },
+    sources: {
+      static_config: "Static config",
+    },
+  },
+  overview: {
+    title: "Work overview",
+    description:
+      "Case counts are based on the cases available to your role, tenant and department.",
+    accessibleCases: "accessible cases",
+    statuses: {
+      new: "New cases",
+      triage_pending: "Triage pending",
+      triaged: "Triaged",
+      in_progress: "In progress",
+      waiting_for_citizen: "Waiting for citizen",
+      closed: "Closed",
+    },
+    actions: {
+      openQueue: "Open case queue",
+      openQueueDescription:
+        "Open the full queue of cases you are allowed to access.",
+      reviewTriage: "Review AI triage cases",
+      reviewTriageDescription:
+        "Review cases waiting for triage or human follow-up.",
+      viewAnalytics: "View analytics",
+      viewAnalyticsDescription:
+        "Inspect case volume, AI review quality and effect metrics.",
+      viewOperations: "View operations",
+      viewOperationsDescription:
+        "Check health, readiness, integrations and operational metrics.",
+    },
   },
   login: {
     title: "Internal login",
@@ -37,6 +118,23 @@ export const internalDictionaryEn = {
   cases: {
     title: "Case dashboard",
     status: "Status",
+    filters: {
+      all: "All",
+      new: "New",
+      triage_pending: "Triage pending",
+      triaged: "Triaged",
+      in_progress: "In progress",
+      waiting_for_citizen: "Waiting for citizen",
+      closed: "Closed",
+      rejected: "Rejected",
+    },
+    statusDescription:
+      "These are the cases you are allowed to access based on your role, tenant and department.",
+    search: "Search",
+    searchPlaceholder:
+      "Search title, citizen, category, status or department",
+    emptyHint:
+      "Try another status filter, clear the search, or check whether your role, tenant and department scope includes matching cases.",
     case: "Case",
     department: "Department",
     created: "Created",
@@ -94,6 +192,123 @@ export const internalDictionaryEn = {
     empty: "No documents uploaded.",
     download: "Download",
     uploadedBy: "Uploaded by",
+  },
+  caseDetail: {
+    activityLoadError: "Recent activity could not be loaded.",
+    readOnlyTitle: "Read-only case access",
+    readOnlyText:
+      "Your current role can view this case but cannot update status, add notes, run or review AI triage, or upload documents.",
+    recommendedWorkflow: "Recommended workflow",
+    statusUpdatesReadOnly:
+      "Status updates are disabled for read-only roles.",
+    internalNotesReadOnly:
+      "Internal note updates are disabled for read-only roles.",
+    currentStatus: "Current status",
+    rejectedTitle: "Rejected",
+    statusExplanations: {
+      new: "The case has been received and is waiting for initial handling.",
+      triage_pending: "The case is ready for AI or manual triage.",
+      triaged:
+        "A human reviewer has confirmed category, urgency and routing.",
+      in_progress: "The assigned department is actively processing the case.",
+      waiting_for_citizen:
+        "The case is waiting for more information from the citizen.",
+      closed: "The case has been completed.",
+      rejected: "The case has been rejected and is in a terminal state.",
+    },
+    aiSuggestionWarning:
+      "AI suggestions do not update the official case automatically. A human reviewer must accept or correct them.",
+    storedFailureReason: "Stored failure reason",
+    officialValues: "Official case values",
+    officialCategory: "Official category",
+    officialDepartment: "Official department",
+    officialUrgency: "Official urgency",
+    suggestedValues: "AI suggested values",
+    suggestedCategory: "Suggested category",
+    suggestedDepartment: "Suggested department",
+    suggestedUrgency: "Suggested urgency",
+    noDepartment: "No department",
+    currentSelection: "Current selection",
+    departmentListUnavailable:
+      "Department list is unavailable. Enter the department slug manually.",
+    reviewComment: "Review comment",
+    reviewCommentPlaceholder:
+      "Explain why the AI suggestion was accepted or corrected.",
+    aiReviewReadOnly: "AI review actions are disabled for read-only roles.",
+    aiFailureTitle: "AI triage could not complete",
+    retryAiTriage: "Retry AI triage",
+    reviewCorrectionRequired:
+      "Change at least one reviewed value or add a review comment before saving a correction.",
+    documentUploadReadOnly:
+      "Document upload is disabled for read-only roles.",
+    recentActivityTitle: "Recent activity",
+    recentActivityDescription: "Audit events connected to this case.",
+    recentActivityEmpty:
+      "No recent activity has been recorded for this case yet.",
+    statusTransitionTerminal:
+      "This case is already in a terminal status. Backend rules may reject reopening unless explicitly supported.",
+    statusTransitionSkippedStart:
+      "This selection skips the recommended next workflow step",
+    statusTransitionSkippedEnd:
+      "You can still submit it, but review the case history first.",
+    statusTransitionBackward:
+      "This selection moves the case backward in the workflow. You can still submit it, but review the case history first.",
+    aiErrors: {
+      providerNotConfigured:
+        "The AI provider is not configured. Check Operations and set the required provider settings before running triage.",
+      timeout:
+        "The AI provider timed out. Try again, and check provider timeout settings if this keeps happening.",
+      validationFailed:
+        "The AI triage response or request could not be validated. Review the case data and try again.",
+      upstreamError:
+        "The AI provider returned an upstream error. Retry triage after the provider is healthy.",
+      unknown:
+        "AI triage failed. Retry the request or check Operations for provider status.",
+      safeProviderFailed: "AI provider failed.",
+      safeCiDisabled: "Real OpenAI calls are disabled in CI.",
+      safeApiKeyMissing: "OpenAI API key is not configured.",
+      safeTimeout: "AI provider request timed out.",
+      safeInvalidResponse: "AI provider returned an invalid response.",
+      safeFallback: "AI failed.",
+    },
+    actionLabels: {
+      "case.created_by_citizen": "Case created",
+      "case.status_updated": "Status changed",
+      "case.internal_note_created": "Internal note added",
+      "document.uploaded": "Document uploaded",
+      "document.uploaded_by_citizen": "Document uploaded by citizen",
+      "document.downloaded": "Document downloaded",
+      "ai.triage_result_created": "AI triage run",
+      "ai.triage_result_failed": "AI triage failed",
+      "ai.triage_review_created": "AI review accepted/corrected",
+    },
+  },
+  audit: {
+    title: "Audit",
+    loadEventsError: "Could not load audit events.",
+    loadPageError: "Could not load audit page.",
+    sectionTitle: "Recent tenant audit events",
+    description: "Read-only audit trail for events in",
+    eventType: "Event type",
+    allEvents: "All events",
+    actor: "Actor",
+    actorPlaceholder: "Name or email",
+    from: "From",
+    to: "To",
+    apply: "Apply",
+    empty: "No audit events match the current filters.",
+    systemOrCitizen: "System or citizen",
+    actionLabels: {
+      "case.created_by_citizen": "Case created",
+      "case.status_updated": "Status changed",
+      "case.internal_note_created": "Internal note added",
+      "document.uploaded": "Document uploaded",
+      "document.uploaded_by_citizen": "Document uploaded by citizen",
+      "document.downloaded": "Document downloaded",
+      "ai.triage_result_created": "AI triage run",
+      "ai.triage_result_failed": "AI triage failed",
+      "ai.triage_review_created": "AI review accepted/corrected",
+    },
   },
   analytics: {
     title: "Analytics",
@@ -170,8 +385,70 @@ export const internalDictionaryEn = {
     apiErrors: "API errors",
     apiErrors24h: "API errors last 24h",
     aiLatency: "AI average latency",
+    aiConfiguration: "AI configuration",
+    provider: "Provider",
+    model: "Model",
+    configured: "Configured",
+    timeout: "Timeout",
+    maxAttempts: "Max attempts",
+    ciDisabled: "CI disabled",
+    openAiNotConfigured:
+      "OpenAI is selected but not configured. Set OPENAI_API_KEY before production use.",
+    mockAiActive:
+      "Mock AI provider is active. This is suitable for demos without API cost.",
     loadMetricsError: "Could not load operations metrics.",
     loadDashboardError: "Could not load operations dashboard.",
+  },
+  admin: {
+    departments: {
+      title: "Departments",
+      sectionTitle: "Tenant departments",
+      description: "Read-only department overview for",
+      count: "departments",
+      loadError: "Could not load departments.",
+      empty: "No departments were found for this tenant.",
+      columns: {
+        name: "Name",
+        slug: "Slug",
+        municipality: "Municipality",
+        cases: "Cases",
+      },
+    },
+    routingRules: {
+      title: "Routing rules",
+      sectionTitle: "Tenant routing logic",
+      descriptionStart: "Read-only category to department routing for",
+      descriptionEnd:
+        "AI triage can suggest a department from the tenant department list, but official case values update only after human review.",
+      count: "rules",
+      notice:
+        "These rules document the current static/demo routing conventions. This is not a workflow engine and cannot be edited from the UI yet.",
+      loadError: "Could not load routing rules.",
+      empty: "No routing rules are documented for this tenant.",
+      unresolvedDepartment: "Unresolved department",
+      columns: {
+        category: "Category",
+        defaultDepartment: "Default department",
+        source: "Source",
+        urgencyGuidance: "Urgency guidance",
+      },
+    },
+    users: {
+      title: "Users",
+      sectionTitle: "Tenant users",
+      description: "Read-only user and role overview for",
+      count: "users",
+      loadError: "Could not load users.",
+      empty: "No users were found for this tenant.",
+      active: "Active",
+      columns: {
+        name: "Name",
+        email: "Email",
+        role: "Role",
+        department: "Department",
+        status: "Status",
+      },
+    },
   },
   privacy: {
     title: "Privacy",

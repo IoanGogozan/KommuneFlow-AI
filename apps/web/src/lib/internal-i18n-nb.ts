@@ -6,7 +6,7 @@ export const internalDictionaryNb = {
     analytics: "Analyse",
     audit: "Revisjon",
     backToPublic: "Til innbyggerskjema",
-    dashboard: "Dashboard",
+    dashboard: "Oversikt",
     cases: "Saker",
     caseDetail: "Saksdetalj",
     internalArea: "Intern sone",
@@ -17,12 +17,92 @@ export const internalDictionaryNb = {
   },
   common: {
     app: "KommuneFlow AI",
+    all: "Alle",
+    allTenantAccess: "Tilgang til hele kommunen",
+    clear: "Nullstill",
+    count: "Antall",
+    email: "E-post",
     missing: "Mangler",
+    name: "Navn",
     none: "Ingen",
+    role: "Rolle",
+    roles: {
+      super_admin: "Superadministrator",
+      tenant_admin: "Kommuneadministrator",
+      department_admin: "Avdelingsadministrator",
+      case_worker: "Saksbehandler",
+      auditor: "Revisor",
+    },
+    scope: "Tilgangsområde",
+    search: "Søk",
+    source: "Kilde",
+    status: "Status",
     unknown: "Ukjent",
     unassigned: "Ikke tildelt",
     last24h: "siste 24 t",
     language: "Språk",
+    yes: "Ja",
+    no: "Nei",
+    categories: {
+      building_case: "Byggesak",
+      kindergarten_school: "Barnehage og skole",
+      health_care: "Helse og omsorg",
+      road_transport: "Vei og transport",
+      tax_finance: "Skatt og økonomi",
+      water_waste: "Vann og avløp",
+      general_inquiry: "Generell henvendelse",
+      unknown: "Ukjent",
+    },
+    departments: {
+      general_administration: "Sentraladministrasjon",
+      health_care: "Helse og omsorg",
+      kindergarten_school: "Barnehage og skole",
+      technical_department: "Teknisk avdeling",
+      water_waste: "Vann og avløp",
+    },
+    urgencies: {
+      low: "Lav",
+      normal: "Normal",
+      high: "Høy",
+      urgent: "Kritisk",
+    },
+    operationStatuses: {
+      ok: "OK",
+      ready: "Klar",
+      completed: "Fullført",
+      failed: "Feilet",
+      stale: "Utdatert",
+    },
+    sources: {
+      static_config: "Statisk konfigurasjon",
+    },
+  },
+  overview: {
+    title: "Arbeidsoversikt",
+    description:
+      "Sakstallene er basert på sakene rollen, kommunen og avdelingen din har tilgang til.",
+    accessibleCases: "tilgjengelige saker",
+    statuses: {
+      new: "Nye saker",
+      triage_pending: "Venter på triage",
+      triaged: "Triagert",
+      in_progress: "Under behandling",
+      waiting_for_citizen: "Venter på innbygger",
+      closed: "Lukket",
+    },
+    actions: {
+      openQueue: "Åpne sakslisten",
+      openQueueDescription: "Åpne hele køen med saker du har tilgang til.",
+      reviewTriage: "Gå gjennom KI-triage",
+      reviewTriageDescription:
+        "Se saker som venter på triage eller menneskelig oppfølging.",
+      viewAnalytics: "Se analyse",
+      viewAnalyticsDescription:
+        "Undersøk saksvolum, KI-kvalitet og effektmålinger.",
+      viewOperations: "Se drift",
+      viewOperationsDescription:
+        "Sjekk helse, klarhet, integrasjoner og driftsmålinger.",
+    },
   },
   login: {
     title: "Intern innlogging",
@@ -36,6 +116,23 @@ export const internalDictionaryNb = {
   cases: {
     title: "Saksoversikt",
     status: "Status",
+    filters: {
+      all: "Alle",
+      new: "Ny",
+      triage_pending: "Venter på triage",
+      triaged: "Triagert",
+      in_progress: "Under behandling",
+      waiting_for_citizen: "Venter på innbygger",
+      closed: "Lukket",
+      rejected: "Avvist",
+    },
+    statusDescription:
+      "Dette er sakene du har tilgang til basert på rolle, kommune og avdeling.",
+    search: "Søk",
+    searchPlaceholder:
+      "Søk etter tittel, innbygger, kategori, status eller avdeling",
+    emptyHint:
+      "Prøv et annet statusfilter, nullstill søket, eller kontroller at rollen og tilgangsområdet ditt omfatter aktuelle saker.",
     case: "Sak",
     department: "Avdeling",
     created: "Opprettet",
@@ -93,6 +190,124 @@ export const internalDictionaryNb = {
     empty: "Ingen dokumenter er lastet opp.",
     download: "Last ned",
     uploadedBy: "Lastet opp av",
+  },
+  caseDetail: {
+    activityLoadError: "Kunne ikke laste nylig aktivitet.",
+    readOnlyTitle: "Skrivebeskyttet sakstilgang",
+    readOnlyText:
+      "Din nåværende rolle kan se saken, men kan ikke oppdatere status, legge til notater, kjøre eller vurdere KI-triage, eller laste opp dokumenter.",
+    recommendedWorkflow: "Anbefalt arbeidsflyt",
+    statusUpdatesReadOnly:
+      "Statusoppdateringer er deaktivert for skrivebeskyttede roller.",
+    internalNotesReadOnly:
+      "Interne notater er deaktivert for skrivebeskyttede roller.",
+    currentStatus: "Nåværende status",
+    rejectedTitle: "Avvist",
+    statusExplanations: {
+      new: "Saken er mottatt og venter på første behandling.",
+      triage_pending: "Saken er klar for KI-triage eller manuell triage.",
+      triaged:
+        "En saksbehandler har bekreftet kategori, hastegrad og ruting.",
+      in_progress: "Tildelt avdeling behandler saken.",
+      waiting_for_citizen:
+        "Saken venter på mer informasjon fra innbygger.",
+      closed: "Saken er ferdigbehandlet.",
+      rejected: "Saken er avvist og har en avsluttende status.",
+    },
+    aiSuggestionWarning:
+      "KI-forslag oppdaterer ikke den offisielle saken automatisk. En saksbehandler må godta eller korrigere dem.",
+    storedFailureReason: "Lagret feilårsak",
+    officialValues: "Offisielle saksverdier",
+    officialCategory: "Offisiell kategori",
+    officialDepartment: "Offisiell avdeling",
+    officialUrgency: "Offisiell hastegrad",
+    suggestedValues: "KI-foreslåtte verdier",
+    suggestedCategory: "Foreslått kategori",
+    suggestedDepartment: "Foreslått avdeling",
+    suggestedUrgency: "Foreslått hastegrad",
+    noDepartment: "Ingen avdeling",
+    currentSelection: "Nåværende valg",
+    departmentListUnavailable:
+      "Avdelingslisten er utilgjengelig. Skriv inn avdelingsslug manuelt.",
+    reviewComment: "Vurderingskommentar",
+    reviewCommentPlaceholder:
+      "Forklar hvorfor KI-forslaget ble godtatt eller korrigert.",
+    aiReviewReadOnly:
+      "KI-vurdering er deaktivert for skrivebeskyttede roller.",
+    aiFailureTitle: "KI-triage kunne ikke fullføres",
+    retryAiTriage: "Prøv KI-triage på nytt",
+    reviewCorrectionRequired:
+      "Endre minst én vurdert verdi eller legg til en vurderingskommentar før du lagrer en korrigering.",
+    documentUploadReadOnly:
+      "Dokumentopplasting er deaktivert for skrivebeskyttede roller.",
+    recentActivityTitle: "Nylig aktivitet",
+    recentActivityDescription: "Revisjonshendelser knyttet til denne saken.",
+    recentActivityEmpty:
+      "Det er ikke registrert nylig aktivitet for denne saken ennå.",
+    statusTransitionTerminal:
+      "Saken har allerede en avsluttende status. Backend-regler kan avvise gjenåpning hvis dette ikke er eksplisitt støttet.",
+    statusTransitionSkippedStart:
+      "Dette valget hopper over neste anbefalte arbeidsflytsteg",
+    statusTransitionSkippedEnd:
+      "Du kan fortsatt sende det inn, men gå gjennom sakshistorikken først.",
+    statusTransitionBackward:
+      "Dette valget flytter saken bakover i arbeidsflyten. Du kan fortsatt sende det inn, men gå gjennom sakshistorikken først.",
+    aiErrors: {
+      providerNotConfigured:
+        "KI-leverandøren er ikke konfigurert. Sjekk Drift og sett nødvendige leverandørinnstillinger før triage kjøres.",
+      timeout:
+        "KI-leverandøren brukte for lang tid. Prøv igjen, og sjekk tidsavbruddinnstillinger hvis dette fortsetter.",
+      validationFailed:
+        "KI-triage-responsen eller forespørselen kunne ikke valideres. Gå gjennom saksdataene og prøv igjen.",
+      upstreamError:
+        "KI-leverandøren returnerte en ekstern feil. Prøv triage på nytt når leverandøren er frisk.",
+      unknown:
+        "KI-triage feilet. Prøv forespørselen på nytt eller sjekk Drift for leverandørstatus.",
+      safeProviderFailed: "KI-leverandøren feilet.",
+      safeCiDisabled: "Reelle OpenAI-kall er deaktivert i CI.",
+      safeApiKeyMissing: "OpenAI API-nøkkel er ikke konfigurert.",
+      safeTimeout: "KI-leverandørens forespørsel fikk tidsavbrudd.",
+      safeInvalidResponse: "KI-leverandøren returnerte et ugyldig svar.",
+      safeFallback: "KI feilet.",
+    },
+    actionLabels: {
+      "case.created_by_citizen": "Sak opprettet",
+      "case.status_updated": "Status endret",
+      "case.internal_note_created": "Internt notat lagt til",
+      "document.uploaded": "Dokument lastet opp",
+      "document.uploaded_by_citizen": "Dokument lastet opp av innbygger",
+      "document.downloaded": "Dokument lastet ned",
+      "ai.triage_result_created": "KI-triage kjørt",
+      "ai.triage_result_failed": "KI-triage feilet",
+      "ai.triage_review_created": "KI-vurdering godtatt/korrigert",
+    },
+  },
+  audit: {
+    title: "Revisjon",
+    loadEventsError: "Kunne ikke laste revisjonshendelser.",
+    loadPageError: "Kunne ikke laste revisjonssiden.",
+    sectionTitle: "Nylige revisjonshendelser for kommunen",
+    description: "Skrivebeskyttet revisjonsspor for hendelser i",
+    eventType: "Hendelsestype",
+    allEvents: "Alle hendelser",
+    actor: "Aktør",
+    actorPlaceholder: "Navn eller e-post",
+    from: "Fra",
+    to: "Til",
+    apply: "Bruk",
+    empty: "Ingen revisjonshendelser matcher filtrene.",
+    systemOrCitizen: "System eller innbygger",
+    actionLabels: {
+      "case.created_by_citizen": "Sak opprettet",
+      "case.status_updated": "Status endret",
+      "case.internal_note_created": "Internt notat lagt til",
+      "document.uploaded": "Dokument lastet opp",
+      "document.uploaded_by_citizen": "Dokument lastet opp av innbygger",
+      "document.downloaded": "Dokument lastet ned",
+      "ai.triage_result_created": "KI-triage kjørt",
+      "ai.triage_result_failed": "KI-triage feilet",
+      "ai.triage_review_created": "KI-vurdering godtatt/korrigert",
+    },
   },
   analytics: {
     title: "Analyse",
@@ -169,8 +384,70 @@ export const internalDictionaryNb = {
     apiErrors: "API-feil",
     apiErrors24h: "API-feil siste 24 t",
     aiLatency: "KI snittlatens",
+    aiConfiguration: "KI-konfigurasjon",
+    provider: "Leverandør",
+    model: "Modell",
+    configured: "Konfigurert",
+    timeout: "Tidsavbrudd",
+    maxAttempts: "Maks forsøk",
+    ciDisabled: "CI deaktivert",
+    openAiNotConfigured:
+      "OpenAI er valgt, men ikke konfigurert. Sett OPENAI_API_KEY før produksjonsbruk.",
+    mockAiActive:
+      "Mock KI-leverandør er aktiv. Dette passer for demoer uten API-kostnad.",
     loadMetricsError: "Kunne ikke laste driftsmetrikker.",
     loadDashboardError: "Kunne ikke laste driftsdashboard.",
+  },
+  admin: {
+    departments: {
+      title: "Avdelinger",
+      sectionTitle: "Kommunale avdelinger",
+      description: "Skrivebeskyttet avdelingsoversikt for",
+      count: "avdelinger",
+      loadError: "Kunne ikke laste avdelinger.",
+      empty: "Fant ingen avdelinger for denne kommunen.",
+      columns: {
+        name: "Navn",
+        slug: "Slug",
+        municipality: "Kommune",
+        cases: "Saker",
+      },
+    },
+    routingRules: {
+      title: "Rutingsregler",
+      sectionTitle: "Rutingslogikk for kommunen",
+      descriptionStart: "Skrivebeskyttet ruting fra kategori til avdeling for",
+      descriptionEnd:
+        "KI-triage kan foreslå en avdeling fra kommunens avdelingsliste, men offisielle saksverdier oppdateres først etter menneskelig vurdering.",
+      count: "regler",
+      notice:
+        "Disse reglene dokumenterer gjeldende statiske/demo-rutiner. Dette er ikke en arbeidsflytmotor og kan foreløpig ikke redigeres i UI.",
+      loadError: "Kunne ikke laste rutingsregler.",
+      empty: "Ingen rutingsregler er dokumentert for denne kommunen.",
+      unresolvedDepartment: "Uavklart avdeling",
+      columns: {
+        category: "Kategori",
+        defaultDepartment: "Standardavdeling",
+        source: "Kilde",
+        urgencyGuidance: "Hastegradveiledning",
+      },
+    },
+    users: {
+      title: "Brukere",
+      sectionTitle: "Kommunale brukere",
+      description: "Skrivebeskyttet bruker- og rolleoversikt for",
+      count: "brukere",
+      loadError: "Kunne ikke laste brukere.",
+      empty: "Fant ingen brukere for denne kommunen.",
+      active: "Aktiv",
+      columns: {
+        name: "Navn",
+        email: "E-post",
+        role: "Rolle",
+        department: "Avdeling",
+        status: "Status",
+      },
+    },
   },
   privacy: {
     title: "Personvern",

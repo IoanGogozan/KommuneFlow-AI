@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
+import { formatDisplayValue } from "@/lib/internal-display";
 import { useInternalI18n } from "@/lib/internal-locale";
 import { useInternalSession } from "@/lib/use-internal-session";
 import { AccessDenied } from "../../ui/access-denied";
@@ -170,17 +171,25 @@ export function OperationsDashboard() {
       <section className="mt-5 grid gap-4 md:grid-cols-3">
         <StatusCard
           title={t.operations.health}
-          status={health?.status ?? t.common.unknown}
+          status={formatDisplayValue(health?.status, "operationStatuses", t)}
           detail={health?.timestamp}
         />
         <StatusCard
           title={t.operations.readiness}
-          status={readiness?.status ?? t.common.unknown}
+          status={formatDisplayValue(
+            readiness?.status,
+            "operationStatuses",
+            t,
+          )}
           detail={readiness?.timestamp}
         />
         <StatusCard
           title={t.operations.backup}
-          status={metrics?.backupLastRunStatus ?? t.common.missing}
+          status={formatDisplayValue(
+            metrics?.backupLastRunStatus,
+            "operationStatuses",
+            t,
+          )}
           detail={formatDate(metrics?.backupLastRunAt, t.common.missing)}
         />
       </section>
@@ -191,12 +200,21 @@ export function OperationsDashboard() {
             <Row
               key={name}
               label={name}
-              value={check.safeMessage ?? check.status}
+              value={
+                check.safeMessage ??
+                formatDisplayValue(check.status, "operationStatuses", t)
+              }
             />
           ))}
         </Panel>
 
-        <AIStatusPanel aiStatus={aiStatus} missingLabel={t.common.missing} />
+        <AIStatusPanel
+          aiStatus={aiStatus}
+          missingLabel={t.common.missing}
+          noLabel={t.common.no}
+          t={t}
+          yesLabel={t.common.yes}
+        />
       </section>
 
       <section className="mt-5 grid gap-4 md:grid-cols-2">
@@ -218,10 +236,11 @@ export function OperationsDashboard() {
           />
           <Row
             label={t.operations.ssbImport}
-            value={`${metrics?.ssbImportLastStatus ?? t.common.missing} / ${formatDate(
-              metrics?.ssbImportLastRunAt,
-              t.common.missing,
-            )}`}
+            value={`${formatDisplayValue(
+              metrics?.ssbImportLastStatus,
+              "operationStatuses",
+              t,
+            )} / ${formatDate(metrics?.ssbImportLastRunAt, t.common.missing)}`}
           />
         </Panel>
 
@@ -324,44 +343,48 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 function AIStatusPanel({
   aiStatus,
   missingLabel,
+  noLabel,
+  t,
+  yesLabel,
 }: {
   aiStatus: AIStatusResponse | null;
   missingLabel: string;
+  noLabel: string;
+  t: ReturnType<typeof useInternalI18n>["t"];
+  yesLabel: string;
 }) {
   const isMock = aiStatus?.provider === "mock";
   const isOpenAIUnconfigured =
     aiStatus?.provider === "openai" && !aiStatus.configured;
 
   return (
-    <Panel title="AI Configuration">
-      <Row label="Provider" value={aiStatus?.provider ?? missingLabel} />
-      <Row label="Model" value={aiStatus?.model ?? missingLabel} />
+    <Panel title={t.operations.aiConfiguration}>
+      <Row label={t.operations.provider} value={aiStatus?.provider ?? missingLabel} />
+      <Row label={t.operations.model} value={aiStatus?.model ?? missingLabel} />
       <Row
-        label="Configured"
-        value={aiStatus ? (aiStatus.configured ? "Yes" : "No") : missingLabel}
+        label={t.operations.configured}
+        value={aiStatus ? (aiStatus.configured ? yesLabel : noLabel) : missingLabel}
       />
       <Row
-        label="Timeout"
+        label={t.operations.timeout}
         value={aiStatus ? formatMs(aiStatus.timeoutMs, missingLabel) : missingLabel}
       />
       <Row
-        label="Max attempts"
+        label={t.operations.maxAttempts}
         value={aiStatus ? String(aiStatus.maxAttempts) : missingLabel}
       />
       <Row
-        label="CI disabled"
-        value={aiStatus ? (aiStatus.ciDisabled ? "Yes" : "No") : missingLabel}
+        label={t.operations.ciDisabled}
+        value={aiStatus ? (aiStatus.ciDisabled ? yesLabel : noLabel) : missingLabel}
       />
       {isOpenAIUnconfigured ? (
         <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
-          OpenAI is selected but not configured. Set OPENAI_API_KEY before
-          production use.
+          {t.operations.openAiNotConfigured}
         </p>
       ) : null}
       {isMock ? (
         <p className="rounded-md border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-sky-900">
-          Mock AI provider is active. This is suitable for demos without API
-          cost.
+          {t.operations.mockAiActive}
         </p>
       ) : null}
     </Panel>

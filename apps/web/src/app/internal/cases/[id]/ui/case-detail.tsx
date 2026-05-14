@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
+import { formatDisplayValue } from "@/lib/internal-display";
 import type { InternalDictionary } from "@/lib/internal-i18n";
 import { useInternalI18n } from "@/lib/internal-locale";
 import { useInternalSession } from "@/lib/use-internal-session";
@@ -139,18 +140,6 @@ const workflowStatuses = [
   "waiting_for_citizen",
   "closed",
 ] as const;
-
-const recommendedWorkflow = workflowStatuses.join(" -> ");
-
-const statusExplanations: Record<string, string> = {
-  new: "The case has been received and is waiting for initial handling.",
-  triage_pending: "The case is ready for AI or manual triage.",
-  triaged: "A human reviewer has confirmed category, urgency and routing.",
-  in_progress: "The assigned department is actively processing the case.",
-  waiting_for_citizen: "The case is waiting for more information from the citizen.",
-  closed: "The case has been completed.",
-  rejected: "The case has been rejected and is in a terminal state.",
-};
 
 const caseCategories = [
   "building_case",
@@ -329,9 +318,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     loadCase().catch(() => setError(t.cases.loadCaseError));
     loadDocuments().catch(() => setError(t.cases.loadDocumentsError));
     loadAITriage().catch(() => setError(t.cases.loadAiError));
-    loadActivity().catch(() =>
-      setActivityError("Recent activity could not be loaded."),
-    );
+    loadActivity().catch(() => setActivityError(t.caseDetail.activityLoadError));
     loadDepartments().catch(() => setDepartmentListUnavailable(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canReadCase, caseId, currentUser, sessionLoading]);
@@ -351,7 +338,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     });
 
     if (!response.ok) {
-      setStatusUpdateError(await readSafeStatusUpdateError(response));
+      setStatusUpdateError(await readSafeStatusUpdateError(response, t));
       return;
     }
 
@@ -397,14 +384,14 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     );
 
     if (!response.ok) {
-      setAIError(await buildAITriageError(response));
+      setAIError(await buildAITriageError(response, t));
       return;
     }
 
     const result = (await response.json()) as AITriageResultResponse;
     setAiResult(result);
     if (result.status === "failed") {
-      setAIError(classifyStoredAIFailure(result.failureReason));
+      setAIError(classifyStoredAIFailure(result.failureReason, t));
     }
     syncReviewForm(result);
     await loadActivity();
@@ -438,7 +425,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
       trimmedReviewComment.length === 0
     ) {
       setReviewValidationError(
-        "Change at least one reviewed value or add a review comment before saving a correction.",
+        t.caseDetail.reviewCorrectionRequired,
       );
       return;
     }
@@ -599,7 +586,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
       </Link>
 
       <CaseSummaryCard caseRecord={caseRecord} t={t} />
-      {!canUpdateCase ? <ReadOnlyNotice currentRole={currentUser.role} /> : null}
+      {!canUpdateCase ? <ReadOnlyNotice t={t} /> : null}
       <CitizenAddressCard caseAddress={caseAddress} t={t} />
       <section className="mt-5 grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
         <CaseWorkflowCard
@@ -676,7 +663,7 @@ function CaseSummaryCard({
           </h1>
         </div>
         <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-800">
-          {caseRecord.status}
+          {getStatusLabel(caseRecord.status, t)}
         </span>
       </div>
 
@@ -684,9 +671,20 @@ function CaseSummaryCard({
         <Info label={t.cases.citizen} value={caseRecord.citizenProfile.name} />
         <Info
           label={t.cases.department}
-          value={caseRecord.assignedDepartment?.name ?? t.common.unassigned}
+          value={
+            caseRecord.assignedDepartment?.name
+              ? formatDisplayValue(
+                  caseRecord.assignedDepartment.name,
+                  "departments",
+                  t,
+                )
+              : t.common.unassigned
+          }
         />
-        <Info label={t.cases.urgency} value={caseRecord.urgency} />
+        <Info
+          label={t.cases.urgency}
+          value={formatDisplayValue(caseRecord.urgency, "urgencies", t)}
+        />
       </dl>
 
       <p className="mt-6 whitespace-pre-wrap leading-7 text-slate-700">
@@ -750,15 +748,14 @@ function CitizenAddressCard({
   );
 }
 
-function ReadOnlyNotice({ currentRole }: { currentRole: string }) {
+function ReadOnlyNotice({ t }: { t: InternalDictionary }) {
   return (
     <div className="mt-5 rounded-md border border-slate-200 bg-slate-50 p-4">
       <p className="text-sm font-semibold text-slate-950">
-        Read-only case access
+        {t.caseDetail.readOnlyTitle}
       </p>
       <p className="mt-1 text-sm leading-6 text-slate-600">
-        Your current role, {currentRole}, can view this case but cannot update
-        status, add notes, run or review AI triage, or upload documents.
+        {t.caseDetail.readOnlyText}
       </p>
     </div>
   );
@@ -781,7 +778,10 @@ function CaseWorkflowCard({
   status: string;
   t: InternalDictionary;
 }) {
-  const transitionWarning = getStatusTransitionWarning(currentStatus, status);
+  const transitionWarning = getStatusTransitionWarning(currentStatus, status, t);
+  const recommendedWorkflow = workflowStatuses
+    .map((item) => getStatusLabel(item, t))
+    .join(" -> ");
 
   return (
     <form
@@ -791,11 +791,11 @@ function CaseWorkflowCard({
       <h2 className="text-lg font-semibold text-slate-950">
         {t.cases.status}
       </h2>
-      <WorkflowTimeline currentStatus={currentStatus} />
+      <WorkflowTimeline currentStatus={currentStatus} t={t} />
       {canUpdate ? (
         <>
           <p className="mt-4 rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-600">
-            Recommended workflow: {recommendedWorkflow}
+            {t.caseDetail.recommendedWorkflow}: {recommendedWorkflow}
           </p>
           <select
             value={status}
@@ -804,7 +804,7 @@ function CaseWorkflowCard({
           >
             {caseStatuses.map((item) => (
               <option key={item} value={item}>
-                {item}
+                {getStatusLabel(item, t)}
               </option>
             ))}
           </select>
@@ -827,14 +827,20 @@ function CaseWorkflowCard({
         </>
       ) : (
         <p className="mt-4 rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-600">
-          Status updates are disabled for read-only roles.
+          {t.caseDetail.statusUpdatesReadOnly}
         </p>
       )}
     </form>
   );
 }
 
-function WorkflowTimeline({ currentStatus }: { currentStatus: string }) {
+function WorkflowTimeline({
+  currentStatus,
+  t,
+}: {
+  currentStatus: string;
+  t: InternalDictionary;
+}) {
   const currentIndex = workflowStatuses.findIndex(
     (item) => item === currentStatus,
   );
@@ -867,11 +873,11 @@ function WorkflowTimeline({ currentStatus }: { currentStatus: string }) {
                       : "text-sm font-medium text-slate-700"
                   }
                 >
-                  {formatStatusLabel(item)}
+                  {getStatusLabel(item, t)}
                 </p>
-                {isCurrent ? (
+                {isCurrent && getStatusExplanation(item, t) ? (
                   <p className="mt-1 text-xs leading-5 text-slate-500">
-                    {statusExplanations[item]}
+                    {getStatusExplanation(item, t)}
                   </p>
                 ) : null}
               </div>
@@ -881,15 +887,18 @@ function WorkflowTimeline({ currentStatus }: { currentStatus: string }) {
       </ol>
       {isRejected ? (
         <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3">
-          <p className="text-sm font-semibold text-red-900">Rejected</p>
+          <p className="text-sm font-semibold text-red-900">
+            {t.caseDetail.rejectedTitle}
+          </p>
           <p className="mt-1 text-xs leading-5 text-red-800">
-            {statusExplanations.rejected}
+            {getStatusExplanation("rejected", t)}
           </p>
         </div>
       ) : null}
-      {!isRejected && statusExplanations[currentStatus] ? (
+      {!isRejected && getStatusExplanation(currentStatus, t) ? (
         <p className="mt-3 rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-600">
-          Current status: {statusExplanations[currentStatus]}
+          {t.caseDetail.currentStatus}:{" "}
+          {getStatusExplanation(currentStatus, t)}
         </p>
       ) : null}
     </div>
@@ -929,7 +938,7 @@ function InternalNotesCard({
         </form>
       ) : (
         <p className="mt-4 rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-600">
-          Internal note updates are disabled for read-only roles.
+          {t.caseDetail.internalNotesReadOnly}
         </p>
       )}
 
@@ -1019,8 +1028,7 @@ function AITriageCard({
         {t.ai.notice}
       </p>
       <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm font-medium leading-6 text-amber-950">
-        AI suggestions do not update the official case automatically. A human
-        reviewer must accept or correct them.
+        {t.caseDetail.aiSuggestionWarning}
       </p>
 
       {!aiResult ? (
@@ -1032,6 +1040,7 @@ function AITriageCard({
           canRetry={canRun}
           error={aiError}
           onRetry={onRunAITriage}
+          t={t}
         />
       ) : null}
 
@@ -1039,8 +1048,8 @@ function AITriageCard({
         <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-4">
           <p className="text-sm font-semibold text-red-900">{t.ai.failed}</p>
           <p className="mt-2 text-sm leading-6 text-red-800">
-            Stored failure reason:{" "}
-            {safeStoredFailureReason(aiResult.failureReason) ??
+            {t.caseDetail.storedFailureReason}:{" "}
+            {safeStoredFailureReason(aiResult.failureReason, t) ??
               t.common.unknown}
           </p>
         </div>
@@ -1051,36 +1060,68 @@ function AITriageCard({
           <div className="grid gap-3">
             <div className="rounded-md border border-slate-200 bg-white p-4">
               <h3 className="text-sm font-semibold text-slate-950">
-                Official case values
+                {t.caseDetail.officialValues}
               </h3>
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                <Info label="Official category" value={officialCategory} />
                 <Info
-                  label="Official department"
-                  value={officialDepartment ?? t.common.unassigned}
+                  label={t.caseDetail.officialCategory}
+                  value={formatDisplayValue(officialCategory, "categories", t)}
                 />
-                <Info label="Official urgency" value={officialUrgency} />
+                <Info
+                  label={t.caseDetail.officialDepartment}
+                  value={
+                    officialDepartment
+                      ? formatDisplayValue(
+                          officialDepartment,
+                          "departments",
+                          t,
+                        )
+                      : t.common.unassigned
+                  }
+                />
+                <Info
+                  label={t.caseDetail.officialUrgency}
+                  value={formatDisplayValue(officialUrgency, "urgencies", t)}
+                />
               </div>
             </div>
 
             <div className="rounded-md border border-sky-200 bg-sky-50 p-4">
               <h3 className="text-sm font-semibold text-slate-950">
-                AI suggested values
+                {t.caseDetail.suggestedValues}
               </h3>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <Info
-                  label="Suggested category"
-                  value={aiResult.suggestedCategory ?? t.common.unknown}
-                />
-                <Info
-                  label="Suggested department"
+                  label={t.caseDetail.suggestedCategory}
                   value={
-                    aiResult.suggestedDepartment?.name ?? t.common.unassigned
+                    aiResult.suggestedCategory
+                      ? formatDisplayValue(
+                          aiResult.suggestedCategory,
+                          "categories",
+                          t,
+                        )
+                      : t.common.unknown
                   }
                 />
                 <Info
-                  label="Suggested urgency"
-                  value={aiResult.suggestedUrgency ?? "normal"}
+                  label={t.caseDetail.suggestedDepartment}
+                  value={
+                    aiResult.suggestedDepartment?.name
+                      ? formatDisplayValue(
+                          aiResult.suggestedDepartment.name,
+                          "departments",
+                          t,
+                        )
+                      : t.common.unassigned
+                  }
+                />
+                <Info
+                  label={t.caseDetail.suggestedUrgency}
+                  value={formatDisplayValue(
+                    aiResult.suggestedUrgency ?? "normal",
+                    "urgencies",
+                    t,
+                  )}
                 />
                 <Info
                   label={t.ai.confidence}
@@ -1122,9 +1163,9 @@ function AITriageCard({
                   }
                   className="rounded-md border border-slate-300 bg-white px-3 py-2"
                 >
-                  {caseCategories.map((item) => (
+                      {caseCategories.map((item) => (
                     <option key={item} value={item}>
-                      {item}
+                      {formatDisplayValue(item, "categories", t)}
                     </option>
                   ))}
                 </select>
@@ -1139,15 +1180,15 @@ function AITriageCard({
                     }
                     className="rounded-md border border-slate-300 bg-white px-3 py-2"
                   >
-                    <option value="">No department</option>
+                    <option value="">{t.caseDetail.noDepartment}</option>
                     {selectedDepartmentIsMissing ? (
                       <option value={reviewDepartmentSlug}>
-                        Current selection ({reviewDepartmentSlug})
+                        {t.caseDetail.currentSelection} ({reviewDepartmentSlug})
                       </option>
                     ) : null}
                     {departments.map((department) => (
                       <option key={department.id} value={department.slug}>
-                        {department.name}
+                        {formatDisplayValue(department.name, "departments", t)}
                       </option>
                     ))}
                   </select>
@@ -1162,8 +1203,7 @@ function AITriageCard({
                     />
                     {departmentListUnavailable ? (
                       <span className="text-xs leading-5 text-amber-700">
-                        Department list is unavailable. Enter the department
-                        slug manually.
+                        {t.caseDetail.departmentListUnavailable}
                       </span>
                     ) : null}
                   </>
@@ -1180,13 +1220,13 @@ function AITriageCard({
                 >
                   {caseUrgencies.map((item) => (
                     <option key={item} value={item}>
-                      {item}
+                      {formatDisplayValue(item, "urgencies", t)}
                     </option>
                   ))}
                 </select>
               </label>
               <label className="grid gap-1 text-sm text-slate-700">
-                Review comment
+                {t.caseDetail.reviewComment}
                 <textarea
                   value={reviewComment}
                   onChange={(event) =>
@@ -1194,7 +1234,7 @@ function AITriageCard({
                   }
                   rows={4}
                   maxLength={1000}
-                  placeholder="Explain why the AI suggestion was accepted or corrected."
+                  placeholder={t.caseDetail.reviewCommentPlaceholder}
                   className="rounded-md border border-slate-300 bg-white px-3 py-2"
                 />
               </label>
@@ -1225,7 +1265,7 @@ function AITriageCard({
                 {t.ai.humanReview}
               </h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                AI review actions are disabled for read-only roles.
+                {t.caseDetail.aiReviewReadOnly}
               </p>
             </div>
           )}
@@ -1282,7 +1322,7 @@ function DocumentsCard({
         </form>
       ) : (
         <p className="mt-4 rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-600">
-          Document upload is disabled for read-only roles.
+          {t.caseDetail.documentUploadReadOnly}
         </p>
       )}
 
@@ -1331,15 +1371,17 @@ function AITriageFailureNotice({
   canRetry,
   error,
   onRetry,
+  t,
 }: {
   canRetry: boolean;
   error: AIErrorState;
   onRetry: () => void;
+  t: InternalDictionary;
 }) {
   return (
     <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-4">
       <p className="text-sm font-semibold text-red-900">
-        AI triage could not complete
+        {t.caseDetail.aiFailureTitle}
       </p>
       <p className="mt-2 text-sm leading-6 text-red-800">{error.message}</p>
       {canRetry ? (
@@ -1348,7 +1390,7 @@ function AITriageFailureNotice({
           onClick={onRetry}
           className="mt-3 rounded-md bg-red-800 px-4 py-2 text-sm font-semibold text-white hover:bg-red-900"
         >
-          Retry AI triage
+          {t.caseDetail.retryAiTriage}
         </button>
       ) : null}
     </div>
@@ -1369,10 +1411,10 @@ function RecentActivityCard({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-slate-950">
-            Recent Activity
+            {t.caseDetail.recentActivityTitle}
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-500">
-            Audit events connected to this case.
+            {t.caseDetail.recentActivityDescription}
           </p>
         </div>
       </div>
@@ -1385,7 +1427,7 @@ function RecentActivityCard({
 
       {!error && activity.length === 0 ? (
         <p className="mt-4 rounded-md bg-slate-50 p-3 text-sm text-slate-600">
-          No recent activity has been recorded for this case yet.
+          {t.caseDetail.recentActivityEmpty}
         </p>
       ) : null}
 
@@ -1401,7 +1443,7 @@ function RecentActivityCard({
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="text-sm font-semibold text-slate-950">
-                      {formatActivityAction(event.action)}
+                      {formatActivityAction(event.action, t)}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
                       {formatActivityActor(event.actor, t.common.unknown)}
@@ -1411,7 +1453,7 @@ function RecentActivityCard({
                     {new Date(event.createdAt).toLocaleString()}
                   </time>
                 </div>
-                <ActivityMetadataSummary summary={event.metadataSummary} />
+                <ActivityMetadataSummary summary={event.metadataSummary} t={t} />
               </article>
             </li>
           ))}
@@ -1423,8 +1465,10 @@ function RecentActivityCard({
 
 function ActivityMetadataSummary({
   summary,
+  t,
 }: {
   summary: Record<string, string | number | boolean | null>;
+  t: InternalDictionary;
 }) {
   const entries = Object.entries(summary);
 
@@ -1440,7 +1484,7 @@ function ActivityMetadataSummary({
             {formatMetadataKey(key)}
           </dt>
           <dd className="mt-1 text-sm font-semibold text-slate-900">
-            {formatMetadataValue(value)}
+            {formatMetadataValue(value, t)}
           </dd>
         </div>
       ))}
@@ -1480,20 +1524,8 @@ function formatFileSize(sizeBytes: number) {
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function formatActivityAction(action: string) {
-  const labels: Record<string, string> = {
-    "case.created_by_citizen": "Case created",
-    "document.uploaded_by_citizen": "Document uploaded by citizen",
-    "document.uploaded": "Document uploaded",
-    "document.downloaded": "Document downloaded",
-    "ai.triage_result_created": "AI triage run",
-    "ai.triage_result_failed": "AI triage failed",
-    "ai.triage_review_created": "AI review accepted/corrected",
-    "case.status_updated": "Status changed",
-    "case.internal_note_created": "Internal note added",
-  };
-
-  return labels[action] ?? action;
+function formatActivityAction(action: string, t: InternalDictionary) {
+  return (t.caseDetail.actionLabels as Record<string, string>)[action] ?? action;
 }
 
 function formatActivityActor(
@@ -1515,19 +1547,25 @@ function formatMetadataKey(key: string) {
     .toLowerCase();
 }
 
-function formatMetadataValue(value: string | number | boolean | null) {
+function formatMetadataValue(
+  value: string | number | boolean | null,
+  t: InternalDictionary,
+) {
   if (value === null) {
     return "-";
   }
 
   if (typeof value === "boolean") {
-    return value ? "Yes" : "No";
+    return value ? t.common.yes : t.common.no;
   }
 
   return String(value);
 }
 
-async function buildAITriageError(response: Response): Promise<AIErrorState> {
+async function buildAITriageError(
+  response: Response,
+  t: InternalDictionary,
+): Promise<AIErrorState> {
   const apiError = await readSafeApiError(response);
   const message = apiError?.message ?? "";
 
@@ -1539,43 +1577,41 @@ async function buildAITriageError(response: Response): Promise<AIErrorState> {
   ) {
     return {
       kind: "provider_not_configured",
-      message:
-        "The AI provider is not configured. Check Operations and set the required provider settings before running triage.",
+      message: t.caseDetail.aiErrors.providerNotConfigured,
     };
   }
 
   if (response.status === 408 || message.toLowerCase().includes("timeout")) {
     return {
       kind: "timeout",
-      message:
-        "The AI provider timed out. Try again, and check provider timeout settings if this keeps happening.",
+      message: t.caseDetail.aiErrors.timeout,
     };
   }
 
   if (response.status === 400 || response.status === 422) {
     return {
       kind: "validation_failed",
-      message:
-        "The AI triage response or request could not be validated. Review the case data and try again.",
+      message: t.caseDetail.aiErrors.validationFailed,
     };
   }
 
   if (response.status >= 500) {
     return {
       kind: "upstream_error",
-      message:
-        "The AI provider returned an upstream error. Retry triage after the provider is healthy.",
+      message: t.caseDetail.aiErrors.upstreamError,
     };
   }
 
   return {
     kind: "unknown",
-    message:
-      "AI triage failed. Retry the request or check Operations for provider status.",
+    message: t.caseDetail.aiErrors.unknown,
   };
 }
 
-async function readSafeStatusUpdateError(response: Response) {
+async function readSafeStatusUpdateError(
+  response: Response,
+  t: InternalDictionary,
+) {
   try {
     const body = (await response.json()) as {
       error?: {
@@ -1588,10 +1624,10 @@ async function readSafeStatusUpdateError(response: Response) {
       return message;
     }
   } catch {
-    return "Could not update status.";
+    return t.cases.updateStatusError;
   }
 
-  return "Could not update status.";
+  return t.cases.updateStatusError;
 }
 
 async function readSafeApiError(response: Response) {
@@ -1611,12 +1647,12 @@ async function readSafeApiError(response: Response) {
 
 function classifyStoredAIFailure(
   failureReason: string | null,
+  t: InternalDictionary,
 ): AIErrorState | null {
   if (!failureReason) {
     return {
       kind: "unknown",
-      message:
-        "AI triage failed. Retry the request or check Operations for provider status.",
+      message: t.caseDetail.aiErrors.unknown,
     };
   }
 
@@ -1625,8 +1661,7 @@ function classifyStoredAIFailure(
   if (lowerReason.includes("timeout")) {
     return {
       kind: "timeout",
-      message:
-        "The AI provider timed out. Try again, and check provider timeout settings if this keeps happening.",
+      message: t.caseDetail.aiErrors.timeout,
     };
   }
 
@@ -1636,8 +1671,7 @@ function classifyStoredAIFailure(
   ) {
     return {
       kind: "validation_failed",
-      message:
-        "The AI triage response could not be validated. Review the case data and try again.",
+      message: t.caseDetail.aiErrors.validationFailed,
     };
   }
 
@@ -1648,41 +1682,56 @@ function classifyStoredAIFailure(
   ) {
     return {
       kind: "provider_not_configured",
-      message:
-        "The AI provider is not configured. Check Operations and set the required provider settings before running triage.",
+      message: t.caseDetail.aiErrors.providerNotConfigured,
     };
   }
 
   return {
     kind: "upstream_error",
-    message:
-      "The AI provider returned an upstream error. Retry triage after the provider is healthy.",
+    message: t.caseDetail.aiErrors.upstreamError,
   };
 }
 
-function safeStoredFailureReason(failureReason: string | null) {
+function safeStoredFailureReason(
+  failureReason: string | null,
+  t: InternalDictionary,
+) {
   if (!failureReason) {
     return null;
   }
 
-  const safeReasons = [
-    "AI provider failed.",
-    "Real OpenAI calls are disabled in CI.",
-    "OpenAI API key is not configured.",
-    "AI provider request timed out.",
-    "AI provider returned an invalid response.",
-  ];
+  const safeReasons: Record<string, string> = {
+    "AI provider failed.": t.caseDetail.aiErrors.safeProviderFailed,
+    "Real OpenAI calls are disabled in CI.":
+      t.caseDetail.aiErrors.safeCiDisabled,
+    "OpenAI API key is not configured.":
+      t.caseDetail.aiErrors.safeApiKeyMissing,
+    "AI provider request timed out.": t.caseDetail.aiErrors.safeTimeout,
+    "AI provider returned an invalid response.":
+      t.caseDetail.aiErrors.safeInvalidResponse,
+  };
 
-  return safeReasons.includes(failureReason) ? failureReason : "AI failed.";
+  return safeReasons[failureReason] ?? t.caseDetail.aiErrors.safeFallback;
 }
 
 function formatStatusLabel(status: string) {
   return status.replaceAll("_", " ");
 }
 
+function getStatusLabel(status: string, t: InternalDictionary) {
+  return (t.cases.filters as Record<string, string>)[status] ?? formatStatusLabel(status);
+}
+
+function getStatusExplanation(status: string, t: InternalDictionary) {
+  return (
+    (t.caseDetail.statusExplanations as Record<string, string>)[status] ?? null
+  );
+}
+
 function getStatusTransitionWarning(
   currentStatus: string,
   selectedStatus: string,
+  t: InternalDictionary,
 ) {
   if (currentStatus === selectedStatus) {
     return null;
@@ -1693,7 +1742,7 @@ function getStatusTransitionWarning(
   }
 
   if (currentStatus === "closed" || currentStatus === "rejected") {
-    return "This case is already in a terminal status. Backend rules may reject reopening unless explicitly supported.";
+    return t.caseDetail.statusTransitionTerminal;
   }
 
   const currentIndex = workflowStatuses.findIndex(
@@ -1708,13 +1757,14 @@ function getStatusTransitionWarning(
   }
 
   if (selectedIndex > currentIndex + 1) {
-    return `This selection skips the recommended next workflow step, ${formatStatusLabel(
+    return `${t.caseDetail.statusTransitionSkippedStart}, ${getStatusLabel(
       workflowStatuses[currentIndex + 1],
-    )}. You can still submit it, but review the case history first.`;
+      t,
+    )}. ${t.caseDetail.statusTransitionSkippedEnd}`;
   }
 
   if (selectedIndex < currentIndex) {
-    return "This selection moves the case backward in the workflow. You can still submit it, but review the case history first.";
+    return t.caseDetail.statusTransitionBackward;
   }
 
   return null;

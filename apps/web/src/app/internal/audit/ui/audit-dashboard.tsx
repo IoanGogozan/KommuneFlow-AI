@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
+import type { InternalDictionary } from "@/lib/internal-i18n";
 import { useInternalI18n } from "@/lib/internal-locale";
 import { useInternalSession } from "@/lib/use-internal-session";
 import { AccessDenied } from "../../ui/access-denied";
@@ -96,7 +97,7 @@ export function AuditDashboard() {
     }
 
     if (!response.ok) {
-      setError("Could not load audit events.");
+      setError(t.audit.loadEventsError);
       return;
     }
 
@@ -133,10 +134,10 @@ export function AuditDashboard() {
         locale={locale}
         setLocale={setLocale}
         t={t}
-        title="Audit"
+        title={t.audit.title}
       >
         <p className="mt-6 text-sm text-slate-600">
-          {sessionError ? "Could not load audit page." : t.cases.loading}
+          {sessionError ? t.audit.loadPageError : t.cases.loading}
         </p>
       </InternalShell>
     );
@@ -149,7 +150,7 @@ export function AuditDashboard() {
         locale={locale}
         setLocale={setLocale}
         t={t}
-        title="Audit"
+        title={t.audit.title}
       >
         <AccessDenied
           currentRole={currentUser.role}
@@ -165,16 +166,16 @@ export function AuditDashboard() {
       locale={locale}
       setLocale={setLocale}
       t={t}
-      title="Audit"
+      title={t.audit.title}
     >
       <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-950">
-              Recent tenant audit events
+              {t.audit.sectionTitle}
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Read-only audit trail for events in {currentUser.tenant.name}.
+              {t.audit.description} {currentUser.tenant.name}.
             </p>
           </div>
         </div>
@@ -184,7 +185,7 @@ export function AuditDashboard() {
           className="mt-5 grid gap-3 lg:grid-cols-[1.2fr_1fr_0.8fr_0.8fr_auto_auto]"
         >
           <label className="grid gap-1 text-sm text-slate-700">
-            Event type
+            {t.audit.eventType}
             <select
               value={action}
               onChange={(event) => setAction(event.target.value)}
@@ -192,22 +193,22 @@ export function AuditDashboard() {
             >
               {eventTypeOptions.map((item) => (
                 <option key={item || "all"} value={item}>
-                  {item ? formatActionLabel(item) : "All events"}
+                  {item ? formatActionLabel(item, t) : t.audit.allEvents}
                 </option>
               ))}
             </select>
           </label>
           <label className="grid gap-1 text-sm text-slate-700">
-            Actor
+            {t.audit.actor}
             <input
               value={actor}
               onChange={(event) => setActor(event.target.value)}
-              placeholder="Name or email"
+              placeholder={t.audit.actorPlaceholder}
               className="rounded-md border border-slate-300 bg-white px-3 py-2"
             />
           </label>
           <label className="grid gap-1 text-sm text-slate-700">
-            From
+            {t.audit.from}
             <input
               value={from}
               onChange={(event) => setFrom(event.target.value)}
@@ -216,7 +217,7 @@ export function AuditDashboard() {
             />
           </label>
           <label className="grid gap-1 text-sm text-slate-700">
-            To
+            {t.audit.to}
             <input
               value={to}
               onChange={(event) => setTo(event.target.value)}
@@ -228,14 +229,14 @@ export function AuditDashboard() {
             type="submit"
             className="self-end rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
           >
-            Apply
+            {t.audit.apply}
           </button>
           <button
             type="button"
             onClick={clearFilters}
             className="self-end rounded-md border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
           >
-            Clear
+            {t.common.clear}
           </button>
         </form>
       </section>
@@ -249,7 +250,7 @@ export function AuditDashboard() {
       <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         {events.length === 0 && !error ? (
           <p className="rounded-md bg-slate-50 p-4 text-sm text-slate-600">
-            No audit events match the current filters.
+            {t.audit.empty}
           </p>
         ) : null}
 
@@ -260,7 +261,7 @@ export function AuditDashboard() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-slate-950">
-                      {formatActionLabel(event.action)}
+                      {formatActionLabel(event.action, t)}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
                       {event.entityType} | {event.entityId}
@@ -271,9 +272,9 @@ export function AuditDashboard() {
                   </time>
                 </div>
                 <p className="mt-3 text-sm text-slate-600">
-                  Actor: {formatActor(event.actor)}
+                  {t.audit.actor}: {formatActor(event.actor, t)}
                 </p>
-                <MetadataSummary summary={event.metadataSummary} />
+                <MetadataSummary summary={event.metadataSummary} t={t} />
               </li>
             ))}
           </ol>
@@ -285,8 +286,10 @@ export function AuditDashboard() {
 
 function MetadataSummary({
   summary,
+  t,
 }: {
   summary: Record<string, string | number | boolean | null>;
+  t: InternalDictionary;
 }) {
   const entries = Object.entries(summary);
 
@@ -302,7 +305,7 @@ function MetadataSummary({
             {formatMetadataKey(key)}
           </dt>
           <dd className="mt-1 text-sm font-semibold text-slate-900">
-            {formatMetadataValue(value)}
+            {formatMetadataValue(value, t)}
           </dd>
         </div>
       ))}
@@ -310,29 +313,17 @@ function MetadataSummary({
   );
 }
 
-function formatActor(actor: AuditEventResponse["actor"]) {
+function formatActor(actor: AuditEventResponse["actor"], t: InternalDictionary) {
   if (!actor) {
-    return "System or citizen";
+    return t.audit.systemOrCitizen;
   }
 
-  const label = actor.name ?? actor.email ?? "Unknown";
+  const label = actor.name ?? actor.email ?? t.common.unknown;
   return actor.role ? `${label} (${actor.role})` : label;
 }
 
-function formatActionLabel(action: string) {
-  const labels: Record<string, string> = {
-    "case.created_by_citizen": "Case created",
-    "case.status_updated": "Status changed",
-    "case.internal_note_created": "Internal note added",
-    "document.uploaded": "Document uploaded",
-    "document.uploaded_by_citizen": "Document uploaded by citizen",
-    "document.downloaded": "Document downloaded",
-    "ai.triage_result_created": "AI triage run",
-    "ai.triage_result_failed": "AI triage failed",
-    "ai.triage_review_created": "AI review accepted/corrected",
-  };
-
-  return labels[action] ?? action;
+function formatActionLabel(action: string, t: InternalDictionary) {
+  return (t.audit.actionLabels as Record<string, string>)[action] ?? action;
 }
 
 function formatMetadataKey(key: string) {
@@ -342,13 +333,16 @@ function formatMetadataKey(key: string) {
     .toLowerCase();
 }
 
-function formatMetadataValue(value: string | number | boolean | null) {
+function formatMetadataValue(
+  value: string | number | boolean | null,
+  t: InternalDictionary,
+) {
   if (value === null) {
     return "-";
   }
 
   if (typeof value === "boolean") {
-    return value ? "Yes" : "No";
+    return value ? t.common.yes : t.common.no;
   }
 
   return String(value);

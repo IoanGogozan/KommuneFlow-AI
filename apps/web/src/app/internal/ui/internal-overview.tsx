@@ -16,12 +16,12 @@ type CaseOverviewItem = {
 };
 
 const overviewStatuses = [
-  { key: "new", label: "New cases" },
-  { key: "triage_pending", label: "Triage pending" },
-  { key: "triaged", label: "Triaged" },
-  { key: "in_progress", label: "In progress" },
-  { key: "waiting_for_citizen", label: "Waiting for citizen" },
-  { key: "closed", label: "Closed" },
+  { key: "new" },
+  { key: "triage_pending" },
+  { key: "triaged" },
+  { key: "in_progress" },
+  { key: "waiting_for_citizen" },
+  { key: "closed" },
 ] as const;
 
 export function InternalOverview() {
@@ -96,7 +96,7 @@ export function InternalOverview() {
         t={t}
         title={t.nav.dashboard}
       >
-        <p className="mt-6 text-sm text-slate-600">
+        <p className="mt-6 text-sm text-slate-700">
           {sessionError ? t.cases.loadError : t.cases.loading}
         </p>
       </InternalShell>
@@ -128,35 +128,34 @@ export function InternalOverview() {
       t={t}
       title={t.nav.dashboard}
     >
-      <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="mt-6 border border-[#c8d9e8] bg-white p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-slate-950">
-              Work overview
+            <h2 className="text-xl font-semibold text-[#003b71]">
+              {t.overview.title}
             </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Case counts are based on the cases available to your role, tenant
-              and department.
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
+              {t.overview.description}
             </p>
           </div>
-          <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
-            {cases.length} accessible cases
+          <span className="bg-[#eaf4fb] px-3 py-2 text-sm font-semibold text-[#003b71]">
+            {cases.length} {t.overview.accessibleCases}
           </span>
         </div>
         {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
       </section>
 
-      <section className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {overviewStatuses.map((status) => (
           <Link
             key={status.key}
             href={`/internal/cases?status=${status.key}`}
-            className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:bg-slate-50"
+            className="border border-[#c8d9e8] border-l-4 border-l-[#003b71] bg-white p-4 hover:bg-[#f5f9fc]"
           >
-            <p className="text-sm font-medium text-slate-500">
-              {status.label}
+            <p className="text-sm font-semibold text-[#55718d]">
+              {t.overview.statuses[status.key]}
             </p>
-            <p className="mt-3 text-4xl font-semibold text-slate-950">
+            <p className="mt-2 text-4xl font-semibold text-[#003b71]">
               {counts[status.key] ?? 0}
             </p>
           </Link>
@@ -165,27 +164,31 @@ export function InternalOverview() {
 
       <section className="mt-5 grid gap-3 md:grid-cols-2">
         <OverviewAction
-          description="Open the full queue of cases you are allowed to access."
+          description={t.overview.actions.openQueueDescription}
           href="/internal/cases"
-          label="Open case queue"
+          label={t.overview.actions.openQueue}
+          priority="primary"
         />
         <OverviewAction
-          description="Review cases waiting for triage or human follow-up."
+          description={t.overview.actions.reviewTriageDescription}
           href="/internal/cases?status=triage_pending"
-          label="Review AI triage cases"
+          label={t.overview.actions.reviewTriage}
+          priority="primary"
         />
         {canReadAnalytics ? (
           <OverviewAction
-            description="Inspect case volume, AI review quality and effect metrics."
+            description={t.overview.actions.viewAnalyticsDescription}
             href="/internal/analytics"
-            label="View analytics"
+            label={t.overview.actions.viewAnalytics}
+            priority="secondary"
           />
         ) : null}
         {canReadOperations ? (
           <OverviewAction
-            description="Check health, readiness, integrations and operational metrics."
+            description={t.overview.actions.viewOperationsDescription}
             href="/internal/operations"
-            label="View operations"
+            label={t.overview.actions.viewOperations}
+            priority="secondary"
           />
         ) : null}
       </section>
@@ -197,18 +200,24 @@ function OverviewAction({
   description,
   href,
   label,
+  priority,
 }: {
   description: string;
   href: string;
   label: string;
+  priority: "primary" | "secondary";
 }) {
   return (
     <Link
       href={href}
-      className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:bg-slate-50"
+      className={
+        priority === "primary"
+          ? "border border-[#003b71] bg-white p-5 hover:bg-[#eaf4fb]"
+          : "border border-[#c8d9e8] bg-white p-5 hover:bg-[#f5f9fc]"
+      }
     >
-      <h3 className="text-base font-semibold text-slate-950">{label}</h3>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+      <h3 className="text-base font-semibold text-[#003b71]">{label}</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-700">{description}</p>
     </Link>
   );
 }

@@ -8,6 +8,10 @@ import {
 } from "./internal-i18n";
 
 const storageKey = "kommuneflow.internal.locale";
+const languageLabels = {
+  nb: "Norsk",
+  en: "English",
+} as const;
 
 export function useInternalI18n(): {
   locale: Locale;
@@ -43,7 +47,7 @@ export function InternalLanguageToggle({
   setLocale: (locale: Locale) => void;
 }) {
   return (
-    <div className="flex rounded-md border border-slate-300 bg-white p-1">
+    <div className="flex border border-[#c8d9e8] bg-white p-1">
       {(["nb", "en"] as const).map((item) => (
         <button
           key={item}
@@ -51,12 +55,12 @@ export function InternalLanguageToggle({
           onClick={() => setLocale(item)}
           className={
             item === locale
-              ? "rounded bg-slate-950 px-2 py-1 text-xs font-semibold text-white"
-              : "rounded px-2 py-1 text-xs font-semibold text-slate-700"
+              ? "bg-[#003b71] px-3 py-1.5 text-sm font-semibold text-white"
+              : "px-3 py-1.5 text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb]"
           }
           aria-pressed={item === locale}
         >
-          {item.toUpperCase()}
+          {languageLabels[item]}
         </button>
       ))}
     </div>

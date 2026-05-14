@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
+import { formatDisplayValue } from "@/lib/internal-display";
+import type { InternalDictionary } from "@/lib/internal-i18n";
 import { useInternalI18n } from "@/lib/internal-locale";
 import { useInternalSession } from "@/lib/use-internal-session";
 import { AccessDenied } from "../../ui/access-denied";
@@ -27,14 +29,14 @@ type CaseListItem = {
 };
 
 const statusFilters = [
-  { label: "All", value: "all" },
-  { label: "New", value: "new" },
-  { label: "Triage pending", value: "triage_pending" },
-  { label: "Triaged", value: "triaged" },
-  { label: "In progress", value: "in_progress" },
-  { label: "Waiting for citizen", value: "waiting_for_citizen" },
-  { label: "Closed", value: "closed" },
-  { label: "Rejected", value: "rejected" },
+  { value: "all" },
+  { value: "new" },
+  { value: "triage_pending" },
+  { value: "triaged" },
+  { value: "in_progress" },
+  { value: "waiting_for_citizen" },
+  { value: "closed" },
+  { value: "rejected" },
 ] as const;
 
 export function CasesDashboard() {
@@ -207,8 +209,7 @@ export function CasesDashboard() {
               {t.cases.status}
             </h2>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-              These are the cases you are allowed to access based on your role,
-              tenant and department.
+              {t.cases.statusDescription}
             </p>
           </div>
           <label className="grid min-w-48 gap-2 sm:hidden">
@@ -222,7 +223,7 @@ export function CasesDashboard() {
             >
               {statusFilters.map((item) => (
                 <option key={item.value} value={item.value}>
-                  {item.label}
+                  {t.cases.filters[item.value]}
                 </option>
               ))}
             </select>
@@ -245,7 +246,7 @@ export function CasesDashboard() {
                     : "rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
                 }
               >
-                {item.label}{" "}
+                {t.cases.filters[item.value]}{" "}
                 <span
                   className={
                     isActive
@@ -262,12 +263,14 @@ export function CasesDashboard() {
 
         <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
           <label className="grid gap-2">
-            <span className="text-sm font-medium text-slate-700">Search</span>
+            <span className="text-sm font-medium text-slate-700">
+              {t.cases.search}
+            </span>
             <input
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search title, citizen, category, status or department"
+              placeholder={t.cases.searchPlaceholder}
               className="rounded-md border border-slate-300 px-3 py-2 text-slate-950 outline-none focus:border-slate-600"
             />
           </label>
@@ -277,7 +280,7 @@ export function CasesDashboard() {
             disabled={!search}
             className="self-end rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
           >
-            Clear
+            {t.common.clear}
           </button>
         </div>
       </section>
@@ -297,6 +300,11 @@ export function CasesDashboard() {
           <CaseListRow
             key={caseItem.id}
             caseItem={caseItem}
+            categoryLabel={t.ai.category}
+            createdLabel={t.cases.created}
+            departmentLabel={t.cases.department}
+            statusLabels={t.cases.filters}
+            t={t}
             unassignedLabel={t.common.unassigned}
           />
         ))}
@@ -306,8 +314,7 @@ export function CasesDashboard() {
               {t.cases.empty}
             </p>
             <p className="mt-1 text-sm text-slate-500">
-              Try another status filter, clear the search, or check whether
-              your role, tenant and department scope includes matching cases.
+              {t.cases.emptyHint}
             </p>
           </div>
         ) : null}
@@ -318,12 +325,24 @@ export function CasesDashboard() {
 
 function CaseListRow({
   caseItem,
+  categoryLabel,
+  createdLabel,
+  departmentLabel,
+  statusLabels,
+  t,
   unassignedLabel,
 }: {
   caseItem: CaseListItem;
+  categoryLabel: string;
+  createdLabel: string;
+  departmentLabel: string;
+  statusLabels: Record<string, string>;
+  t: InternalDictionary;
   unassignedLabel: string;
 }) {
-  const department = caseItem.assignedDepartment?.name ?? unassignedLabel;
+  const department = caseItem.assignedDepartment?.name
+    ? formatDisplayValue(caseItem.assignedDepartment.name, "departments", t)
+    : unassignedLabel;
 
   return (
     <Link
@@ -341,35 +360,39 @@ function CaseListRow({
         </div>
 
         <div className="flex flex-wrap gap-2 lg:block">
-          <Badge tone={statusTone(caseItem.status)}>{caseItem.status}</Badge>
+          <Badge tone={statusTone(caseItem.status)}>
+            {statusLabels[caseItem.status] ?? formatLabel(caseItem.status)}
+          </Badge>
           <span className="lg:hidden">
             <Badge tone={urgencyTone(caseItem.urgency)}>
-              {caseItem.urgency}
+              {formatDisplayValue(caseItem.urgency, "urgencies", t)}
             </Badge>
           </span>
         </div>
 
         <div className="hidden lg:block">
-          <Badge tone={urgencyTone(caseItem.urgency)}>{caseItem.urgency}</Badge>
+          <Badge tone={urgencyTone(caseItem.urgency)}>
+            {formatDisplayValue(caseItem.urgency, "urgencies", t)}
+          </Badge>
         </div>
 
         <p className="text-slate-700">
           <span className="font-medium text-slate-500 lg:hidden">
-            Category:{" "}
+            {categoryLabel}:{" "}
           </span>
-          {formatLabel(caseItem.category)}
+          {formatDisplayValue(caseItem.category, "categories", t)}
         </p>
 
         <p className="text-slate-700">
           <span className="font-medium text-slate-500 lg:hidden">
-            Department:{" "}
+            {departmentLabel}:{" "}
           </span>
           {department}
         </p>
 
         <p className="text-slate-700">
           <span className="font-medium text-slate-500 lg:hidden">
-            Created:{" "}
+            {createdLabel}:{" "}
           </span>
           {new Date(caseItem.createdAt).toLocaleDateString()}
         </p>

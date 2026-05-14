@@ -5,6 +5,7 @@ export type Locale = (typeof locales)[number];
 export type IntakeDictionary = {
   languageLabel: string;
   switchLanguage: string;
+  employeePortalLabel: string;
   badge: string;
   title: string;
   intro: string;
@@ -40,6 +41,8 @@ export type IntakeDictionary = {
   descriptionLabel: string;
   documentsLabel: string;
   documentsHelp: string;
+  documentsChooseFiles: string;
+  documentsNoFilesSelected: string;
   privacyLabel: string;
   privacyText: string;
   submit: string;
@@ -71,6 +74,7 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
   nb: {
     languageLabel: "Språk",
     switchLanguage: "English",
+    employeePortalLabel: "Ansattportal",
     badge: "Innbyggerportal",
     title: "Send inn en henvendelse",
     intro:
@@ -116,6 +120,8 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     documentsLabel: "Dokumenter",
     documentsHelp:
       "Valgfritt. Last opp PDF, PNG eller JPG. Maks 10 MB per fil.",
+    documentsChooseFiles: "Velg filer",
+    documentsNoFilesSelected: "Ingen filer valgt",
     privacyLabel: "Personvern",
     privacyText:
       "Jeg forstår at opplysningene og eventuelle dokumenter brukes til å registrere og behandle henvendelsen min. Tilgang loggføres, og data kan eksporteres eller håndteres etter kommunens retensjonsregler.",
@@ -150,6 +156,7 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
   en: {
     languageLabel: "Language",
     switchLanguage: "Norsk",
+    employeePortalLabel: "Employee portal",
     badge: "Citizen portal",
     title: "Submit a request",
     intro:
@@ -194,6 +201,8 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     descriptionLabel: "Description",
     documentsLabel: "Documents",
     documentsHelp: "Optional. Upload PDF, PNG, or JPG. Maximum 10 MB per file.",
+    documentsChooseFiles: "Choose files",
+    documentsNoFilesSelected: "No files selected",
     privacyLabel: "Privacy",
     privacyText:
       "I understand that my information and any documents are used to register and process this request. Access is audited, and data may be exported or handled according to the municipality's retention policy.",
