@@ -218,6 +218,13 @@ export const internalDictionaryEn = {
     },
     aiSuggestionWarning:
       "AI suggestions do not update the official case automatically. A human reviewer must accept or correct them.",
+    aiDecisionTitle: "AI suggestion ready",
+    aiDecisionText:
+      "Review the changes below. If they are correct, approve the whole suggestion with one click.",
+    aiAcceptHelp:
+      "Accept suggestion applies the AI values directly and does not require a comment.",
+    aiWillChange: "Will change",
+    aiNoChange: "No change",
     storedFailureReason: "Stored failure reason",
     officialValues: "Official case values",
     officialCategory: "Official category",

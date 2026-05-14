@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { PrismaService } from '../../database/prisma.service';
 import { CurrentUser } from '../auth/current-user';
 import { AuditService } from '../audit/audit.service';
+import { AIService } from '../ai/ai.service';
 import { KartverketAddressService } from '../integrations/kartverket-address/kartverket-address.service';
 import { NotificationService } from '../notifications/notification.service';
 import { CasesService } from './cases.service';
@@ -1287,6 +1288,9 @@ function createService(
         logCaseConfirmation: jest.fn().mockResolvedValue({ id: 'email_1' }),
         logStatusChanged: jest.fn().mockResolvedValue({ id: 'email_2' }),
       } as unknown as NotificationService),
+    {
+      runSystemCaseTriage: jest.fn().mockResolvedValue({ id: 'ai_result_1' }),
+    } as unknown as AIService,
   );
 }
 

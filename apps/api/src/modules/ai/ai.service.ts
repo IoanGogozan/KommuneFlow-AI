@@ -78,8 +78,45 @@ export class AIService {
 
   async runCaseTriage(caseId: string, user: CurrentUser) {
     const caseRecord = await this.findAccessibleCase(caseId, user);
+    return this.runCaseTriageForCase(caseRecord, user);
+  }
+
+  async runSystemCaseTriage(caseId: string, tenantId: string) {
+    const caseRecord = await this.prisma.case.findFirst({
+      where: {
+        id: caseId,
+        tenantId,
+      },
+      select: {
+        id: true,
+        tenantId: true,
+        title: true,
+        description: true,
+        sourceLanguage: true,
+        assignedDepartmentId: true,
+      },
+    });
+
+    if (!caseRecord) {
+      throw new NotFoundException('Case not found.');
+    }
+
+    return this.runCaseTriageForCase(caseRecord);
+  }
+
+  private async runCaseTriageForCase(
+    caseRecord: {
+      id: string;
+      tenantId: string;
+      title: string;
+      description: string;
+      sourceLanguage: string;
+      assignedDepartmentId: string | null;
+    },
+    user?: CurrentUser,
+  ) {
     const departments = await this.prisma.department.findMany({
-      where: { tenantId: user.tenantId },
+      where: { tenantId: caseRecord.tenantId },
       orderBy: { name: 'asc' },
       select: {
         id: true,
@@ -108,7 +145,7 @@ export class AIService {
       );
       const result = await this.prisma.aITriageResult.create({
         data: {
-          tenantId: user.tenantId,
+          tenantId: caseRecord.tenantId,
           caseId: caseRecord.id,
           model: providerResult.model,
           promptVersion: providerResult.promptVersion,
@@ -126,7 +163,7 @@ export class AIService {
       });
 
       await this.auditService.record({
-        tenantId: user.tenantId,
+        tenantId: caseRecord.tenantId,
         actor: user,
         action: 'ai.triage_result_created',
         entityType: 'ai_triage_result',
@@ -139,7 +176,7 @@ export class AIService {
       });
 
       await this.recordAIObservabilityEvent({
-        tenantId: user.tenantId,
+        tenantId: caseRecord.tenantId,
         caseId: caseRecord.id,
         aiTriageResultId: result.id,
         model: providerResult.model,
@@ -162,7 +199,7 @@ export class AIService {
       const failureReason = safeAIProviderFailureReason(error);
       const result = await this.prisma.aITriageResult.create({
         data: {
-          tenantId: user.tenantId,
+          tenantId: caseRecord.tenantId,
           caseId: caseRecord.id,
           model: process.env.AI_PROVIDER ?? 'unknown',
           promptVersion: caseTriagePromptVersion,
@@ -175,7 +212,7 @@ export class AIService {
       });
 
       await this.auditService.record({
-        tenantId: user.tenantId,
+        tenantId: caseRecord.tenantId,
         actor: user,
         action: 'ai.triage_result_failed',
         entityType: 'ai_triage_result',
@@ -188,7 +225,7 @@ export class AIService {
       });
 
       await this.recordAIObservabilityEvent({
-        tenantId: user.tenantId,
+        tenantId: caseRecord.tenantId,
         caseId: caseRecord.id,
         aiTriageResultId: result.id,
         model: process.env.AI_PROVIDER ?? 'unknown',
@@ -205,8 +242,8 @@ export class AIService {
         eventType: 'ai.triage_failed',
         severity: 'error',
         source: 'ai',
-        tenantId: user.tenantId,
-        userId: user.id,
+        tenantId: caseRecord.tenantId,
+        userId: user?.id,
         safeMessage: 'AI triage failed.',
         metadata: {
           caseId: caseRecord.id,
@@ -253,6 +290,11 @@ export class AIService {
         id: true,
         suggestedCategory: true,
         suggestedDepartmentId: true,
+        suggestedDepartment: {
+          select: {
+            slug: true,
+          },
+        },
         suggestedUrgency: true,
       },
     });
@@ -261,17 +303,36 @@ export class AIService {
       throw new NotFoundException('AI triage result not found.');
     }
 
-    const approvedDepartment = input.approvedDepartmentSlug
-      ? await this.prisma.department.findFirst({
-          where: {
-            tenantId: user.tenantId,
-            slug: input.approvedDepartmentSlug,
-          },
-          select: { id: true, slug: true },
-        })
-      : null;
+    const approvedCategory =
+      input.wasAiSuggestionAccepted && result.suggestedCategory
+        ? result.suggestedCategory
+        : input.approvedCategory;
+    const approvedUrgency =
+      input.wasAiSuggestionAccepted && result.suggestedUrgency
+        ? result.suggestedUrgency
+        : input.approvedUrgency;
+    const approvedDepartment = input.wasAiSuggestionAccepted
+      ? result.suggestedDepartmentId
+        ? {
+            id: result.suggestedDepartmentId,
+            slug: result.suggestedDepartment?.slug ?? null,
+          }
+        : null
+      : input.approvedDepartmentSlug
+        ? await this.prisma.department.findFirst({
+            where: {
+              tenantId: user.tenantId,
+              slug: input.approvedDepartmentSlug,
+            },
+            select: { id: true, slug: true },
+          })
+        : null;
 
-    if (input.approvedDepartmentSlug && !approvedDepartment) {
+    if (
+      !input.wasAiSuggestionAccepted &&
+      input.approvedDepartmentSlug &&
+      !approvedDepartment
+    ) {
       throw new NotFoundException('Approved department not found.');
     }
 
@@ -281,9 +342,9 @@ export class AIService {
         caseId: caseRecord.id,
         aiTriageResultId: result.id,
         reviewedByUserId: user.id,
-        approvedCategory: input.approvedCategory,
+        approvedCategory,
         approvedDepartmentId: approvedDepartment?.id,
-        approvedUrgency: input.approvedUrgency,
+        approvedUrgency,
         reviewComment: emptyToNull(input.reviewComment),
         wasAiSuggestionAccepted: input.wasAiSuggestionAccepted,
       },
@@ -292,9 +353,9 @@ export class AIService {
     await this.prisma.case.update({
       where: { id: caseRecord.id },
       data: {
-        category: input.approvedCategory,
+        category: approvedCategory,
         assignedDepartmentId: approvedDepartment?.id ?? null,
-        urgency: input.approvedUrgency,
+        urgency: approvedUrgency,
         status: 'triaged',
       },
     });
@@ -314,9 +375,9 @@ export class AIService {
         caseId: caseRecord.id,
         aiTriageResultId: result.id,
         wasAiSuggestionAccepted: input.wasAiSuggestionAccepted,
-        approvedCategory: input.approvedCategory,
+        approvedCategory,
         approvedDepartmentSlug: approvedDepartment?.slug ?? null,
-        approvedUrgency: input.approvedUrgency,
+        approvedUrgency,
       },
     });
 
@@ -331,6 +392,7 @@ export class AIService {
       },
       select: {
         id: true,
+        tenantId: true,
         title: true,
         description: true,
         sourceLanguage: true,

@@ -216,6 +216,13 @@ export const internalDictionaryNb = {
     },
     aiSuggestionWarning:
       "KI-forslag oppdaterer ikke den offisielle saken automatisk. En saksbehandler må godta eller korrigere dem.",
+    aiDecisionTitle: "KI-forslag klart",
+    aiDecisionText:
+      "Kontroller endringene under. Hvis de stemmer, godkjenner du hele forslaget med ett klikk.",
+    aiAcceptHelp:
+      "Godta forslag bruker KI-verdiene direkte og krever ikke kommentar.",
+    aiWillChange: "Endres",
+    aiNoChange: "Ingen endring",
     storedFailureReason: "Lagret feilårsak",
     officialValues: "Offisielle saksverdier",
     officialCategory: "Offisiell kategori",

@@ -581,6 +581,7 @@ function auditor(): CurrentUser {
 function caseRecord() {
   return {
     id: 'case_1',
+    tenantId: 'tenant_1',
     title: 'Request about building permit',
     description: 'I need information about documentation for a garage.',
     sourceLanguage: 'en',

@@ -9,6 +9,7 @@ import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, extname } from 'node:path';
 import { PrismaService } from '../../database/prisma.service';
+import { AIService } from '../ai/ai.service';
 import { CurrentUser } from '../auth/current-user';
 import { roleHasPermission } from '../auth/permissions';
 import { AuditService } from '../audit/audit.service';
@@ -35,6 +36,7 @@ export class CasesService {
     private readonly kartverketAddressService: KartverketAddressService,
     private readonly operationalEventService: OperationalEventService,
     private readonly notificationService: NotificationService,
+    private readonly aiService: AIService,
   ) {}
 
   async createPublicCase(
@@ -123,6 +125,11 @@ export class CasesService {
       caseReference: caseRecord.caseReference,
       statusAccessCode,
       title: caseRecord.title,
+    });
+
+    this.startAutomaticAITriage({
+      tenantId: tenant.id,
+      caseId: caseRecord.id,
     });
 
     return {
@@ -693,6 +700,23 @@ export class CasesService {
         },
       });
     }
+  }
+
+  private startAutomaticAITriage(input: { tenantId: string; caseId: string }) {
+    void this.aiService
+      .runSystemCaseTriage(input.caseId, input.tenantId)
+      .catch(async () => {
+        await this.operationalEventService.record({
+          eventType: 'ai.automatic_triage_failed',
+          severity: 'warning',
+          source: 'ai',
+          tenantId: input.tenantId,
+          safeMessage: 'Automatic AI triage failed after citizen case creation.',
+          metadata: {
+            caseId: input.caseId,
+          },
+        });
+      });
   }
 
   private async logStatusChangedSafely(input: {
