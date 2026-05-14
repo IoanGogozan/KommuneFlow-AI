@@ -32,6 +32,8 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
       STATUS_CODE_PEPPER: ${STATUS_CODE_PEPPER:?STATUS_CODE_PEPPER is required}
       UPLOAD_STORAGE_PATH: /app/uploads
+      JSON_BODY_LIMIT: ${JSON_BODY_LIMIT:-1mb}
+      FORM_BODY_LIMIT: ${FORM_BODY_LIMIT:-1mb}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       DEFAULT_LOCALE: ${DEFAULT_LOCALE:-nb}
       SUPPORTED_LOCALES: ${SUPPORTED_LOCALES:-nb,en}
@@ -39,6 +41,8 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
       OPENAI_TIMEOUT_MS: ${OPENAI_TIMEOUT_MS:-15000}
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-}
+      SEED_RECRUITER_PASSWORD: ${SEED_RECRUITER_PASSWORD:-}
     volumes:
       - uploads_data:/app/uploads
     depends_on:
