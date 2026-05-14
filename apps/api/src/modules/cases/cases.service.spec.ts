@@ -613,6 +613,36 @@ describe('CasesService', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
+  it('lets department case workers read unassigned intake cases', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          tenantId: 'tenant_1',
+          assignedDepartmentId: null,
+          title: 'Unassigned intake case',
+          internalNotes: [],
+          addresses: [],
+          citizenProfile: {
+            id: 'citizen_1',
+            name: 'Demo Citizen',
+            email: 'citizen@example.local',
+            address: 'Demo address',
+          },
+          assignedDepartment: null,
+        }),
+      },
+    });
+
+    await expect(
+      service.findById('case_1', caseWorker()),
+    ).resolves.toMatchObject({
+      id: 'case_1',
+      assignedDepartmentId: null,
+      title: 'Unassigned intake case',
+    });
+  });
+
   it('lets auditors read tenant cases without department mutation access', async () => {
     const service = createService({
       case: {
@@ -796,7 +826,7 @@ describe('CasesService', () => {
     });
   });
 
-  it('lists only department cases for case workers', async () => {
+  it('lists department and unassigned intake cases for case workers', async () => {
     let capturedFindManyInput: unknown;
     const findManyMock = jest.fn((input: unknown) => {
       capturedFindManyInput = input;
@@ -811,11 +841,17 @@ describe('CasesService', () => {
     await service.list(caseWorker(), {});
 
     const findManyInput = capturedFindManyInput as {
-      where: { tenantId: string; assignedDepartmentId?: string };
+      where: {
+        tenantId: string;
+        OR?: Array<{ assignedDepartmentId: string | null }>;
+      };
     };
     expect(findManyInput.where).toMatchObject({
       tenantId: 'tenant_1',
-      assignedDepartmentId: 'department_1',
+      OR: [
+        { assignedDepartmentId: 'department_1' },
+        { assignedDepartmentId: null },
+      ],
     });
   });
 
@@ -969,6 +1005,36 @@ describe('CasesService', () => {
         tenantId: 'tenant_1',
       }),
     );
+  });
+
+  it('allows department case workers to update unassigned intake cases', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          tenantId: 'tenant_1',
+          status: CaseStatus.new,
+          caseReference: 'KF-2026-ABCD1234',
+          assignedDepartmentId: null,
+          citizenProfile: {
+            email: 'citizen@example.local',
+          },
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          status: CaseStatus.triage_pending,
+        }),
+      },
+    });
+
+    await expect(
+      service.updateStatus('case_1', caseWorker(), {
+        status: CaseStatus.triage_pending,
+      }),
+    ).resolves.toMatchObject({
+      id: 'case_1',
+      status: CaseStatus.triage_pending,
+    });
   });
 
   it('blocks invalid status transitions', async () => {

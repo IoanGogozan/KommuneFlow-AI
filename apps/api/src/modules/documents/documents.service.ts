@@ -350,7 +350,8 @@ export class DocumentsService {
     if (
       roleHasPermission(user.role, 'document:read:department') &&
       user.departmentId &&
-      assignedDepartmentId === user.departmentId
+      (assignedDepartmentId === user.departmentId ||
+        assignedDepartmentId === null)
     ) {
       return;
     }
@@ -373,7 +374,11 @@ export class DocumentsService {
       return;
     }
 
-    if (user.departmentId && assignedDepartmentId === user.departmentId) {
+    if (
+      user.departmentId &&
+      (assignedDepartmentId === user.departmentId ||
+        assignedDepartmentId === null)
+    ) {
       return;
     }
 

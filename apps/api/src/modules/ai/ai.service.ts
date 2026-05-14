@@ -357,7 +357,8 @@ export class AIService {
     if (
       roleHasPermission(user.role, 'case:read:department') &&
       user.departmentId &&
-      assignedDepartmentId === user.departmentId
+      (assignedDepartmentId === user.departmentId ||
+        assignedDepartmentId === null)
     ) {
       return;
     }
@@ -383,7 +384,8 @@ export class AIService {
     if (
       roleHasPermission(user.role, 'case:update:department') &&
       user.departmentId &&
-      assignedDepartmentId === user.departmentId
+      (assignedDepartmentId === user.departmentId ||
+        assignedDepartmentId === null)
     ) {
       return;
     }

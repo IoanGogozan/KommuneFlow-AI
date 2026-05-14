@@ -315,6 +315,33 @@ describe('AIService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
+  it('allows AI triage for unassigned intake cases in the current tenant', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          ...caseRecord(),
+          assignedDepartmentId: null,
+        }),
+      },
+      department: {
+        findMany: jest.fn().mockResolvedValue([department()]),
+      },
+      aITriageResult: {
+        create: jest.fn().mockResolvedValue({
+          id: 'ai_result_1',
+          status: 'completed',
+        }),
+      },
+    });
+
+    await expect(
+      service.runCaseTriage('case_1', caseWorker()),
+    ).resolves.toMatchObject({
+      id: 'ai_result_1',
+      status: 'completed',
+    });
+  });
+
   it('blocks auditors from reviewing AI triage', async () => {
     const service = createService({
       case: {
@@ -405,6 +432,53 @@ describe('AIService', () => {
         entityType: 'ai_review',
       }),
     );
+  });
+
+  it('allows human review to route unassigned intake cases', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          ...caseRecord(),
+          assignedDepartmentId: null,
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          category: CaseCategory.building_case,
+        }),
+      },
+      aITriageResult: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'ai_result_1',
+          suggestedCategory: CaseCategory.building_case,
+          suggestedDepartmentId: 'department_1',
+          suggestedUrgency: CaseUrgency.normal,
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'ai_result_1' }),
+      },
+      department: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'department_1',
+          slug: 'technical_department',
+        }),
+      },
+      aIReview: {
+        create: jest.fn().mockResolvedValue({
+          id: 'review_1',
+        }),
+      },
+    });
+
+    await expect(
+      service.reviewCaseTriage('case_1', 'ai_result_1', caseWorker(), {
+        approvedCategory: CaseCategory.building_case,
+        approvedDepartmentSlug: 'technical_department',
+        approvedUrgency: CaseUrgency.normal,
+        reviewComment: '',
+        wasAiSuggestionAccepted: true,
+      }),
+    ).resolves.toMatchObject({
+      id: 'review_1',
+    });
   });
 });
 

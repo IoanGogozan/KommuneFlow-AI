@@ -250,6 +250,24 @@ describe('DocumentsService', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
+  it('allows department users to access unassigned intake case documents', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          assignedDepartmentId: null,
+        }),
+      },
+      caseDocument: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    });
+
+    await expect(service.listForCase('case_1', caseWorker())).resolves.toEqual(
+      [],
+    );
+  });
+
   it('filters sensitive documents when the user lacks sensitive permission', async () => {
     let capturedFindManyInput: unknown;
     const service = createService({
@@ -408,6 +426,36 @@ describe('DocumentsService', () => {
         entityId: 'document_1',
       }),
     );
+  });
+
+  it('allows uploads to unassigned intake cases', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          assignedDepartmentId: null,
+        }),
+      },
+      caseDocument: {
+        create: jest.fn().mockResolvedValue({
+          id: 'document_1',
+          originalFileName: 'permit.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 12,
+          checksumSha256: 'checksum',
+          isSensitive: false,
+          createdAt: new Date('2026-05-09T07:00:00.000Z'),
+        }),
+      },
+    });
+
+    await expect(
+      service.uploadForCase('case_1', caseWorker(), pdfFile(), {
+        isSensitive: false,
+      }),
+    ).resolves.toMatchObject({
+      id: 'document_1',
+    });
   });
 
   it('returns a download stream and records a document download audit event', async () => {

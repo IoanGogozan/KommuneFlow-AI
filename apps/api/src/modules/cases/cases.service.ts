@@ -329,7 +329,10 @@ export class CasesService {
         throw new ForbiddenException('You do not have access to cases.');
       }
 
-      where.assignedDepartmentId = user.departmentId;
+      where.OR = [
+        { assignedDepartmentId: user.departmentId },
+        { assignedDepartmentId: null },
+      ];
     }
 
     return this.prisma.case.findMany({
@@ -496,7 +499,8 @@ export class CasesService {
     if (
       roleHasPermission(user.role, 'case:read:department') &&
       user.departmentId &&
-      assignedDepartmentId === user.departmentId
+      (assignedDepartmentId === user.departmentId ||
+        assignedDepartmentId === null)
     ) {
       return;
     }
@@ -628,7 +632,8 @@ export class CasesService {
     if (
       roleHasPermission(user.role, 'case:update:department') &&
       user.departmentId &&
-      assignedDepartmentId === user.departmentId
+      (assignedDepartmentId === user.departmentId ||
+        assignedDepartmentId === null)
     ) {
       return;
     }
