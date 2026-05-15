@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import { CasesDashboard } from "./ui/cases-dashboard";
 
 export default function InternalCasesPage() {
-  return <CasesDashboard />;
+  return (
+    <Suspense fallback={null}>
+      <CasesDashboard />
+    </Suspense>
+  );
 }
