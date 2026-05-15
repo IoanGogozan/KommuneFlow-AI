@@ -759,7 +759,7 @@ function generateCaseReference() {
 }
 
 function generateStatusAccessCode() {
-  return randomBytes(16).toString('base64url').toUpperCase();
+  return randomBytes(4).toString('hex').toUpperCase();
 }
 
 function hashStatusAccessCode(statusAccessCode: string) {

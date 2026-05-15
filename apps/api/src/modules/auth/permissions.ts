@@ -35,6 +35,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
   ],
   department_admin: [
     'case:read:department',
+    'case:read:all_tenant',
     'case:update:department',
     'case:close',
     'document:upload',

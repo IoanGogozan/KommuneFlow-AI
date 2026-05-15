@@ -35,6 +35,8 @@ export type IntakeDictionary = {
   addressSuggestionLabel: string;
   addressConfirm: string;
   addressConfirmed: string;
+  addressConfirmedHelp: string;
+  addressChange: string;
   addressNoResults: string;
   addressError: string;
   caseTitleLabel: string;
@@ -64,6 +66,7 @@ export type IntakeDictionary = {
   statusLookupError: string;
   statusLookupResultTitle: string;
   statusLabel: string;
+  statusLabels: Record<string, string>;
   updatedLabel: string;
   departmentLabel: string;
   newCase: string;
@@ -113,6 +116,9 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     addressSuggestionLabel: "Foreslatt adresse",
     addressConfirm: "Bekreft adresse",
     addressConfirmed: "Adresse bekreftet",
+    addressConfirmedHelp:
+      "Adressen er lagret i skjemaet. Du kan fortsette til neste del.",
+    addressChange: "Endre adresse",
     addressNoResults: "Fant ingen adresseforslag.",
     addressError: "Kunne ikke validere adressen nå.",
     caseTitleLabel: "Tittel",
@@ -148,6 +154,15 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     statusLookupError: "Fant ikke saken med denne kombinasjonen.",
     statusLookupResultTitle: "Status for saken",
     statusLabel: "Status",
+    statusLabels: {
+      new: "Mottatt",
+      triage_pending: "Venter på triage",
+      triaged: "Triagert",
+      in_progress: "Under behandling",
+      waiting_for_citizen: "Venter på deg",
+      closed: "Lukket",
+      rejected: "Avvist",
+    },
     updatedLabel: "Sist oppdatert",
     departmentLabel: "Avdeling",
     newCase: "Ny henvendelse",
@@ -195,6 +210,9 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     addressSuggestionLabel: "Suggested address",
     addressConfirm: "Confirm address",
     addressConfirmed: "Address confirmed",
+    addressConfirmedHelp:
+      "The address is saved in the form. You can continue to the next section.",
+    addressChange: "Change address",
     addressNoResults: "No address suggestions found.",
     addressError: "Could not validate the address right now.",
     caseTitleLabel: "Title",
@@ -229,6 +247,15 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     statusLookupError: "No case was found with that combination.",
     statusLookupResultTitle: "Case status",
     statusLabel: "Status",
+    statusLabels: {
+      new: "Received",
+      triage_pending: "Waiting for triage",
+      triaged: "Triaged",
+      in_progress: "In progress",
+      waiting_for_citizen: "Waiting for you",
+      closed: "Closed",
+      rejected: "Rejected",
+    },
     updatedLabel: "Last updated",
     departmentLabel: "Department",
     newCase: "New request",

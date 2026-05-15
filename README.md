@@ -207,8 +207,12 @@ pnpm --filter @kommuneflow/api prisma:seed
 Start API and web:
 
 ```bash
-pnpm dev
+pnpm run dev
 ```
+
+`pnpm run dev` starts Postgres, checks whether API/Web are already running, and then runs the missing dev server logs in
+your current terminal. Use `pnpm dev:status` to see what is running and `pnpm dev:stop` to stop local API/Web Node
+processes.
 
 Local URLs:
 

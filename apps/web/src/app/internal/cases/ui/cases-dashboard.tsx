@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
-import { formatDisplayValue } from "@/lib/internal-display";
+import {
+  formatDisplayValue,
+  formatInternalDate,
+} from "@/lib/internal-display";
 import type { InternalDictionary } from "@/lib/internal-i18n";
 import { useInternalI18n } from "@/lib/internal-locale";
 import { useInternalSession } from "@/lib/use-internal-session";
@@ -39,8 +42,11 @@ const statusFilters = [
   { value: "rejected" },
 ] as const;
 
+type StatusFilter = (typeof statusFilters)[number]["value"];
+
 export function CasesDashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { locale, setLocale, t } = useInternalI18n();
   const {
     currentUser,
@@ -51,8 +57,8 @@ export function CasesDashboard() {
   const [cases, setCases] = useState<CaseListItem[]>([]);
   const [allCases, setAllCases] = useState<CaseListItem[]>([]);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
   const [error, setError] = useState<string | null>(null);
+  const status = parseStatusFilter(searchParams.get("status"));
 
   const query = useMemo(() => {
     return status === "all" ? "" : `?status=${status}`;
@@ -93,6 +99,14 @@ export function CasesDashboard() {
     hasPermission("case:read:own") ||
     hasPermission("case:read:department") ||
     hasPermission("case:read:all_tenant");
+
+  function updateStatusFilter(nextStatus: StatusFilter) {
+    router.replace(
+      nextStatus === "all"
+        ? "/internal/cases"
+        : `/internal/cases?status=${nextStatus}`,
+    );
+  }
 
   useEffect(() => {
     async function loadCases() {
@@ -218,7 +232,9 @@ export function CasesDashboard() {
             </span>
             <select
               value={status}
-              onChange={(event) => setStatus(event.target.value)}
+              onChange={(event) =>
+                updateStatusFilter(parseStatusFilter(event.target.value))
+              }
               className="rounded-md border border-slate-300 px-3 py-2 text-slate-950"
             >
               {statusFilters.map((item) => (
@@ -239,7 +255,7 @@ export function CasesDashboard() {
               <button
                 key={item.value}
                 type="button"
-                onClick={() => setStatus(item.value)}
+                onClick={() => updateStatusFilter(item.value)}
                 className={
                   isActive
                     ? "rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white"
@@ -394,11 +410,17 @@ function CaseListRow({
           <span className="font-medium text-slate-500 lg:hidden">
             {createdLabel}:{" "}
           </span>
-          {new Date(caseItem.createdAt).toLocaleDateString()}
+          {formatInternalDate(caseItem.createdAt)}
         </p>
       </div>
     </Link>
   );
+}
+
+function parseStatusFilter(value: string | null): StatusFilter {
+  return statusFilters.some((filter) => filter.value === value)
+    ? (value as StatusFilter)
+    : "all";
 }
 
 function Badge({

@@ -5,7 +5,10 @@ import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
-import { formatDisplayValue } from "@/lib/internal-display";
+import {
+  formatDisplayValue,
+  formatInternalDateTime,
+} from "@/lib/internal-display";
 import { useInternalI18n } from "@/lib/internal-locale";
 import { useInternalSession } from "@/lib/use-internal-session";
 import { AccessDenied } from "../../ui/access-denied";
@@ -410,7 +413,7 @@ function Metric({ label, value }: { label: string; value: string | number }) {
 }
 
 function formatDate(value: string | null | undefined, missingLabel: string) {
-  return value ? new Date(value).toLocaleString() : missingLabel;
+  return value ? formatInternalDateTime(value) : missingLabel;
 }
 
 function formatMs(value: number | null | undefined, missingLabel: string) {

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
+import { formatInternalDateTime } from "@/lib/internal-display";
 import type { InternalDictionary } from "@/lib/internal-i18n";
 import { useInternalI18n } from "@/lib/internal-locale";
 import { useInternalSession } from "@/lib/use-internal-session";
@@ -268,7 +269,7 @@ export function AuditDashboard() {
                     </p>
                   </div>
                   <time className="text-xs text-slate-500">
-                    {new Date(event.createdAt).toLocaleString()}
+                    {formatInternalDateTime(event.createdAt)}
                   </time>
                 </div>
                 <p className="mt-3 text-sm text-slate-600">

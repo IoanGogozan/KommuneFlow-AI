@@ -3,6 +3,7 @@
 import { FormEvent, ReactNode, useState } from "react";
 import { getApiBaseUrl } from "@/lib/api";
 import type { IntakeDictionary, Locale } from "@/lib/i18n";
+import { formatInternalDateTime } from "@/lib/internal-display";
 
 type IntakeFormProps = {
   dictionary: IntakeDictionary;
@@ -131,6 +132,8 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
 
     setAddress(addressSuggestion.normalizedAddress);
     setIsAddressConfirmed(true);
+    setAddressSuggestion(null);
+    setAddressSearchMessage(null);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -255,7 +258,10 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
             label={dictionary.successMunicipalityLabel}
             value={selectedTenant.name}
           />
-          <InfoItem label={dictionary.statusLabel} value={result.status} />
+          <InfoItem
+            label={dictionary.statusLabel}
+            value={formatPublicStatus(result.status, dictionary)}
+          />
         </dl>
 
         <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-900">
@@ -387,6 +393,8 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
                 onChange={(event) => {
                   setAddress(event.target.value);
                   setIsAddressConfirmed(false);
+                  setAddressSuggestion(null);
+                  setAddressSearchMessage(null);
                 }}
                 className="border-2 border-[#c8d9e8] px-3 py-2 text-slate-950 outline-none focus:border-[#003b71]"
               />
@@ -403,7 +411,30 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
             </div>
           </label>
 
-          {addressSuggestion ? (
+          {isAddressConfirmed ? (
+            <section className="border-2 border-[#00876c] bg-[#eefaf6] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-[#005f4c]">
+                    {dictionary.addressConfirmed}
+                  </p>
+                  <p className="mt-1 text-sm text-[#005f4c]">{address}</p>
+                  <p className="mt-2 text-sm leading-6 text-[#005f4c]">
+                    {dictionary.addressConfirmedHelp}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddressConfirmed(false)}
+                  className="border-2 border-[#00876c] bg-white px-3 py-2 text-sm font-semibold text-[#005f4c] hover:bg-[#dff5ed]"
+                >
+                  {dictionary.addressChange}
+                </button>
+              </div>
+            </section>
+          ) : null}
+
+          {!isAddressConfirmed && addressSuggestion ? (
             <section className="border-2 border-[#00876c] bg-[#eefaf6] p-4">
               <p className="text-sm font-medium text-[#005f4c]">
                 {dictionary.addressSuggestionLabel}
@@ -416,9 +447,7 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
                 onClick={confirmAddress}
                 className="mt-3 bg-[#007f66] px-4 py-2 text-sm font-semibold text-white hover:bg-[#006b56]"
               >
-                {isAddressConfirmed
-                  ? dictionary.addressConfirmed
-                  : dictionary.addressConfirm}
+                {dictionary.addressConfirm}
               </button>
             </section>
           ) : null}
@@ -593,7 +622,7 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
             <div className="flex justify-between gap-4">
               <dt className="text-slate-600">{dictionary.statusLabel}</dt>
               <dd className="font-medium text-[#003b71]">
-                {statusResult.status}
+                {formatPublicStatus(statusResult.status, dictionary)}
               </dd>
             </div>
             <div className="flex justify-between gap-4">
@@ -611,7 +640,7 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
             <div className="flex justify-between gap-4">
               <dt className="text-slate-600">{dictionary.updatedLabel}</dt>
               <dd className="font-medium text-[#003b71]">
-                {new Date(statusResult.updatedAt).toLocaleString()}
+                {formatInternalDateTime(statusResult.updatedAt)}
               </dd>
             </div>
           </dl>
@@ -697,4 +726,8 @@ function Field({
       />
     </label>
   );
+}
+
+function formatPublicStatus(status: string, dictionary: IntakeDictionary) {
+  return dictionary.statusLabels[status] ?? status;
 }

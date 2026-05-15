@@ -20,6 +20,31 @@ export function formatDisplayValue(
   return labels[normalizeDisplayKey(value)] ?? value;
 }
 
+const internalDateTimeFormatter = new Intl.DateTimeFormat("nb-NO", {
+  dateStyle: "short",
+  timeStyle: "short",
+  timeZone: "Europe/Oslo",
+});
+
+const internalDateFormatter = new Intl.DateTimeFormat("nb-NO", {
+  dateStyle: "short",
+  timeZone: "Europe/Oslo",
+});
+
+const internalNumberFormatter = new Intl.NumberFormat("nb-NO");
+
+export function formatInternalDateTime(value: string | Date) {
+  return internalDateTimeFormatter.format(new Date(value));
+}
+
+export function formatInternalDate(value: string | Date) {
+  return internalDateFormatter.format(new Date(value));
+}
+
+export function formatInternalNumber(value: number) {
+  return internalNumberFormatter.format(value);
+}
+
 function normalizeDisplayKey(value: string) {
   return value
     .trim()

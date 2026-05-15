@@ -5,9 +5,13 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
-import { formatDisplayValue } from "@/lib/internal-display";
+import {
+  formatDisplayValue,
+  formatInternalDateTime,
+} from "@/lib/internal-display";
 import type { InternalDictionary } from "@/lib/internal-i18n";
 import { useInternalI18n } from "@/lib/internal-locale";
+import type { InternalCurrentUser } from "@/lib/internal-user";
 import { useInternalSession } from "@/lib/use-internal-session";
 import { AccessDenied } from "../../../ui/access-denied";
 import { InternalShell } from "../../../ui/internal-shell";
@@ -40,7 +44,9 @@ type CaseDetailResponse = {
     validatedAt: string | null;
   }>;
   assignedDepartment: {
+    id: string;
     name: string;
+    slug: string;
   } | null;
   internalNotes: Array<{
     id: string;
@@ -169,6 +175,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
   const [activity, setActivity] = useState<CaseActivityResponse[]>([]);
   const [activityError, setActivityError] = useState<string | null>(null);
   const [aiError, setAIError] = useState<AIErrorState | null>(null);
+  const [aiIsRunning, setAIIsRunning] = useState(false);
   const [departments, setDepartments] = useState<DepartmentOption[]>([]);
   const [departmentListUnavailable, setDepartmentListUnavailable] =
     useState(false);
@@ -184,14 +191,12 @@ export function CaseDetail({ caseId }: { caseId: string }) {
   const [reviewValidationError, setReviewValidationError] = useState<
     string | null
   >(null);
+  const [reviewSuccess, setReviewSuccess] = useState<string | null>(null);
+  const [reviewIsSaving, setReviewIsSaving] = useState(false);
   const canReadCase =
     hasPermission("case:read:own") ||
     hasPermission("case:read:department") ||
     hasPermission("case:read:all_tenant");
-  const canUpdateCase = hasPermission("case:update:department");
-  const canRunAITriage = canUpdateCase && hasPermission("ai:triage:run");
-  const canReviewAITriage = canUpdateCase && hasPermission("ai:triage:review");
-  const canUploadDocument = canUpdateCase && hasPermission("document:upload");
 
   function syncReviewForm(result: AITriageResultResponse | null) {
     if (!result) {
@@ -214,16 +219,19 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     if (response.status === 401) {
       await clearSession();
       router.push("/internal/login");
-      return;
+      return false;
     }
 
     if (!response.ok) {
-      throw new Error("Failed to load case");
+      setError(t.cases.loadCaseError);
+      return false;
     }
 
     const result = (await response.json()) as CaseDetailResponse;
     setCaseRecord(result);
     setStatus(result.status);
+    setError(null);
+    return true;
   }
 
   async function loadDocuments() {
@@ -374,27 +382,33 @@ export function CaseDetail({ caseId }: { caseId: string }) {
   async function runAITriage() {
     setError(null);
     setAIError(null);
+    setReviewSuccess(null);
+    setAIIsRunning(true);
 
-    const response = await fetch(
-      `${getApiBaseUrl()}/cases/${caseId}/ai-triage`,
-      {
-        method: "POST",
-        credentials: "include",
-      },
-    );
+    try {
+      const response = await fetch(
+        `${getApiBaseUrl()}/cases/${caseId}/ai-triage`,
+        {
+          method: "POST",
+          credentials: "include",
+        },
+      );
 
-    if (!response.ok) {
-      setAIError(await buildAITriageError(response, t));
-      return;
+      if (!response.ok) {
+        setAIError(await buildAITriageError(response, t));
+        return;
+      }
+
+      const result = (await response.json()) as AITriageResultResponse;
+      setAiResult(result);
+      if (result.status === "failed") {
+        setAIError(classifyStoredAIFailure(result.failureReason, t));
+      }
+      syncReviewForm(result);
+      await loadActivity();
+    } finally {
+      setAIIsRunning(false);
     }
-
-    const result = (await response.json()) as AITriageResultResponse;
-    setAiResult(result);
-    if (result.status === "failed") {
-      setAIError(classifyStoredAIFailure(result.failureReason, t));
-    }
-    syncReviewForm(result);
-    await loadActivity();
   }
 
   function correctionHasMeaningfulDifference() {
@@ -410,67 +424,64 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     );
   }
 
-  async function submitAIReview(accepted: boolean) {
-    if (!aiResult) {
+  async function submitAIReview() {
+    if (!aiResult || aiResult.status !== "completed") {
       return;
     }
 
     setError(null);
     setReviewValidationError(null);
+    setReviewSuccess(null);
+    setReviewIsSaving(true);
     const trimmedReviewComment = reviewComment.trim();
+    const accepted = !correctionHasMeaningfulDifference();
 
-    if (
-      !accepted &&
-      !correctionHasMeaningfulDifference() &&
-      trimmedReviewComment.length === 0
-    ) {
-      setReviewValidationError(
-        t.caseDetail.reviewCorrectionRequired,
-      );
-      return;
-    }
-
-    const approvedCategory = accepted
-      ? (aiResult.suggestedCategory ?? "unknown")
-      : reviewCategory;
-    const approvedDepartmentSlug = accepted
-      ? (aiResult.suggestedDepartment?.slug ?? null)
-      : reviewDepartmentSlug || null;
-    const approvedUrgency = accepted
-      ? (aiResult.suggestedUrgency ?? "normal")
-      : reviewUrgency;
-    const response = await fetch(
-      `${getApiBaseUrl()}/cases/${caseId}/ai-triage/${aiResult.id}/review`,
-      {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
+    try {
+      const approvedCategory = accepted
+        ? (aiResult.suggestedCategory ?? "unknown")
+        : reviewCategory;
+      const approvedDepartmentSlug = accepted
+        ? (aiResult.suggestedDepartment?.slug ?? null)
+        : reviewDepartmentSlug || null;
+      const approvedUrgency = accepted
+        ? (aiResult.suggestedUrgency ?? "normal")
+        : reviewUrgency;
+      const response = await fetch(
+        `${getApiBaseUrl()}/cases/${caseId}/ai-triage/${aiResult.id}/review`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            approvedCategory,
+            approvedDepartmentSlug,
+            approvedUrgency,
+            reviewComment: trimmedReviewComment,
+            wasAiSuggestionAccepted: accepted,
+          }),
         },
-        body: JSON.stringify({
-          approvedCategory,
-          approvedDepartmentSlug,
-          approvedUrgency,
-          reviewComment: trimmedReviewComment,
-          wasAiSuggestionAccepted: accepted,
-        }),
-      },
-    );
+      );
 
-    if (!response.ok) {
-      setError(t.cases.reviewAiError);
-      return;
+      if (!response.ok) {
+        setError(t.cases.reviewAiError);
+        return;
+      }
+
+      await loadCase();
+      await loadAITriage();
+      await loadActivity();
+      setReviewComment("");
+      setReviewSuccess(t.caseDetail.aiReviewSaved);
+    } finally {
+      setReviewIsSaving(false);
     }
-
-    await loadCase();
-    await loadAITriage();
-    await loadActivity();
-    setReviewComment("");
   }
 
   async function reviewAITriage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await submitAIReview(false);
+    await submitAIReview();
   }
 
   async function addNote(event: FormEvent<HTMLFormElement>) {
@@ -552,6 +563,13 @@ export function CaseDetail({ caseId }: { caseId: string }) {
   }
 
   const caseAddress = caseRecord.addresses[0] ?? null;
+  const canModifyThisCase = canModifyAssignedCase(currentUser, caseRecord);
+  const canRunThisAITriage =
+    canModifyThisCase && hasPermission("ai:triage:run");
+  const canReviewThisAITriage =
+    canModifyThisCase && hasPermission("ai:triage:review");
+  const canUploadDocumentToThisCase =
+    canModifyThisCase && hasPermission("document:upload");
 
   return (
     <InternalShell
@@ -586,7 +604,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
       </Link>
 
       <CaseSummaryCard caseRecord={caseRecord} t={t} />
-      {!canUpdateCase ? <ReadOnlyNotice t={t} /> : null}
+      {!canModifyThisCase ? <ReadOnlyNotice t={t} /> : null}
       <AITriageCard
         aiResult={aiResult}
         officialCategory={caseRecord.category}
@@ -595,18 +613,20 @@ export function CaseDetail({ caseId }: { caseId: string }) {
         departments={departments}
         departmentListUnavailable={departmentListUnavailable}
         aiError={aiError}
-        canReview={canReviewAITriage}
-        canRun={canRunAITriage}
+        aiIsRunning={aiIsRunning}
+        canReview={canReviewThisAITriage}
+        canRun={canRunThisAITriage}
         onReviewCategoryChange={setReviewCategory}
         onReviewCommentChange={setReviewComment}
         onReviewDepartmentSlugChange={setReviewDepartmentSlug}
         onReviewUrgencyChange={setReviewUrgency}
         onRunAITriage={runAITriage}
-        onSubmitAIReview={submitAIReview}
         onSubmitCorrection={reviewAITriage}
         reviewCategory={reviewCategory}
         reviewComment={reviewComment}
         reviewDepartmentSlug={reviewDepartmentSlug}
+        reviewIsSaving={reviewIsSaving}
+        reviewSuccess={reviewSuccess}
         reviewValidationError={reviewValidationError}
         reviewUrgency={reviewUrgency}
         t={t}
@@ -614,7 +634,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
       <CitizenAddressCard caseAddress={caseAddress} t={t} />
       <section className="mt-5 grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
         <CaseWorkflowCard
-          canUpdate={canUpdateCase}
+          canUpdate={canModifyThisCase}
           currentStatus={caseRecord.status}
           error={statusUpdateError}
           onSubmit={updateStatus}
@@ -623,7 +643,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
           t={t}
         />
         <InternalNotesCard
-          canAddNote={canUpdateCase}
+          canAddNote={canModifyThisCase}
           error={error}
           notes={caseRecord.internalNotes}
           onSubmit={addNote}
@@ -631,7 +651,7 @@ export function CaseDetail({ caseId }: { caseId: string }) {
         />
       </section>
       <DocumentsCard
-        canUpload={canUploadDocument}
+        canUpload={canUploadDocumentToThisCase}
         caseId={caseId}
         documents={documents}
         onUploadDocument={uploadDocument}
@@ -758,6 +778,30 @@ function ReadOnlyNotice({ t }: { t: InternalDictionary }) {
         {t.caseDetail.readOnlyText}
       </p>
     </div>
+  );
+}
+
+function canModifyAssignedCase(
+  currentUser: InternalCurrentUser,
+  caseRecord: CaseDetailResponse,
+) {
+  if (
+    currentUser.role === "super_admin" &&
+    currentUser.permissions.includes("case:read:all_tenant")
+  ) {
+    return true;
+  }
+
+  if (!currentUser.permissions.includes("case:update:department")) {
+    return false;
+  }
+
+  const assignedDepartmentId = caseRecord.assignedDepartment?.id ?? null;
+
+  return (
+    currentUser.departmentId !== null &&
+    (assignedDepartmentId === currentUser.departmentId ||
+      assignedDepartmentId === null)
   );
 }
 
@@ -949,7 +993,7 @@ function InternalNotesCard({
           <article key={note.id} className="rounded-md bg-slate-50 p-4">
             <p className="text-sm leading-6 text-slate-700">{note.body}</p>
             <p className="mt-2 text-xs text-slate-500">
-              {note.author.name} | {new Date(note.createdAt).toLocaleString()}
+              {note.author.name} | {formatInternalDateTime(note.createdAt)}
             </p>
           </article>
         ))}
@@ -961,6 +1005,7 @@ function InternalNotesCard({
 function AITriageCard({
   aiResult,
   aiError,
+  aiIsRunning,
   canReview,
   canRun,
   officialCategory,
@@ -973,17 +1018,19 @@ function AITriageCard({
   onReviewDepartmentSlugChange,
   onReviewUrgencyChange,
   onRunAITriage,
-  onSubmitAIReview,
   onSubmitCorrection,
   reviewCategory,
   reviewComment,
   reviewDepartmentSlug,
+  reviewIsSaving,
+  reviewSuccess,
   reviewValidationError,
   reviewUrgency,
   t,
 }: {
   aiResult: AITriageResultResponse | null;
   aiError: AIErrorState | null;
+  aiIsRunning: boolean;
   canReview: boolean;
   canRun: boolean;
   officialCategory: string;
@@ -996,11 +1043,12 @@ function AITriageCard({
   onReviewDepartmentSlugChange: (value: string) => void;
   onReviewUrgencyChange: (value: string) => void;
   onRunAITriage: () => void;
-  onSubmitAIReview: (accepted: boolean) => void;
   onSubmitCorrection: (event: FormEvent<HTMLFormElement>) => void;
   reviewCategory: string;
   reviewComment: string;
   reviewDepartmentSlug: string;
+  reviewIsSaving: boolean;
+  reviewSuccess: string | null;
   reviewValidationError: string | null;
   reviewUrgency: string;
   t: InternalDictionary;
@@ -1012,6 +1060,12 @@ function AITriageCard({
   const suggestedCategory = aiResult?.suggestedCategory ?? "unknown";
   const suggestedDepartmentName = aiResult?.suggestedDepartment?.name ?? null;
   const suggestedUrgency = aiResult?.suggestedUrgency ?? "normal";
+  const reviewHasCorrection =
+    aiResult !== null &&
+    (reviewCategory !== suggestedCategory ||
+      (reviewDepartmentSlug || null) !==
+        (aiResult.suggestedDepartment?.slug ?? null) ||
+      reviewUrgency !== suggestedUrgency);
   const confidenceLabel =
     aiResult?.confidenceScore === null || aiResult?.confidenceScore === undefined
       ? t.common.unknown
@@ -1032,15 +1086,27 @@ function AITriageCard({
           <button
             type="button"
             onClick={onRunAITriage}
-            className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+            disabled={aiIsRunning}
+            className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
           >
-            {t.ai.generate}
+            {aiIsRunning
+              ? t.caseDetail.aiGenerateRunning
+              : aiResult
+                ? t.caseDetail.aiGenerateAgain
+                : t.ai.generate}
           </button>
         ) : null}
       </div>
 
       {!aiResult ? (
-        <p className="mt-4 text-sm text-slate-500">{t.ai.empty}</p>
+        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-semibold text-amber-950">
+            {t.caseDetail.aiNoResultTitle}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-amber-900">
+            {canRun ? t.caseDetail.aiNoResultAction : t.ai.empty}
+          </p>
+        </div>
       ) : null}
 
       {aiError ? (
@@ -1130,7 +1196,22 @@ function AITriageCard({
             <TextPanel label={t.ai.reason} value={aiResult.reasoningSummary} />
           </div>
 
-          {canReview ? (
+          {reviewSuccess ? (
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-sm font-semibold text-emerald-950">
+                {reviewSuccess}
+              </p>
+            </div>
+          ) : canReview && aiResult.status === "reviewed" ? (
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
+              <h3 className="text-sm font-semibold text-emerald-950">
+                {t.ai.humanReview}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-emerald-900">
+                {t.caseDetail.aiReviewAlreadySaved}
+              </p>
+            </div>
+          ) : canReview && aiResult.status === "completed" ? (
             <form
               onSubmit={onSubmitCorrection}
               className="grid content-start gap-3 rounded-md bg-slate-50 p-4"
@@ -1138,15 +1219,8 @@ function AITriageCard({
               <h3 className="text-sm font-semibold text-slate-950">
                 {t.ai.humanReview}
               </h3>
-              <button
-                type="button"
-                onClick={() => onSubmitAIReview(true)}
-                className="rounded-md bg-emerald-700 px-4 py-3 text-sm font-semibold text-white"
-              >
-                {t.ai.accept}
-              </button>
               <p className="text-sm leading-6 text-slate-600">
-                {t.caseDetail.aiAcceptHelp}
+                {t.caseDetail.aiReviewHelp}
               </p>
               <label className="grid gap-1 text-sm text-slate-700">
                 {t.ai.category}
@@ -1239,9 +1313,14 @@ function AITriageCard({
               ) : null}
               <button
                 type="submit"
-                className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+                disabled={reviewIsSaving}
+                className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
               >
-                {t.ai.saveCorrection}
+                {reviewIsSaving
+                  ? t.caseDetail.aiReviewSaving
+                  : reviewHasCorrection
+                    ? t.ai.saveCorrection
+                    : t.ai.accept}
               </button>
             </form>
           ) : (
@@ -1324,7 +1403,7 @@ function DocumentsCard({
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
                   {document.mimeType} | {formatFileSize(document.sizeBytes)} |{" "}
-                  {new Date(document.createdAt).toLocaleString()}
+                  {formatInternalDateTime(document.createdAt)}
                 </p>
               </div>
               {document.isSensitive ? (
@@ -1435,7 +1514,7 @@ function RecentActivityCard({
                     </p>
                   </div>
                   <time className="text-xs text-slate-500">
-                    {new Date(event.createdAt).toLocaleString()}
+                    {formatInternalDateTime(event.createdAt)}
                   </time>
                 </div>
                 <ActivityMetadataSummary summary={event.metadataSummary} t={t} />

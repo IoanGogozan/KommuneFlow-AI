@@ -153,9 +153,9 @@ export const internalDictionaryEn = {
     validation: "Validation",
     notAvailable: "Not available",
     noAddress: "No address was submitted with this case.",
-    updateStatus: "Update status",
+    updateStatus: "Save status change",
     notes: "Internal notes",
-    addNote: "Add note",
+    addNote: "Add internal note",
     loadCaseError: "Could not load case.",
     loadDocumentsError: "Could not load documents.",
     loadAiError: "Could not load AI triage.",
@@ -166,7 +166,7 @@ export const internalDictionaryEn = {
   },
   ai: {
     title: "AI triage",
-    generate: "Generate suggestion",
+    generate: "Run AI triage",
     notice:
       "AI suggestions are decision support only. A human case worker must review and approve any category, department, or urgency change.",
     empty: "No AI suggestion generated for this case.",
@@ -180,8 +180,8 @@ export const internalDictionaryEn = {
     reason: "Reason",
     humanReview: "Human review",
     departmentSlug: "Department slug",
-    accept: "Accept suggestion",
-    saveCorrection: "Save correction",
+    accept: "Accept AI suggestion and mark triaged",
+    saveCorrection: "Save correction and mark triaged",
   },
   documents: {
     title: "Documents",
@@ -220,9 +220,18 @@ export const internalDictionaryEn = {
       "AI suggestions do not update the official case automatically. A human reviewer must accept or correct them.",
     aiDecisionTitle: "AI suggestion ready",
     aiDecisionText:
-      "Review the changes below. If they are correct, approve the whole suggestion with one click.",
-    aiAcceptHelp:
-      "Accept suggestion applies the AI values directly and does not require a comment.",
+      "Review the changes below. If they are correct, save the whole suggestion with one click.",
+    aiGenerateAgain: "Run AI triage again",
+    aiGenerateRunning: "AI triage is running...",
+    aiNoResultTitle: "No AI triage is stored",
+    aiNoResultAction:
+      "New citizen cases attempt automatic triage in the background. If no result is shown here, press Run AI triage to create a suggestion manually.",
+    aiReviewHelp:
+      "Review the fields. Unchanged fields accept the AI suggestion; changed fields are saved as a correction.",
+    aiReviewSaving: "Saving AI review...",
+    aiReviewSaved: "AI review saved. The case is marked as triaged.",
+    aiReviewAlreadySaved:
+      "AI review is already saved. The case uses the values shown in the summary above.",
     aiWillChange: "Will change",
     aiNoChange: "No change",
     storedFailureReason: "Stored failure reason",
@@ -367,6 +376,42 @@ export const internalDictionaryEn = {
     aiCorrection: "AI correction",
     aiFailure: "AI failure",
     minSaved: "min saved",
+    executiveTitle: "What the numbers mean",
+    executiveText:
+      "Use analytics to see whether AI creates value, where cases get stuck, and whether volume is changing.",
+    loadingInsight: "Loading decision context for the selected period.",
+    aiQualityTitle: "AI quality",
+    aiQualityText:
+      "Shows whether AI suggestions can be used directly, or whether model behavior/routing should be adjusted.",
+    aiQualityHealthy:
+      "AI suggestions are mostly accepted. Keep monitoring corrections.",
+    aiQualityNeedsReview:
+      "The correction rate is high. Review common corrections and routing rules.",
+    flowTitle: "Flow and bottlenecks",
+    flowText:
+      "Shows how quickly cases are triaged and whether many cases stop because the citizen must respond.",
+    flowHealthy:
+      "Cases are moving without an obvious bottleneck in the selected period.",
+    flowBlocked:
+      "A noticeable share of cases is waiting for the citizen. Check whether requests for more information can be clearer.",
+    reliabilityTitle: "AI stability",
+    reliabilityHealthy:
+      "AI triage rarely fails in the selected period.",
+    reliabilityNeedsReview:
+      "The AI failure rate is high enough to review integration, prompt, or input data.",
+    volumeTitle: "Volume and capacity",
+    volumeText:
+      "Shows total workload and normalized volume when SSB population data is available.",
+    median: "Median",
+    waitingDetail:
+      "A high number means case workers are waiting for replies before cases can continue.",
+    aiFailureDetail:
+      "Failures mean AI triage could not produce a usable suggestion.",
+    selectedPeriod: "Total for the selected period.",
+    estimateDetail:
+      "Estimated saved time based on accepted and corrected AI reviews.",
+    populationMissingDetail:
+      "Missing SSB population data for normalized comparison.",
   },
   operations: {
     title: "Operations",

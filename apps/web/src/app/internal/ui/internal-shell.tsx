@@ -120,35 +120,33 @@ export function InternalShell({
         }
       >
         <header className="border-b border-[#003b71] pb-4">
-          <div className="flex flex-wrap items-start justify-between gap-5">
-            <div>
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+            <div className="min-w-0">
               <p className="text-sm font-semibold text-[#55718d]">
                 {t.common.app}
               </p>
-              <h1 className="mt-1 text-3xl font-semibold text-[#003b71]">
+              <h1 className="mt-1 break-words text-3xl font-semibold text-[#003b71]">
                 {title}
               </h1>
-            </div>
-            <div className="flex w-full flex-col items-stretch gap-3 lg:w-auto lg:items-end">
               {currentUser ? (
                 <UserContext currentUser={currentUser} t={t} />
               ) : null}
-              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                <Link
-                  href={`/${locale}`}
-                  className="border border-[#c8d9e8] bg-white px-3 py-2 text-sm font-semibold text-[#003b71] hover:border-[#003b71] hover:bg-[#eaf4fb]"
-                >
-                  {t.nav.publicIntake}
-                </Link>
-                <InternalLanguageToggle locale={locale} setLocale={setLocale} />
-                <button
-                  type="button"
-                  onClick={() => void signOut()}
-                  className="border border-[#c8d9e8] bg-white px-3 py-2 text-sm font-semibold text-[#003b71] hover:border-[#003b71] hover:bg-[#eaf4fb]"
-                >
-                  {t.nav.signOut}
-                </button>
-              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              <Link
+                href={`/${locale}`}
+                className="border border-[#c8d9e8] bg-white px-3 py-2 text-sm font-semibold text-[#003b71] hover:border-[#003b71] hover:bg-[#eaf4fb]"
+              >
+                {t.nav.publicIntake}
+              </Link>
+              <InternalLanguageToggle locale={locale} setLocale={setLocale} />
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                className="border border-[#c8d9e8] bg-white px-3 py-2 text-sm font-semibold text-[#003b71] hover:border-[#003b71] hover:bg-[#eaf4fb]"
+              >
+                {t.nav.signOut}
+              </button>
             </div>
           </div>
           <nav
@@ -202,16 +200,16 @@ function UserContext({
   return (
     <section
       aria-label="Current internal user"
-      className="border border-[#c8d9e8] bg-white px-3 py-2 text-sm"
+      className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[#55718d]"
     >
       <p className="font-semibold text-[#003b71]">
         {currentUser.name || currentUser.email}
       </p>
-      <p className="mt-1 text-xs text-[#55718d]">
+      <p>
         <span className="font-semibold text-[#003b71]">{t.common.role}:</span>{" "}
         {formatRole(currentUser.role, t)}
       </p>
-      <p className="mt-1 text-xs text-[#55718d]">
+      <p>
         <span className="font-semibold text-[#003b71]">{t.common.scope}:</span>{" "}
         {currentUser.tenant.name} / {scope}
       </p>

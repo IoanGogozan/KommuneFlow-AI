@@ -151,9 +151,9 @@ export const internalDictionaryNb = {
     validation: "Validering",
     notAvailable: "Ikke tilgjengelig",
     noAddress: "Ingen adresse ble sendt inn med saken.",
-    updateStatus: "Oppdater status",
+    updateStatus: "Lagre statusendring",
     notes: "Interne notater",
-    addNote: "Legg til notat",
+    addNote: "Legg til internt notat",
     loadCaseError: "Kunne ikke laste sak.",
     loadDocumentsError: "Kunne ikke laste dokumenter.",
     loadAiError: "Kunne ikke laste KI-triage.",
@@ -164,7 +164,7 @@ export const internalDictionaryNb = {
   },
   ai: {
     title: "KI-triage",
-    generate: "Lag forslag",
+    generate: "Kjør KI-triage",
     notice:
       "KI-forslag er kun beslutningsstøtte. En saksbehandler må kontrollere og godkjenne endringer i kategori, avdeling eller hastegrad.",
     empty: "Ingen KI-forslag er laget for denne saken.",
@@ -178,8 +178,8 @@ export const internalDictionaryNb = {
     reason: "Begrunnelse",
     humanReview: "Menneskelig vurdering",
     departmentSlug: "Avdelingsslug",
-    accept: "Godta forslag",
-    saveCorrection: "Lagre korrigering",
+    accept: "Godta KI-forslag og merk som triagert",
+    saveCorrection: "Lagre korrigering og merk som triagert",
   },
   documents: {
     title: "Dokumenter",
@@ -218,9 +218,18 @@ export const internalDictionaryNb = {
       "KI-forslag oppdaterer ikke den offisielle saken automatisk. En saksbehandler må godta eller korrigere dem.",
     aiDecisionTitle: "KI-forslag klart",
     aiDecisionText:
-      "Kontroller endringene under. Hvis de stemmer, godkjenner du hele forslaget med ett klikk.",
-    aiAcceptHelp:
-      "Godta forslag bruker KI-verdiene direkte og krever ikke kommentar.",
+      "Kontroller endringene under. Hvis de stemmer, lagrer du hele forslaget med ett klikk.",
+    aiGenerateAgain: "Kjør KI-triage på nytt",
+    aiGenerateRunning: "KI-triage kjører...",
+    aiNoResultTitle: "Ingen KI-triage er lagret",
+    aiNoResultAction:
+      "Nye innsendte saker forsøkes triagert automatisk i bakgrunnen. Hvis det ikke finnes et resultat her, trykk Kjør KI-triage for å lage et forslag manuelt.",
+    aiReviewHelp:
+      "Kontroller feltene. Uendrede felt betyr at KI-forslaget godtas; endrede felt lagres som korrigering.",
+    aiReviewSaving: "Lagrer KI-vurdering...",
+    aiReviewSaved: "KI-vurderingen er lagret. Saken er merket som triagert.",
+    aiReviewAlreadySaved:
+      "KI-vurderingen er allerede lagret. Saken bruker verdiene som vises i sammendraget øverst.",
     aiWillChange: "Endres",
     aiNoChange: "Ingen endring",
     storedFailureReason: "Lagret feilårsak",
@@ -366,6 +375,42 @@ export const internalDictionaryNb = {
     aiCorrection: "KI-korrigering",
     aiFailure: "KI-feil",
     minSaved: "min spart",
+    executiveTitle: "Hva tallene betyr",
+    executiveText:
+      "Bruk analysen til å se om KI gir verdi, hvor sakene stopper opp, og om volumet endrer seg.",
+    loadingInsight: "Laster beslutningsgrunnlag for valgt periode.",
+    aiQualityTitle: "KI-kvalitet",
+    aiQualityText:
+      "Viser om KI-forslagene kan brukes direkte, eller om modellen/rutingen bør justeres.",
+    aiQualityHealthy:
+      "KI-forslagene blir stort sett godtatt. Fortsett å følge med på korrigeringer.",
+    aiQualityNeedsReview:
+      "Korrigeringsraten er høy. Gå gjennom typiske korrigeringer og rutingsregler.",
+    flowTitle: "Flyt og flaskehalser",
+    flowText:
+      "Viser hvor raskt saker triageres og om mange saker stopper fordi innbyggeren må svare.",
+    flowHealthy:
+      "Sakene flyter uten tydelig blokkering i valgt periode.",
+    flowBlocked:
+      "En merkbar andel saker venter på innbygger. Sjekk om forespørsler om mer informasjon kan bli tydeligere.",
+    reliabilityTitle: "KI-stabilitet",
+    reliabilityHealthy:
+      "KI-triage feiler sjelden i valgt periode.",
+    reliabilityNeedsReview:
+      "KI-feilraten er høy nok til at integrasjon, prompt eller datagrunnlag bør sjekkes.",
+    volumeTitle: "Volum og kapasitet",
+    volumeText:
+      "Viser total belastning og normalisert volum når SSB-befolkningstall finnes.",
+    median: "Median",
+    waitingDetail:
+      "Høyt tall betyr at saksbehandlere venter på svar før saken kan gå videre.",
+    aiFailureDetail:
+      "Feil her betyr at KI-triage ikke klarte å lage et brukbart forslag.",
+    selectedPeriod: "Totalt for valgt periode.",
+    estimateDetail:
+      "Estimert spart tid basert på godkjente og korrigerte KI-vurderinger.",
+    populationMissingDetail:
+      "Mangler SSB-befolkningstall for normalisert sammenligning.",
   },
   operations: {
     title: "Drift",

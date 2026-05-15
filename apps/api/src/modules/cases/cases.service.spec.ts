@@ -464,7 +464,7 @@ describe('CasesService', () => {
       statusAccessCode: expect.any(String) as string,
       status: CaseStatus.new,
     });
-    expect(result.statusAccessCode).toHaveLength(22);
+    expect(result.statusAccessCode).toHaveLength(8);
     expect(logCaseConfirmationMock).toHaveBeenCalledWith(
       expect.objectContaining({
         caseId: 'case_1',

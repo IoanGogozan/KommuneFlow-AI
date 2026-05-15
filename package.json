@@ -4,7 +4,11 @@
   "private": true,
   "packageManager": "pnpm@10.28.2",
   "scripts": {
-    "dev": "pnpm --parallel --filter @kommuneflow/api --filter @kommuneflow/web dev",
+    "dev": "powershell -ExecutionPolicy Bypass -File scripts/dev-start.ps1",
+    "dev:raw": "pnpm --parallel --filter @kommuneflow/api --filter @kommuneflow/web dev",
+    "dev:start": "powershell -ExecutionPolicy Bypass -File scripts/dev-start.ps1",
+    "dev:status": "powershell -ExecutionPolicy Bypass -File scripts/dev-status.ps1",
+    "dev:stop": "powershell -ExecutionPolicy Bypass -File scripts/dev-stop.ps1",
     "dev:api": "pnpm --filter @kommuneflow/api start:dev",
     "dev:web": "pnpm --filter @kommuneflow/web dev",
     "build": "pnpm --recursive --if-present build",
