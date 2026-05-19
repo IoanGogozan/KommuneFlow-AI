@@ -33,6 +33,8 @@ pnpm --filter @kommuneflow/web test:e2e
 pnpm test:etl
 ```
 
+GitHub Actions also runs CodeQL static analysis and Gitleaks secret scanning as separate security workflows.
+
 ## API Tests
 
 The API test suite must protect the server-side trust boundaries:

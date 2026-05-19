@@ -29,7 +29,7 @@ Included checks:
 | ------------------------------------------ | ------ | --------------------------------------------------------------------- |
 | `pnpm lint`                                | PASS   | API and web lint passed.                                              |
 | `pnpm typecheck`                           | PASS   | API, web, and shared packages passed.                                 |
-| `pnpm --filter @kommuneflow/api test:cov:ci` | PASS | API Jest suite: 35 suites, 209 tests; coverage thresholds passed.      |
+| `pnpm --filter @kommuneflow/api test:cov:ci` | PASS | API Jest suite: 35 suites, 212 tests; coverage thresholds passed.      |
 | `pnpm --filter @kommuneflow/api test:e2e:ci` | PASS | API e2e suite: 20 tests with `AI_PROVIDER=mock`.                      |
 | `pnpm --filter @kommuneflow/web test`      | PASS   | Web Vitest suite: 2 files, 6 tests.                                   |
 | `pnpm --filter @kommuneflow/web test:e2e`  | PASS   | Playwright browser smoke suite: 3 tests.                              |
@@ -39,10 +39,10 @@ Last recorded API coverage:
 
 | Metric     | Value  |
 | ---------- | ------ |
-| Statements | 82.34% |
-| Branches   | 69.76% |
-| Functions  | 87.32% |
-| Lines      | 82.10% |
+| Statements | 82.36% |
+| Branches   | 69.79% |
+| Functions  | 87.19% |
+| Lines      | 82.13% |
 
 ## Manual Verification Checklist
 

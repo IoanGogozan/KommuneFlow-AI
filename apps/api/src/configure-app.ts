@@ -12,7 +12,32 @@ import {
 export function configureApp(app: INestApplication) {
   const originValidationMiddleware = new OriginValidationMiddleware();
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          defaultSrc: ["'none'"],
+          baseUri: ["'none'"],
+          formAction: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+      frameguard: {
+        action: 'deny',
+      },
+      referrerPolicy: {
+        policy: 'no-referrer',
+      },
+      strictTransportSecurity:
+        process.env.NODE_ENV === 'production'
+          ? {
+              maxAge: 31_536_000,
+              includeSubDomains: true,
+            }
+          : false,
+    }),
+  );
   app.use(json({ limit: process.env.JSON_BODY_LIMIT ?? '1mb' }));
   app.use(
     urlencoded({ extended: true, limit: process.env.FORM_BODY_LIMIT ?? '1mb' }),

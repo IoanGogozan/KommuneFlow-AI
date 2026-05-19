@@ -57,7 +57,14 @@ export class AuthController {
   }
 
   @Post('logout')
-  logout(@Res({ passthrough: true }) response: Response) {
+  async logout(
+    @Req() request: Request & RequestWithId,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    await this.authService.logout(getAuthCookie(request), {
+      requestId: request.requestId,
+    });
+
     response.clearCookie(AUTH_COOKIE_NAME, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -73,4 +80,10 @@ export class AuthController {
   me(@CurrentUserParam() user: CurrentUser) {
     return this.authService.getCurrentUserProfile(user);
   }
+}
+
+function getAuthCookie(request: Request) {
+  const cookies = request.cookies as Record<string, unknown> | undefined;
+  const cookie = cookies?.[AUTH_COOKIE_NAME];
+  return typeof cookie === 'string' ? cookie : undefined;
 }

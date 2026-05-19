@@ -9,12 +9,13 @@ KommuneFlow AI demonstrates security and privacy engineering patterns. It is not
 ## Implemented Controls
 
 - `HttpOnly`, `SameSite`, and production `Secure` auth cookie handling.
+- JWT expiry, issuer/audience validation, and payload validation before request user hydration.
 - Server-side RBAC and permission guards.
 - Tenant-scoped access checks for tenant-owned case, document, privacy, analytics, AI, and operational data.
 - Auditor read-only behavior.
 - Bcrypt password hashing.
 - Login, public intake, and public status lookup rate limiting.
-- Helmet security headers, strict CORS allowlist, and Origin/Referer validation for cookie-authenticated mutations.
+- Helmet security headers with explicit CSP defaults, `frame-ancestors 'none'`, denied framing, strict CORS allowlist, and Origin/Referer validation for cookie-authenticated mutations.
 - Safe error responses with request IDs and no stack traces in API responses.
 - JSON/form body limits in the API.
 - Multipart upload limits in Multer and request body limits in Caddy.
@@ -23,12 +24,13 @@ KommuneFlow AI demonstrates security and privacy engineering patterns. It is not
 - Private document storage and audited document downloads.
 - Soft-delete for documents and retention cleanup that removes expired physical files before deleting document metadata.
 - Audit events for case, document, AI review, privacy, and retention actions.
-- Operational events for failed logins, permission denials, rate-limit blocks, upload failures, integration failures, API errors, and maintenance runs.
+- Operational events for failed logins, successful logins, logout, permission denials, rate-limit blocks, upload failures, integration failures, API errors, and maintenance runs.
 - Tenant-scoped operations metrics where the underlying data model is tenant-aware.
 - Citizen profile export, citizen profile identifier anonymization, retention policy, dry-run cleanup, and confirmed cleanup.
 - Human-reviewed AI suggestions; AI output is validated before storage and does not directly mutate official case fields.
 - Mock AI provider for local demos and tests.
 - Basic AI input minimization/redaction for obvious email, phone, and Norwegian national-identity-like patterns.
+- GitHub Actions checks for CodeQL static analysis and Gitleaks secret scanning.
 - Production-like Docker Compose, Caddy HTTPS reverse proxy, smoke test, backup scripts, and restore documentation.
 
 ## Known Production Gaps
@@ -44,7 +46,7 @@ KommuneFlow AI demonstrates security and privacy engineering patterns. It is not
 - No formal DPIA, legal basis assessment, archival/legal-hold analysis, or DPO review.
 - No formal processor/subprocessor review for hosting, observability, backup, email, or AI providers.
 - No complete incident response workflow in the product UI.
-- No dependency/container scanning gate is enforced in CI yet.
+- No container image scanning gate is enforced in CI yet.
 - AI provider calls are synchronous in the request path.
 - AI redaction is basic and should not be treated as complete PII anonymization.
 - Citizen profile anonymization does not fully erase/anonymize free text, documents, audit records, filenames, email logs, AI summaries, or archive-bound records.

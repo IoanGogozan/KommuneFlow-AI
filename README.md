@@ -85,16 +85,17 @@ Implemented controls include:
 
 - Password hashing with bcrypt
 - `HttpOnly` auth cookie
-- JWT expiry and production secret enforcement
+- JWT expiry, issuer/audience validation, payload validation, and production secret enforcement
 - Rate limiting
-- Helmet security headers
+- Helmet security headers with explicit CSP and denied framing
 - Strict CORS allowlist
 - Origin/Referer validation for cookie-authenticated mutations
 - Explicit JSON/form body limits
-- Public and internal rate-limit blocks persisted as operational events
+- Login success/logout, failed login, and rate-limit blocks persisted as operational events
 - Server-side permission guards
 - Tenant-scoped database queries
 - Negative auth/RBAC/tenant tests
+- GitHub Actions security scans with CodeQL and Gitleaks
 - File size, extension, MIME, magic-byte, and filename validation
 - Private upload storage
 - Secure document download with audit events

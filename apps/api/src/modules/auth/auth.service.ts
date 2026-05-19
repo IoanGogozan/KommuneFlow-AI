@@ -5,7 +5,7 @@ import { UserStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { OperationalEventService } from '../operations/operational-event.service';
 import { LoginInput } from './auth.schemas';
-import { CurrentUser } from './current-user';
+import { CurrentUser, parseCurrentUserPayload } from './current-user';
 import { ROLE_PERMISSIONS } from './permissions';
 
 @Injectable()
@@ -59,6 +59,10 @@ export class AuthService {
 
     const accessToken = await this.jwtService.signAsync(currentUser);
 
+    await this.recordSuccessfulLogin(currentUser, {
+      requestId: context?.requestId,
+    });
+
     return {
       accessToken,
       user: {
@@ -70,6 +74,40 @@ export class AuthService {
         role: user.role,
       },
     };
+  }
+
+  async logout(
+    accessToken: string | undefined,
+    context?: { requestId?: string },
+  ) {
+    if (!accessToken) {
+      return;
+    }
+
+    try {
+      const payload =
+        await this.jwtService.verifyAsync<Record<string, unknown>>(accessToken);
+      const currentUser = parseCurrentUserPayload(payload);
+
+      if (!currentUser) {
+        return;
+      }
+
+      await this.operationalEventService.record({
+        eventType: 'auth.logout',
+        severity: 'info',
+        source: 'auth',
+        tenantId: currentUser.tenantId,
+        userId: currentUser.id,
+        requestId: context?.requestId,
+        safeMessage: 'User logged out.',
+        metadata: {
+          role: currentUser.role,
+        },
+      });
+    } catch {
+      return;
+    }
   }
 
   async getCurrentUserProfile(currentUser: CurrentUser) {
@@ -135,6 +173,27 @@ export class AuthService {
       metadata: {
         reason,
         emailDomain: email.includes('@') ? email.split('@').at(-1) : null,
+      },
+    });
+  }
+
+  private async recordSuccessfulLogin(
+    user: CurrentUser,
+    context?: { requestId?: string },
+  ) {
+    await this.operationalEventService.record({
+      eventType: 'auth.login_success',
+      severity: 'info',
+      source: 'auth',
+      tenantId: user.tenantId,
+      userId: user.id,
+      requestId: context?.requestId,
+      safeMessage: 'User logged in.',
+      metadata: {
+        role: user.role,
+        emailDomain: user.email.includes('@')
+          ? user.email.split('@').at(-1)
+          : null,
       },
     });
   }

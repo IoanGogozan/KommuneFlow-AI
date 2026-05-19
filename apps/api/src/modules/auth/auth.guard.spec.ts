@@ -83,6 +83,29 @@ describe('AuthGuard', () => {
       ),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
+
+  it('returns 401 when a token has an invalid user payload', async () => {
+    const verifyAsyncMock = jest.fn().mockResolvedValue({
+      id: 'user_1',
+      tenantId: 'tenant_1',
+      email: 'case.worker@arendal.local',
+      role: 'not_a_real_role',
+    });
+    const jwtService = {
+      verifyAsync: verifyAsyncMock,
+    } as unknown as JwtService;
+    const guard = new AuthGuard(jwtService);
+
+    await expect(
+      guard.canActivate(
+        createContext({
+          headers: {
+            authorization: 'Bearer invalid-payload-token',
+          },
+        }),
+      ),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
 });
 
 function currentUserPayload() {

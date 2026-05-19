@@ -13,6 +13,7 @@ Covered by backend tests:
 - disabled users cannot log in
 - malformed bearer tokens are rejected
 - expired cookie tokens are rejected
+- tokens with invalid user payloads are rejected
 - cookie-authenticated state-changing requests from invalid origins are rejected
 - invalid JSON bodies return safe standardized errors
 - oversized JSON bodies are rejected
@@ -107,10 +108,13 @@ CI runs:
 - lint
 - typecheck
 - API and web unit/integration tests
+- Playwright browser smoke tests for public and internal browser flows
 - Python ELT tests
 - database migrations against a CI PostgreSQL service
 - API e2e tests
 - dependency audit
+- CodeQL static analysis
+- Gitleaks secret scanning
 - build
 
 The API e2e job uses mocked external API behavior in tests and `AI_PROVIDER=mock`. CI must not call real Kartverket, SSB, or OpenAI services. Local release verification should run `pnpm test:all`, which also includes Playwright browser smoke tests.

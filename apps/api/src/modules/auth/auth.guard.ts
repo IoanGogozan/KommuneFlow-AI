@@ -7,7 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { AUTH_COOKIE_NAME } from './auth.constants';
-import { CurrentUser } from './current-user';
+import { CurrentUser, parseCurrentUserPayload } from './current-user';
 
 export type AuthenticatedRequest = Request & {
   user?: CurrentUser;
@@ -28,7 +28,15 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      request.user = await this.jwtService.verifyAsync<CurrentUser>(token);
+      const payload =
+        await this.jwtService.verifyAsync<Record<string, unknown>>(token);
+      const currentUser = parseCurrentUserPayload(payload);
+
+      if (!currentUser) {
+        throw new UnauthorizedException('Authentication required.');
+      }
+
+      request.user = currentUser;
       return true;
     } catch {
       throw new UnauthorizedException('Authentication required.');
