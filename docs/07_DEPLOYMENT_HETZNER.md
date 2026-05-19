@@ -17,6 +17,7 @@ As of 2026-05-19, the Hetzner demo is online behind HTTPS and Caddy Basic Auth. 
 - authenticated `/api/v1/auth/me`
 - authenticated `/api/v1/cases`
 - authenticated `/api/v1/ai/status`
+- AI status reports provider `openai`, model `gpt-4o-mini`, and configured `true`
 
 Do not treat this as full production readiness. Restore testing, offsite backup operations, monitoring review, legal/controller setup, and production data governance are still separate release requirements.
 

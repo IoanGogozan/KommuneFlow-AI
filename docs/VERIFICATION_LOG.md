@@ -56,7 +56,7 @@ Record exact date, command, account, environment, and result when manual checks 
 | Analytics rebuild              | PENDING | Use `docs/integrations/manual-verification.md#analytics-rebuild`.              |
 | Document upload/download       | PENDING | Use `docs/integrations/manual-verification.md#document-upload-and-download`.   |
 | Citizen status lookup          | PENDING | Use `docs/integrations/manual-verification.md#citizen-status-lookup`.          |
-| Hetzner live smoke test        | PASS    | 2026-05-19: HTTPS demo checked for web root, `/nb`, health, readiness, internal login page, internal demo login, `/auth/me`, `/cases`, and `/ai/status`. |
+| Hetzner live smoke test        | PASS    | 2026-05-19: HTTPS demo checked for web root, `/nb`, health, readiness, internal login page, internal demo login, `/auth/me`, `/cases`, and `/ai/status`. AI status reported provider `openai`, model `gpt-4o-mini`, and configured `true`; no API key value was logged. |
 
 ## Manual Verification Notes Template
 

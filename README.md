@@ -331,7 +331,7 @@ AI deployment mode is controlled server-side:
 
 After deploy, log in internally, open Operations, verify the AI Configuration panel, then run AI triage on a seeded or synthetic case.
 
-Deployment status: production assets are implemented, the protected Hetzner HTTPS demo is online, and live smoke checks passed on 2026-05-19. This is still a portfolio/demo deployment, not a formally approved municipal production environment.
+Deployment status: production assets are implemented, the protected Hetzner HTTPS demo is online, and live smoke checks passed on 2026-05-19. The online demo is configured server-side with `AI_PROVIDER=openai`; `/api/v1/ai/status` reports provider `openai`, model `gpt-4o-mini`, and configured `true`. `OPENAI_API_KEY` is intentionally not documented or exposed. This is still a portfolio/demo deployment, not a formally approved municipal production environment.
 
 ## Testing Status
 
