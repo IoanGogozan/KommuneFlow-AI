@@ -29,7 +29,7 @@ The application UI must support:
 | [05_TECH_STACK_AND_ARCHITECTURE.md](./05_TECH_STACK_AND_ARCHITECTURE.md) | Stack, backend/frontend architecture, database approach, code quality rules, and API conventions.               |
 | [security/PRODUCTION_SECURITY_HARDENING.md](./security/PRODUCTION_SECURITY_HARDENING.md) | Implemented controls, known production gaps, target controls, and public demo safety rules. |
 | [AZURE_FABRIC_EXTENSION.md](./AZURE_FABRIC_EXTENSION.md)                 | Microsoft Azure, AI Foundry, and Fabric target architecture for organizations using that stack.                 |
-| [06_TESTING_STRATEGY.md](./06_TESTING_STRATEGY.md)                       | Unit, integration, API, security, RBAC, tenant isolation, AI mock, E2E, and CI test requirements.               |
+| [06_TESTING_STRATEGY.md](./06_TESTING_STRATEGY.md)                       | Current test layers, commands, coverage gates, browser smoke tests, and CI/local release-gate expectations.     |
 | [09_DEFINITION_OF_DONE.md](./09_DEFINITION_OF_DONE.md)                   | Common feature completion criteria.                                                                             |
 
 ## Focused Implementation Docs

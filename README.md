@@ -44,7 +44,7 @@ AI is decision support only. Official case category, department, urgency, and st
 - pnpm monorepo
 - Docker Compose
 - Caddy for production reverse proxy and HTTPS
-- Jest and Supertest
+- Jest, Supertest, Vitest, Playwright, and pytest
 
 ## Architecture
 
@@ -226,15 +226,29 @@ Local URLs:
 - Internal operations: `http://localhost:3000/internal/operations`
 - Internal privacy: `http://localhost:3000/internal/privacy`
 
+## Verification
+
+Run the full local verification suite:
+
+```bash
+pnpm test:all
+```
+
+This runs linting, type checks, API coverage tests, API e2e tests, web component tests, Playwright browser smoke tests, and Python ELT tests.
+
 ## Useful Commands
 
 ```bash
 pnpm lint
 pnpm typecheck
 pnpm test
+pnpm test:all
 pnpm build
 pnpm audit:deps
+pnpm --filter @kommuneflow/api test:cov:ci
 pnpm --filter @kommuneflow/api test:e2e
+pnpm --filter @kommuneflow/web test
+pnpm --filter @kommuneflow/web test:e2e
 pnpm --filter @kommuneflow/api prisma:migrate
 pnpm --filter @kommuneflow/api prisma:seed
 cd apps/etl && python -m pytest -q
@@ -316,21 +330,18 @@ AI deployment mode is controlled server-side:
 
 After deploy, log in internally, open Operations, verify the AI Configuration panel, then run AI triage on a seeded or synthetic case.
 
-Deployment status: production assets are implemented and locally verified. Public Hetzner HTTPS deployment still needs to be executed and verified on a real host.
+Deployment status: production assets are implemented, the protected Hetzner HTTPS demo is online, and live smoke checks passed on 2026-05-19. This is still a portfolio/demo deployment, not a formally approved municipal production environment.
 
 ## Testing Status
 
 Current verified commands:
 
 ```txt
-pnpm lint       PASS
-pnpm typecheck  PASS
-pnpm test       PASS
-pnpm build      PASS
-python -m pytest -q in apps/etl PASS
+pnpm test:all PASS
+pnpm build    PASS
 ```
 
-The API test suite includes unit, service, controller, auth, RBAC, tenant isolation, file upload abuse, AI safety, analytics, privacy, operations, and retention tests. API e2e covers health/security checks and a full business flow from citizen intake to AI review, status update, analytics, operations metrics, and audit evidence.
+`pnpm test:all` runs lint, typecheck, API coverage, API e2e, web Vitest integration tests, web Playwright browser smoke tests, and Python ELT tests. The API test suite includes unit, service, controller, auth, RBAC, tenant isolation, file upload abuse, AI safety, analytics, privacy, operations, and retention tests. API e2e covers health/security checks and a full business flow from citizen intake to AI review, status update, analytics, operations metrics, and audit evidence. Playwright covers the browser-level public intake/status flow, internal login, and internal case detail actions.
 
 ## How to Demo
 
@@ -432,7 +443,7 @@ See [Demo Script](./docs/DEMO_SCRIPT.md) for a shorter live walkthrough.
 
 ## Known Limitations
 
-- Public Hetzner HTTPS deployment has not been verified on a real host yet.
+- Protected Hetzner HTTPS demo is online and live smoke checks pass, but formal production operations are not complete.
 - Citizen status lookup is implemented with case reference and access code, but a richer citizen portal is still future work.
 - Email confirmation is logged through a mock provider; real SMTP/transactional email is future production work.
 - Document OCR/PDF text extraction is not implemented.
@@ -445,8 +456,8 @@ See [Demo Script](./docs/DEMO_SCRIPT.md) for a shorter live walkthrough.
 
 ## Future Improvements
 
-- Real Hetzner deployment and screenshots
-- Additional demo scenarios after screenshots and final README polish
+- Commit current production screenshots for reviewer evidence
+- Scheduled restore testing, offsite backup operations, and monitoring hardening
 - Background worker for AI triage, analytics rebuild, SSB import, and notification delivery
 - Real email provider integration
 - PDF text extraction and document summarization

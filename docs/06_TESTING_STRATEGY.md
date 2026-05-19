@@ -1,97 +1,109 @@
 # Testing Strategy
 
-## Purpose Of This Document
+## Purpose
 
-This document defines required unit, integration, API, security, RBAC, tenant isolation, AI mock, end-to-end, and CI tests.
+This document describes the active test strategy for KommuneFlow AI: what each layer proves, which commands are authoritative, and what must stay deterministic.
 
-## Testing Goal
+## Release Gate
 
-The test suite must prove that the application is secure, tenant-safe, permission-safe, and functionally correct.
+Run the full local release gate from the repository root:
 
-## Required Test Types
+```bash
+pnpm test:all
+```
 
-### Unit Tests
+`pnpm test:all` runs:
 
-Required areas:
+- `pnpm lint`
+- `pnpm typecheck`
+- API Jest coverage with thresholds
+- API e2e tests with `AI_PROVIDER=mock`
+- web Vitest component/integration tests
+- web Playwright browser smoke tests
+- Python ELT pytest tests
 
-- permission logic
-- tenant access logic
+Use narrower commands while developing:
+
+```bash
+pnpm --filter @kommuneflow/api test
+pnpm --filter @kommuneflow/api test:cov:ci
+pnpm --filter @kommuneflow/api test:e2e:ci
+pnpm --filter @kommuneflow/web test
+pnpm --filter @kommuneflow/web test:e2e
+pnpm test:etl
+```
+
+## API Tests
+
+The API test suite must protect the server-side trust boundaries:
+
+- authentication and generic login failure behavior
+- RBAC and permission guards
+- tenant-scoped reads and mutations
 - case status transitions
-- AI output parsing
-- validation schemas
-- retention logic
-- utility functions
+- citizen status lookup secrecy
+- document upload validation and download access
+- safe error responses and request IDs
+- rate-limit operational events
+- AI provider failures, schema validation, and human review
+- privacy export, anonymization, retention, and audit events
+- analytics aggregation and operations metrics
+- external integration failure handling for Kartverket and SSB
 
-### Integration Tests
+API e2e tests use deterministic mock providers. They must not call real Kartverket, SSB, or OpenAI services.
 
-Required areas:
+## Web Tests
 
-- authentication flow
-- create citizen case
-- document metadata creation
-- AI triage with mock provider
-- human review of AI suggestion
-- audit log creation
-- analytics aggregation
+Vitest covers important component behavior with DOM-level assertions and mocked `fetch` calls:
 
-### API Tests
+- public intake submission and status lookup
+- safe error states
+- internal login success/failure
 
-Required checks:
+Playwright covers browser-level smoke flows with deterministic network mocks:
 
-- unauthenticated requests return 401
-- authenticated but unauthorized requests return 403
-- invalid input returns 400
-- successful case creation returns 201
-- case lists are tenant-filtered
-- department users only see department cases
-- auditors cannot mutate resources
+- public citizen intake, address search, document upload, and status lookup
+- internal login and redirect to case list
+- internal case detail status update, document upload, AI triage, and AI review
 
-### Security Tests
+Playwright tests are intentionally fast and deterministic. They verify browser wiring and expected API contracts, not live database behavior.
 
-Required checks:
+## Python ELT Tests
 
-- tenant A cannot access tenant B data
-- citizen A cannot access citizen B case
-- invalid file type rejected
-- oversized upload rejected
-- malformed AI response rejected
-- HTML/script content is safely handled
+The ELT pytest suite covers:
 
-### E2E Smoke Tests
+- transform rules
+- data quality checks
+- idempotent loading
+- extract query mapping
+- database commit/rollback lifecycle
+- SSB import success/failure behavior
+- CLI orchestration
 
-Required flow:
+ELT tests are pure Python and must not call external APIs.
 
-1. Citizen submits a case.
-2. AI mock generates triage suggestion.
-3. Case worker opens the case.
-4. Case worker approves or corrects suggestion.
-5. Case status is updated.
-6. Audit log contains all important events.
-7. Analytics job updates metrics.
+## Coverage Gates
 
-## CI Requirements
+The API Jest config enforces global minimum coverage:
 
-GitHub Actions must run:
+- statements: 75%
+- branches: 65%
+- functions: 80%
+- lines: 75%
 
-- install
-- lint
-- format check
-- type check
-- unit tests
-- integration tests
-- build
+Coverage is a regression guard, not a substitute for risk-based tests. Security, privacy, tenant isolation, and upload/AI failure tests are mandatory even when coverage is above threshold.
 
-A pull request must not be considered complete if CI fails.
+## CI Expectations
 
-## Testing Priority
+GitHub Actions currently runs install, Prisma client generation, lint, typecheck, recursive unit/integration tests, Python ELT tests, database migrations, API e2e tests, dependency audit, and build.
 
-For early development, prioritize:
+Local `pnpm test:all` is stricter than CI because it also runs Playwright browser smoke tests. If CI is extended to run Playwright, it must install browser dependencies explicitly and keep external providers mocked.
 
-1. permission logic
-2. tenant isolation
-3. authentication
-4. case creation
-5. audit event creation
-6. AI structured output parsing with a mock provider
+## Rules
 
-UI polish can move quickly, but backend security tests must not be skipped.
+- Tests must be deterministic.
+- Tests must not require a real OpenAI key.
+- Tests must not call real Kartverket or SSB endpoints in CI.
+- Test data must be synthetic.
+- Security and tenant-isolation regressions must be covered by explicit negative tests.
+- Browser tests should assert user-visible outcomes and important API contracts, not implementation details.

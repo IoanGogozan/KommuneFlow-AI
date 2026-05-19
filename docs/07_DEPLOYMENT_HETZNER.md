@@ -2,7 +2,23 @@
 
 ## Purpose Of This Document
 
-This document defines the production-like Hetzner deployment for KommuneFlow AI. The repository now includes deployable runtime assets, but a public deployment is only complete after the server-specific verification steps below have been executed and recorded.
+This document defines the production-like Hetzner deployment for KommuneFlow AI. The repository includes deployable runtime assets, and the protected Hetzner HTTPS demo was live smoke checked on 2026-05-19. A real municipal production deployment still requires the server-specific operations, legal, backup, and restore controls below to be executed and recorded.
+
+## Current Status
+
+As of 2026-05-19, the Hetzner demo is online behind HTTPS and Caddy Basic Auth. Live smoke verification passed for:
+
+- web root
+- public Norwegian intake page
+- API health endpoint
+- API readiness endpoint
+- internal login page
+- internal demo login
+- authenticated `/api/v1/auth/me`
+- authenticated `/api/v1/cases`
+- authenticated `/api/v1/ai/status`
+
+Do not treat this as full production readiness. Restore testing, offsite backup operations, monitoring review, legal/controller setup, and production data governance are still separate release requirements.
 
 ## Runtime Assets
 

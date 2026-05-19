@@ -46,7 +46,7 @@ Run only the web app:
 pnpm dev:web
 ```
 
-After a production Docker Compose setup is added, this section should include the exact production restart command and rollback notes.
+For production Docker Compose operations, use the commands and rollback notes in [Hetzner Deployment](./07_DEPLOYMENT_HETZNER.md).
 
 ## View Logs
 
@@ -152,7 +152,7 @@ After restore:
 
 ```bash
 pnpm --filter @kommuneflow/api prisma:generate
-pnpm --filter @kommuneflow/api test
+pnpm test:all
 ```
 
 Then verify:
@@ -163,7 +163,7 @@ Then verify:
 - case list
 - document listing on a known case
 
-Record the date and result of each restore test in deployment notes once production deployment exists.
+Record the date and result of each restore test in deployment notes. The Hetzner demo is online, but restore testing is still required before claiming operational production readiness.
 
 Production restore tests should be scheduled and documented. A backup strategy is not complete until a restore from encrypted offsite storage has been tested.
 

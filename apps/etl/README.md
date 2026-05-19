@@ -77,7 +77,7 @@ The package validates:
 
 ```bash
 cd apps/etl
-pytest
+python -m pytest
 ```
 
 Tests are pure Python and do not call external APIs.

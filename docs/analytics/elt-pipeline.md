@@ -142,6 +142,10 @@ The package includes unit tests for:
 - negative value quality failures
 - duplicate snapshot quality failures
 - idempotent loading
+- extract query mapping
+- database commit/rollback lifecycle
+- SSB import success and failure paths
+- CLI orchestration
 
 The tests do not call Kartverket, SSB, OpenAI, or the application API.
 

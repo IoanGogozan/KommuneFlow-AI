@@ -14,12 +14,14 @@ Internal endpoints use the `kommuneflow_access_token` `HttpOnly` cookie after lo
 | --- | --- | --- | --- |
 | `POST` | `/auth/login` | public | Log in internal user and set auth cookie |
 | `POST` | `/auth/logout` | cookie | Clear auth cookie |
+| `GET` | `/auth/me` | internal | Return the current internal user profile and permissions |
 
 ## Public Citizen Intake
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
 | `POST` | `/public/tenants/:tenantSlug/cases` | public | Create citizen case, optionally with uploaded documents |
+| `GET` | `/public/tenants/:tenantSlug/cases/status?caseReference=...&statusAccessCode=...` | public | Look up safe public status fields for a submitted case |
 
 Supports JSON body or multipart form data:
 
@@ -32,8 +34,18 @@ Supports JSON body or multipart form data:
 | --- | --- | --- | --- |
 | `GET` | `/cases` | internal | List tenant/department-scoped cases |
 | `GET` | `/cases/:id` | internal | Get case detail |
+| `GET` | `/cases/:id/activity` | internal | List safe case activity/audit summaries |
 | `PATCH` | `/cases/:id/status` | `case:update:department` | Update case status |
 | `POST` | `/cases/:id/internal-notes` | `case:update:department` | Add internal note |
+
+## Internal Administration
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/departments` | internal | List departments for the current tenant |
+| `GET` | `/admin/departments` | admin permission | List tenant departments with admin metadata |
+| `GET` | `/admin/users` | `user:manage` | List tenant users without password hashes |
+| `GET` | `/admin/routing-rules` | `routing_rules:manage` | List tenant routing rules |
 
 ## Documents
 
@@ -51,6 +63,14 @@ Supports JSON body or multipart form data:
 | `GET` | `/cases/:caseId/ai-triage/latest` | internal | Get latest AI triage result |
 | `POST` | `/cases/:caseId/ai-triage` | `ai:triage:run` | Generate AI triage suggestion |
 | `POST` | `/cases/:caseId/ai-triage/:resultId/review` | `ai:triage:review` | Human review/approval/correction |
+| `GET` | `/ai/status` | operations or AI diagnostics permission | Return safe AI provider status |
+| `GET` | `/internal/ai/diagnostics` | `ai:diagnostics:read` | Return safe AI diagnostics for privileged users |
+
+## Audit
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/audit/events` | `audit:read` | List tenant-scoped audit events with safe metadata summaries |
 
 ## Analytics
 
@@ -103,6 +123,7 @@ Retention cleanup responses include candidate counts, deleted counts, and `docum
 | --- | --- | --- | --- |
 | `GET` | `/health` | public | Liveness check |
 | `GET` | `/readiness` | public | Database and upload storage readiness |
+| `GET` | `/operations/metrics-summary` | `operations:read` | Read operational metrics for the current tenant |
 
 ## Error Shape
 

@@ -58,6 +58,7 @@ Covered by backend tests:
 
 Relevant test file:
 
+- `apps/api/src/modules/documents/documents.controller.spec.ts`
 - `apps/api/src/modules/documents/documents.service.spec.ts`
 
 ## AI Negative Tests
@@ -105,16 +106,17 @@ CI runs:
 - Prisma client generation
 - lint
 - typecheck
-- unit/integration tests
+- API and web unit/integration tests
+- Python ELT tests
 - database migrations against a CI PostgreSQL service
 - API e2e tests
 - dependency audit
 - build
 
-The e2e job uses mocked external API behavior in tests and `AI_PROVIDER=mock`. CI must not call real Kartverket, SSB, or OpenAI services.
+The API e2e job uses mocked external API behavior in tests and `AI_PROVIDER=mock`. CI must not call real Kartverket, SSB, or OpenAI services. Local release verification should run `pnpm test:all`, which also includes Playwright browser smoke tests.
 
 ## Remaining Watch Items
 
-- Full browser-level citizen dashboard isolation is not present because the current product does not expose a citizen portal for reading submitted cases.
-- Broader end-to-end business flow coverage is tracked separately in the E2E phase.
+- Full browser-level citizen dashboard isolation is not present because the current product exposes status lookup, not a richer authenticated citizen portal.
+- Playwright covers public intake/status lookup, internal login, and internal case detail actions, but it uses deterministic network mocks rather than a live database-backed stack.
 - Future production hardening can add PostgreSQL Row-Level Security as defense in depth, but current tenant isolation is enforced through tenant-scoped application queries and tests.

@@ -57,6 +57,14 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Install Playwright browser
+        run: pnpm --filter @kommuneflow/web exec playwright install --with-deps chromium
+
+      - name: Web Playwright e2e
+        run: pnpm --filter @kommuneflow/web test:e2e
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:3101/api/v1
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:

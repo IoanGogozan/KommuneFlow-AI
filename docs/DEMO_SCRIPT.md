@@ -68,7 +68,7 @@ The seed includes Kristiansand, Arendal, and Grimstad tenants, five departments 
 - Operational events back the metrics dashboard instead of relying on empty counters.
 - Retention cleanup is dry-run capable.
 - Python ELT demonstrates data engineering work alongside the TypeScript app.
-- Hetzner deployment is intentionally the final phase and is not marked complete until live HTTPS is verified.
+- The protected Hetzner HTTPS demo is online and live smoke checked; describe it as a portfolio demo, not a real municipal production deployment.
 
 ## Short Pitch
 

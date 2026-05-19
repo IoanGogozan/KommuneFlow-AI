@@ -17,6 +17,8 @@ Run from the repository root:
 pnpm --filter @kommuneflow/web dev
 pnpm --filter @kommuneflow/web lint
 pnpm --filter @kommuneflow/web typecheck
+pnpm --filter @kommuneflow/web test
+pnpm --filter @kommuneflow/web test:e2e
 pnpm --filter @kommuneflow/web build
 ```
 

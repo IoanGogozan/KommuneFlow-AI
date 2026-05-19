@@ -17,6 +17,7 @@ Run from the repository root:
 ```bash
 pnpm --filter @kommuneflow/api start:dev
 pnpm --filter @kommuneflow/api test
+pnpm --filter @kommuneflow/api test:cov:ci
 pnpm --filter @kommuneflow/api test:e2e
 pnpm --filter @kommuneflow/api prisma:seed
 ```

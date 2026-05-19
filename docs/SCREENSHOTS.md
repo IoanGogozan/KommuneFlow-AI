@@ -1,14 +1,14 @@
 # Screenshots
 
-Screenshots should be captured after the UI is seeded with realistic demo data.
+Screenshots are portfolio artifacts and should be regenerated from seeded synthetic data before publishing a demo.
 
-Recommended screenshots after `pnpm --filter @kommuneflow/api prisma:seed`:
+## Recommended Set
 
 1. Citizen intake in Norwegian.
 2. Public status lookup.
 3. Internal login.
 4. Internal overview dashboard.
-5. Case list with several realistic cases.
+5. Case list with realistic cases.
 6. Case detail with documents and internal notes.
 7. AI triage suggestion and human review context.
 8. Analytics dashboard after aggregation.
@@ -31,11 +31,14 @@ docs/screenshots/08-analytics-dashboard.png
 docs/screenshots/09-operations-dashboard.png
 docs/screenshots/10-privacy-dashboard.png
 docs/screenshots/11-audit-dashboard.png
-docs/screenshots/12-audit-dashboard-auditor.png
-docs/screenshots/13-hetzner-smoke-test.png
+docs/screenshots/12-hetzner-smoke-test.png
 ```
 
-Current status: screenshots 1-9 were captured locally from seeded demo data on 2026-05-10. Do not add Hetzner screenshots until the final deployment phase.
+## Current Status
+
+No screenshot files are currently committed under `docs/screenshots/`. Do not claim screenshots are captured until the files exist in the repository or are published as external portfolio assets.
+
+## Capture Command
 
 Regenerate the main local demo screenshots with:
 

@@ -12,15 +12,11 @@ This document defines the concrete technology stack, folder structure, backend a
 - React
 - TypeScript
 - Tailwind CSS
-- shadcn/ui
-- React Hook Form
-- Zod
-- TanStack Query
 - i18n support for Norwegian and English
+- Vitest and Testing Library for component/integration tests
+- Playwright for browser smoke tests
 
 ### Backend
-
-Recommended stack:
 
 - Node.js
 - TypeScript
@@ -46,8 +42,6 @@ NestJS is recommended because the goal is to look more enterprise and public-sec
 - Docker Desktop
 - Docker Compose
 - PostgreSQL container
-- Optional Redis container
-- Optional MinIO container for S3-compatible local storage
 
 ### AI
 
@@ -80,6 +74,7 @@ The current deployment documentation targets Hetzner, but the application is int
 ```txt
 apps/
   api/
+  etl/
   web/
 packages/
   shared/
@@ -101,7 +96,6 @@ src/
   database/
   modules/
     auth/
-    tenants/
     users/
     departments/
     cases/
@@ -119,28 +113,6 @@ src/
     logging/
     security/
     types/
-```
-
-If using Express instead of NestJS:
-
-```txt
-src/
-  app.ts
-  server.ts
-  config/
-  db/
-  modules/
-    auth/
-      auth.controller.ts
-      auth.service.ts
-      auth.repository.ts
-      auth.schemas.ts
-      auth.test.ts
-    cases/
-    documents/
-    ai-triage/
-    audit/
-  shared/
 ```
 
 ## Code Quality Rules
