@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 import type { Locale } from "./i18n";
 import {
   internalDictionaries,
@@ -8,6 +8,7 @@ import {
 } from "./internal-i18n";
 
 const storageKey = "kommuneflow.internal.locale";
+const localeChangedEvent = "kommuneflow.internal.locale.changed";
 const languageLabels = {
   nb: "Norsk",
   en: "English",
@@ -18,18 +19,15 @@ export function useInternalI18n(): {
   setLocale: (locale: Locale) => void;
   t: InternalDictionary;
 } {
-  const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window === "undefined") {
-      return "nb";
-    }
-
-    const stored = window.localStorage.getItem(storageKey);
-    return stored === "nb" || stored === "en" ? stored : "nb";
-  });
+  const locale = useSyncExternalStore(
+    subscribeToLocale,
+    getStoredLocale,
+    getDefaultLocale,
+  );
 
   function setLocale(nextLocale: Locale) {
-    setLocaleState(nextLocale);
     window.localStorage.setItem(storageKey, nextLocale);
+    window.dispatchEvent(new Event(localeChangedEvent));
   }
 
   return {
@@ -65,4 +63,23 @@ export function InternalLanguageToggle({
       ))}
     </div>
   );
+}
+
+function subscribeToLocale(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(localeChangedEvent, onStoreChange);
+
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(localeChangedEvent, onStoreChange);
+  };
+}
+
+function getStoredLocale(): Locale {
+  const stored = window.localStorage.getItem(storageKey);
+  return stored === "nb" || stored === "en" ? stored : getDefaultLocale();
+}
+
+function getDefaultLocale(): Locale {
+  return "nb";
 }

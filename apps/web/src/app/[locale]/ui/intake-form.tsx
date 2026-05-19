@@ -65,6 +65,7 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
   const [selectedDocumentsText, setSelectedDocumentsText] = useState(
     dictionary.documentsNoFilesSelected,
   );
+  const [selectedDocuments, setSelectedDocuments] = useState<File[]>([]);
   const [address, setAddress] = useState("");
   const [addressSuggestion, setAddressSuggestion] = useState<
     AddressSearchResult["results"][number] | null
@@ -160,8 +161,8 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
     const requestBody = new FormData();
     requestBody.set("payload", JSON.stringify(payload));
 
-    for (const file of formData.getAll("documents")) {
-      if (file instanceof File && file.size > 0) {
+    for (const file of selectedDocuments) {
+      if (file.size > 0) {
         requestBody.append("documents", file);
       }
     }
@@ -181,6 +182,7 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
 
       setResult((await response.json()) as SubmissionResult);
       form.reset();
+      setSelectedDocuments([]);
       setSelectedDocumentsText(dictionary.documentsNoFilesSelected);
       setAddress("");
       setAddressSuggestion(null);
@@ -195,11 +197,14 @@ export function IntakeForm({ dictionary, locale }: IntakeFormProps) {
 
   function updateSelectedDocuments(files: FileList | null) {
     if (!files || files.length === 0) {
+      setSelectedDocuments([]);
       setSelectedDocumentsText(dictionary.documentsNoFilesSelected);
       return;
     }
 
-    const fileNames = Array.from(files).map((file) => file.name);
+    const nextFiles = Array.from(files);
+    const fileNames = nextFiles.map((file) => file.name);
+    setSelectedDocuments(nextFiles);
     setSelectedDocumentsText(fileNames.join(", "));
   }
 

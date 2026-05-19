@@ -18,8 +18,10 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
+    "test:cov:ci": "jest --coverage --runInBand",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e:ci": "jest --config ./test/jest-e2e.json --runInBand",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prisma": "prisma",
     "prisma:generate": "prisma generate",
@@ -89,6 +91,14 @@
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
+    "coverageThreshold": {
+      "global": {
+        "statements": 75,
+        "branches": 65,
+        "functions": 80,
+        "lines": 75
+      }
+    },
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
   },
