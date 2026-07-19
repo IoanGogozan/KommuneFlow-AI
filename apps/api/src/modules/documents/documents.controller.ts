@@ -21,10 +21,9 @@ import { CurrentUserParam } from '../auth/current-user.decorator';
 import type { CurrentUser } from '../auth/current-user';
 import { RequirePermissions } from '../auth/permissions.decorator';
 import { PermissionsGuard } from '../auth/permissions.guard';
+import { internalDocumentMultipartLimits } from '../../shared/upload/multipart-limits';
 import { DocumentsService } from './documents.service';
 import { uploadDocumentBodySchema } from './documents.schemas';
-
-const MAX_DOCUMENT_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 @Controller('cases/:caseId/documents')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -67,10 +66,7 @@ export class DocumentsController {
   @RequirePermissions('document:upload')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: {
-        fileSize: MAX_DOCUMENT_FILE_SIZE_BYTES,
-        files: 1,
-      },
+      limits: internalDocumentMultipartLimits,
     }),
   )
   async uploadForCase(
