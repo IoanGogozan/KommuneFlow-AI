@@ -36,7 +36,7 @@ docs/screenshots/12-hetzner-smoke-test.png
 
 ## Current Status
 
-No screenshot files are currently committed under `docs/screenshots/`. Do not claim screenshots are captured until the files exist in the repository or are published as external portfolio assets.
+The Norwegian citizen intake screenshot is committed as `docs/screenshots/01-public-intake-nb.png` and displayed near the top of the main README. The remaining recommended screenshots should be regenerated before claiming a complete portfolio screenshot set.
 
 ## Capture Command
 
