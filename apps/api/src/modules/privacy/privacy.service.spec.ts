@@ -266,7 +266,11 @@ describe('PrivacyService', () => {
   });
 
   it('dry-runs retention cleanup without deleting records', async () => {
-    const auditRecordMock = jest.fn().mockResolvedValue(undefined);
+    let capturedAudit: unknown;
+    const auditRecordMock = jest.fn((input: unknown) => {
+      capturedAudit = input;
+      return Promise.resolve();
+    });
     const deleteManyMock = jest.fn();
     const service = createService(
       retentionPrismaShape({
@@ -299,11 +303,26 @@ describe('PrivacyService', () => {
       },
     });
     expect(deleteManyMock).not.toHaveBeenCalled();
-    expect(auditRecordMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: 'privacy.retention_cleanup_dry_run',
-      }),
-    );
+    const dryRunAudit = capturedAudit as {
+      action: string;
+      metadata: Record<string, unknown>;
+    };
+    expect(dryRunAudit.action).toBe('privacy.retention_cleanup_dry_run');
+    expect(dryRunAudit.metadata).toMatchObject({
+      candidates: {
+        closedCases: 2,
+        deletedDocuments: 3,
+        auditEvents: 4,
+        analyticsSnapshots: 5,
+      },
+      deleted: {
+        closedCases: 0,
+        deletedDocuments: 0,
+        auditEvents: 0,
+        analyticsSnapshots: 0,
+      },
+      skipped: { closedCases: 0, documents: 0 },
+    });
   });
 
   it('deletes expired records when retention cleanup is confirmed', async () => {
@@ -327,13 +346,13 @@ describe('PrivacyService', () => {
     ).resolves.toMatchObject({
       mode: 'delete',
       deleted: {
-        closedCases: 7,
+        closedCases: 0,
         deletedDocuments: 0,
         auditEvents: 7,
         analyticsSnapshots: 7,
       },
     });
-    expect(deleteManyMock).toHaveBeenCalledTimes(3);
+    expect(deleteManyMock).toHaveBeenCalledTimes(2);
     expect(auditRecordMock).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'privacy.retention_cleanup_executed',
@@ -401,6 +420,147 @@ describe('PrivacyService', () => {
 
       await rm(storagePath, { recursive: true, force: true });
     }
+  });
+
+  it('skips a closed case on storage failure and completes it on retry', async () => {
+    const previousStoragePath = process.env.UPLOAD_STORAGE_PATH;
+    const storagePath = await mkdtemp(join(tmpdir(), 'kommuneflow-retention-'));
+    process.env.UPLOAD_STORAGE_PATH = storagePath;
+    const storageKey = 'tenant_1/case_closed/document.pdf';
+    const filePath = join(storagePath, storageKey);
+    await mkdir(filePath, { recursive: true });
+    const caseDeleteMock = jest.fn().mockResolvedValue({ count: 1 });
+    const prismaShape = retentionPrismaShape({
+      deleteManyMock: jest.fn().mockResolvedValue({ count: 0 }),
+      counts: {
+        closedCases: 1,
+        deletedDocuments: 0,
+        auditEvents: 0,
+        analyticsSnapshots: 0,
+      },
+    });
+    prismaShape.case.findMany.mockResolvedValue([
+      {
+        id: 'case_closed',
+        documents: [{ id: 'document_1', storageKey }],
+      },
+    ]);
+    prismaShape.case.deleteMany = caseDeleteMock;
+    let capturedAudit: unknown;
+    const auditRecordMock = jest.fn((input: unknown) => {
+      capturedAudit = input;
+      return Promise.resolve();
+    });
+    const service = createService(prismaShape, {
+      record: auditRecordMock,
+    } as unknown as AuditService);
+
+    try {
+      await expect(
+        service.runRetentionCleanup(superAdmin(), { confirm: true }),
+      ).resolves.toMatchObject({
+        deleted: { closedCases: 0 },
+        skipped: { closedCases: 1, documents: 1 },
+        documentStorage: { cleanupFailures: 1 },
+      });
+      expect(caseDeleteMock).not.toHaveBeenCalled();
+      const partialAudit = capturedAudit as {
+        metadata: Record<string, unknown>;
+      };
+      expect(partialAudit.metadata).toMatchObject({
+        skipped: { closedCases: 1, documents: 1 },
+        documentStorage: { cleanupFailures: 1 },
+      });
+
+      await rm(filePath, { recursive: true, force: true });
+      await mkdir(dirname(filePath), { recursive: true });
+      await writeFile(filePath, Buffer.from('%PDF retry'));
+
+      await expect(
+        service.runRetentionCleanup(superAdmin(), { confirm: true }),
+      ).resolves.toMatchObject({
+        deleted: { closedCases: 1 },
+        skipped: { closedCases: 0, documents: 0 },
+        documentStorage: { filesDeleted: 1, cleanupFailures: 0 },
+      });
+      expect(caseDeleteMock).toHaveBeenCalledWith({
+        where: { id: 'case_closed', tenantId: 'tenant_1' },
+      });
+      await expect(access(filePath)).rejects.toThrow();
+    } finally {
+      if (previousStoragePath === undefined) {
+        delete process.env.UPLOAD_STORAGE_PATH;
+      } else {
+        process.env.UPLOAD_STORAGE_PATH = previousStoragePath;
+      }
+      await rm(storagePath, { recursive: true, force: true });
+    }
+  });
+
+  it('treats an already missing closed-case file as successful cleanup', async () => {
+    const caseDeleteMock = jest.fn().mockResolvedValue({ count: 1 });
+    const prismaShape = retentionPrismaShape({
+      deleteManyMock: jest.fn().mockResolvedValue({ count: 0 }),
+      counts: {
+        closedCases: 1,
+        deletedDocuments: 0,
+        auditEvents: 0,
+        analyticsSnapshots: 0,
+      },
+    });
+    prismaShape.case.findMany.mockResolvedValue([
+      {
+        id: 'case_missing_file',
+        documents: [
+          { id: 'document_missing', storageKey: 'tenant_1/missing.pdf' },
+        ],
+      },
+    ]);
+    prismaShape.case.deleteMany = caseDeleteMock;
+
+    await expect(
+      createService(prismaShape).runRetentionCleanup(superAdmin(), {
+        confirm: true,
+      }),
+    ).resolves.toMatchObject({
+      deleted: { closedCases: 1 },
+      skipped: { closedCases: 0, documents: 0 },
+      documentStorage: {
+        filesAlreadyMissing: 1,
+        cleanupFailures: 0,
+      },
+    });
+  });
+
+  it('rejects concurrent confirmed cleanup for the same tenant', async () => {
+    let releaseCandidates!: () => void;
+    const candidatesBlocked = new Promise<void>((resolve) => {
+      releaseCandidates = resolve;
+    });
+    const prismaShape = retentionPrismaShape({
+      deleteManyMock: jest.fn().mockResolvedValue({ count: 0 }),
+      counts: {
+        closedCases: 0,
+        deletedDocuments: 0,
+        auditEvents: 0,
+        analyticsSnapshots: 0,
+      },
+    });
+    prismaShape.case.findMany.mockImplementation(async () => {
+      await candidatesBlocked;
+      return [];
+    });
+    const service = createService(prismaShape);
+    const firstCleanup = service.runRetentionCleanup(superAdmin(), {
+      confirm: true,
+    });
+    await Promise.resolve();
+
+    await expect(
+      service.runRetentionCleanup(superAdmin(), { confirm: true }),
+    ).rejects.toThrow('already running for this tenant');
+    releaseCandidates();
+    await expect(firstCleanup).resolves.toMatchObject({ mode: 'delete' });
   });
 });
 
@@ -496,6 +656,7 @@ function retentionPrismaShape(input: {
     },
     case: {
       count: jest.fn().mockResolvedValue(input.counts.closedCases),
+      findMany: jest.fn().mockResolvedValue([]),
       deleteMany: input.deleteManyMock,
     },
     caseDocument: {
