@@ -6,10 +6,18 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AI_PROVIDER: mock
+
 jobs:
   checks:
     name: Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:17-alpine
@@ -54,8 +62,11 @@ jobs:
       - name: Type check
         run: pnpm typecheck
 
-      - name: Test
-        run: pnpm test
+      - name: API unit and coverage tests
+        run: pnpm --filter @kommuneflow/api test:cov:ci
+
+      - name: Web tests
+        run: pnpm --filter @kommuneflow/web test
 
       - name: Install Playwright browser
         run: pnpm --filter @kommuneflow/web exec playwright install --with-deps chromium
@@ -64,6 +75,17 @@ jobs:
         run: pnpm --filter @kommuneflow/web test:e2e
         env:
           NEXT_PUBLIC_API_BASE_URL: http://localhost:3101/api/v1
+
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-${{ github.run_id }}
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -85,15 +107,31 @@ jobs:
         env:
           DATABASE_URL: postgresql://kommuneflow:kommuneflow_test_password@localhost:5433/kommuneflow_ai_test
 
-      - name: E2E tests
-        run: pnpm --filter @kommuneflow/api test:e2e
+      - name: PostgreSQL-backed API e2e tests
+        run: pnpm --filter @kommuneflow/api test:e2e:ci
         env:
           NODE_ENV: test
           DATABASE_URL: postgresql://kommuneflow:kommuneflow_test_password@localhost:5433/kommuneflow_ai_test
           JWT_SECRET: ci-test-jwt-secret
           SESSION_SECRET: ci-test-session-secret
-          AI_PROVIDER: mock
           UPLOAD_STORAGE_PATH: ./storage/ci-uploads
+          APP_BASE_URL: http://localhost:3000
+          CORS_ALLOWED_ORIGINS: http://localhost:3000
+
+      - name: Seed synthetic full-stack data
+        run: SEED_DEMO_PASSWORD="DemoPassword123!" pnpm --filter @kommuneflow/api prisma:seed
+        env:
+          DATABASE_URL: postgresql://kommuneflow:kommuneflow_test_password@localhost:5433/kommuneflow_ai_test
+
+      - name: Full-stack browser smoke
+        run: pnpm --filter @kommuneflow/web test:e2e:fullstack
+        env:
+          DATABASE_URL: postgresql://kommuneflow:kommuneflow_test_password@localhost:5433/kommuneflow_ai_test
+          JWT_SECRET: ci-test-jwt-secret
+          SESSION_SECRET: ci-test-session-secret
+          AI_PROVIDER: mock
+          FULLSTACK_DEMO_PASSWORD: DemoPassword123!
+          UPLOAD_STORAGE_PATH: ./storage/ci-fullstack-uploads
           APP_BASE_URL: http://localhost:3000
           CORS_ALLOWED_ORIGINS: http://localhost:3000
 

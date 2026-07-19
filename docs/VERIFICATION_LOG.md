@@ -25,15 +25,15 @@ Result: PASS
 
 Included checks:
 
-| Check                                      | Result | Notes                                                                 |
-| ------------------------------------------ | ------ | --------------------------------------------------------------------- |
-| `pnpm lint`                                | PASS   | API and web lint passed.                                              |
-| `pnpm typecheck`                           | PASS   | API, web, and shared packages passed.                                 |
-| `pnpm --filter @kommuneflow/api test:cov:ci` | PASS | API Jest suite: 35 suites, 212 tests; coverage thresholds passed.      |
-| `pnpm --filter @kommuneflow/api test:e2e:ci` | PASS | API e2e suite: 20 tests with `AI_PROVIDER=mock`.                      |
-| `pnpm --filter @kommuneflow/web test`      | PASS   | Web Vitest suite: 2 files, 6 tests.                                   |
-| `pnpm --filter @kommuneflow/web test:e2e`  | PASS   | Playwright browser smoke suite: 3 tests.                              |
-| `pnpm test:etl`                            | PASS   | Python ELT pytest suite: 22 tests.                                    |
+| Check                                        | Result | Notes                                                             |
+| -------------------------------------------- | ------ | ----------------------------------------------------------------- |
+| `pnpm lint`                                  | PASS   | API and web lint passed.                                          |
+| `pnpm typecheck`                             | PASS   | API, web, and shared packages passed.                             |
+| `pnpm --filter @kommuneflow/api test:cov:ci` | PASS   | API Jest suite: 35 suites, 212 tests; coverage thresholds passed. |
+| `pnpm --filter @kommuneflow/api test:e2e:ci` | PASS   | API e2e suite: 20 tests with `AI_PROVIDER=mock`.                  |
+| `pnpm --filter @kommuneflow/web test`        | PASS   | Web Vitest suite: 2 files, 6 tests.                               |
+| `pnpm --filter @kommuneflow/web test:e2e`    | PASS   | Playwright browser smoke suite: 3 tests.                          |
+| `pnpm test:etl`                              | PASS   | Python ELT pytest suite: 22 tests.                                |
 
 Last recorded API coverage:
 
@@ -48,15 +48,15 @@ Last recorded API coverage:
 
 Record exact date, command, account, environment, and result when manual checks are performed.
 
-| Workflow                       | Result  | Evidence                                                                       |
-| ------------------------------ | ------- | ------------------------------------------------------------------------------ |
-| Kartverket real address lookup | PENDING | Use `docs/integrations/manual-verification.md#kartverket-real-address-lookup`. |
-| SSB import                     | PENDING | Use `docs/integrations/manual-verification.md#ssb-population-import`.          |
-| OpenAI real triage             | PENDING | Use `docs/integrations/manual-verification.md#openai-real-triage`.             |
-| Analytics rebuild              | PENDING | Use `docs/integrations/manual-verification.md#analytics-rebuild`.              |
-| Document upload/download       | PENDING | Use `docs/integrations/manual-verification.md#document-upload-and-download`.   |
-| Citizen status lookup          | PENDING | Use `docs/integrations/manual-verification.md#citizen-status-lookup`.          |
-| Hetzner live smoke test        | PASS    | 2026-05-19: HTTPS demo checked for web root, `/nb`, health, readiness, internal login page, internal demo login, `/auth/me`, `/cases`, and `/ai/status`. AI status reported provider `openai`, model `gpt-4o-mini`, and configured `true`; no API key value was logged. |
+| Workflow                       | Result  | Evidence                                                                                                                                                                                                                                                                                               |
+| ------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Kartverket real address lookup | PENDING | Use `docs/integrations/manual-verification.md#kartverket-real-address-lookup`.                                                                                                                                                                                                                         |
+| SSB import                     | PENDING | Use `docs/integrations/manual-verification.md#ssb-population-import`.                                                                                                                                                                                                                                  |
+| OpenAI real triage             | PENDING | Run the protected, manually triggered `OpenAI Smoke` workflow.                                                                                                                                                                                                                                         |
+| Analytics rebuild              | PENDING | Use `docs/integrations/manual-verification.md#analytics-rebuild`.                                                                                                                                                                                                                                      |
+| Document upload/download       | PENDING | Use `docs/integrations/manual-verification.md#document-upload-and-download`.                                                                                                                                                                                                                           |
+| Citizen status lookup          | PENDING | Use `docs/integrations/manual-verification.md#citizen-status-lookup`.                                                                                                                                                                                                                                  |
+| Hetzner live smoke test        | PASS    | 2026-05-19: HTTPS demo checked for web root, `/nb`, health, readiness, internal login page, internal demo login, `/auth/me`, `/cases`, and `/ai/status`. The normal portfolio configuration is now documented as `AI_PROVIDER=mock`; real OpenAI verification belongs to the separate manual workflow. |
 
 ## Manual Verification Notes Template
 

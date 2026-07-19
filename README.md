@@ -264,6 +264,8 @@ python -m kommuneflow_elt.cli import-ssb --year 2025 --municipality-code 4203
 
 Do not run real Kartverket, SSB, or OpenAI calls in CI.
 
+Recommended required checks are documented in [Branch Protection](./docs/BRANCH_PROTECTION.md). The optional manual `OpenAI Smoke` workflow is intentionally not required for merges.
+
 ## API Overview
 
 See [API Reference](./docs/API_REFERENCE.md).
@@ -331,7 +333,7 @@ AI deployment mode is controlled server-side:
 
 After deploy, log in internally, open Operations, verify the AI Configuration panel, then run AI triage on a seeded or synthetic case.
 
-Deployment status: production assets are implemented, the protected Hetzner HTTPS demo is online, and live smoke checks passed on 2026-05-19. The online demo is configured server-side with `AI_PROVIDER=openai`; `/api/v1/ai/status` reports provider `openai`, model `gpt-4o-mini`, and configured `true`. `OPENAI_API_KEY` is intentionally not documented or exposed. This is still a portfolio/demo deployment, not a formally approved municipal production environment.
+Deployment status: production assets are implemented, the protected Hetzner HTTPS demo is online, and live smoke checks passed on 2026-05-19. The normal portfolio demo uses deterministic `AI_PROVIDER=mock`; real OpenAI verification is isolated in the manually triggered, protected `OpenAI Smoke` GitHub Actions workflow. This is still a portfolio/demo deployment, not a formally approved municipal production environment.
 
 ## Testing Status
 
@@ -413,7 +415,8 @@ running the seed. Do not publish production passwords in screenshots, docs, or t
 ### OpenAI Mode Vs Mock Mode
 
 - Local and no-cost demos should use `AI_PROVIDER=mock`.
-- Real OpenAI triage requires `AI_PROVIDER=openai`, `OPENAI_API_KEY`, `OPENAI_MODEL`, and `OPENAI_TIMEOUT_MS`.
+- The normal portfolio deployment uses `AI_PROVIDER=mock`.
+- Real OpenAI triage is verified separately through the manual protected workflow and requires the `OPENAI_API_KEY` repository secret.
 - Verify the active provider in **Operations** before demoing AI.
 - Never commit, print, screenshot, or document `OPENAI_API_KEY`.
 
