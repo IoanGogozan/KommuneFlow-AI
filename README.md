@@ -1,50 +1,26 @@
 # KommuneFlow AI
 
-KommuneFlow AI is a portfolio-grade municipal case workflow platform. It demonstrates multi-tenant case intake, document handling, AI-assisted triage, human review, RBAC, audit logging, privacy workflows, retention, analytics, and production-like deployment discipline.
+KommuneFlow AI is a **B2B multi-tenant SaaS portfolio demo** for municipal case management, inspired by Norwegian public services. It shows how citizen requests can move from secure intake to human-reviewed AI triage, case handling, audit, privacy operations, and analytics.
 
-The project is inspired by Norwegian municipal service delivery. It is a demo system and must not be used with real citizen data without a real controller/processor setup, legal basis, DPIA, production hardening review, and deployed privacy operations.
+**Problem:** municipal requests often arrive through fragmented channels and require manual routing, limited operational visibility, and careful handling of sensitive data. KommuneFlow AI demonstrates one coherent, traceable workflow while keeping AI in a decision-support role: official case values change only after human review.
 
-## Product
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_Application-005293?style=for-the-badge)](https://kommuneflow.testcloud.cc)
 
-Citizens can submit a request to a municipality, attach documents, and receive a case ID. Municipal employees use the internal dashboard to review cases, upload/download documents, run AI triage, approve or correct AI suggestions, update status, and view operational analytics.
+> The live demo is access-controlled and contains synthetic data only. Demo access can be provided for portfolio review.
 
-AI is decision support only. Official case category, department, urgency, and status change only after human review.
+![KommuneFlow AI citizen intake](./docs/screenshots/01-public-intake-nb.png)
 
-## Feature Highlights
+**Stack:** TypeScript | Next.js | NestJS | PostgreSQL | Prisma | Zod | Python ELT | Docker Compose | Caddy | OpenAI
 
-- Multi-tenant PostgreSQL data model
-- Public citizen intake in Norwegian Bokmal and English
-- Citizen document upload during intake
-- Internal employee UI in Norwegian Bokmal and English
-- Internal case dashboard and case detail view
-- Secure document upload and download
-- Kartverket address search and validation during citizen intake
-- AI provider abstraction with mock and OpenAI providers
-- Human-in-the-loop AI triage review
-- Role-based access control and tenant isolation
-- `HttpOnly` cookie authentication for internal UI
-- Audit events for case, document, AI, privacy, and retention actions
-- Persisted operational events for metrics and incident-style visibility
-- Citizen data export and profile identifier anonymization
-- Retention policy and dry-run/confirmed cleanup
-- Aggregated analytics dashboard with SSB population enrichment
-- Python ELT package for analytics rebuilds and SSB import
-- Health/readiness endpoints and structured logging
-- Production Dockerfiles, Caddy reverse proxy, backup/restore scripts, and Hetzner deployment docs
-- Microsoft Azure, AI Foundry, and Fabric extension plan
+**Key capabilities:** bilingual citizen intake and document upload | Kartverket address validation | tenant isolation and RBAC | human-in-the-loop AI triage | case and document workflows | audit, privacy, retention, and operations views | SSB-enriched analytics
 
-## Tech Stack
+**Project status:** functional, access-controlled portfolio demo with synthetic data, production-like infrastructure, and automated test coverage. CI (including PostgreSQL API e2e tests, a full-stack browser smoke test, dependency audit, and build) passed on 2026-07-19. It is **not** a certified or production-approved municipal system and must not be used with real citizen data; current limitations are documented below.
 
-- TypeScript
-- NestJS API
-- Next.js web app
-- PostgreSQL
-- Prisma
-- Zod validation
-- pnpm monorepo
-- Docker Compose
-- Caddy for production reverse proxy and HTTPS
-- Jest, Supertest, Vitest, Playwright, and pytest
+## Product Walkthrough
+
+Citizens submit a request, attach supporting documents, and receive a case reference. Municipal employees use the internal workspace to review cases, run AI-assisted triage, approve or correct suggestions, manage documents and status, and inspect operational analytics.
+
+The demo also includes role and tenant boundaries, privacy actions, retention controls, audit evidence, security hardening, and production-like deployment assets so reviewers can assess more than a happy-path UI. See the [demo script](./docs/DEMO_SCRIPT.md) for a concise walkthrough.
 
 ## Architecture
 
