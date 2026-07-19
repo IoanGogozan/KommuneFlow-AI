@@ -4,7 +4,7 @@ KommuneFlow AI is a **B2B multi-tenant SaaS portfolio demo** for municipal case 
 
 **Problem:** municipal requests often arrive through fragmented channels and require manual routing, limited operational visibility, and careful handling of sensitive data. KommuneFlow AI demonstrates one coherent, traceable workflow while keeping AI in a decision-support role: official case values change only after human review.
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_Application-005293?style=for-the-badge)](https://kommuneflow.testcloud.cc)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_Application-005293?style=for-the-badge)](https://kommune.norvix.no)
 
 > The live demo is access-controlled and contains synthetic data only. Demo access can be provided for portfolio review.
 
@@ -14,7 +14,7 @@ KommuneFlow AI is a **B2B multi-tenant SaaS portfolio demo** for municipal case 
 
 **Key capabilities:** bilingual citizen intake and document upload | Kartverket address validation | tenant isolation and RBAC | human-in-the-loop AI triage | case and document workflows | audit, privacy, retention, and operations views | SSB-enriched analytics
 
-**Project status:** functional, access-controlled portfolio demo with synthetic data, production-like infrastructure, and automated test coverage. CI (including PostgreSQL API e2e tests, a full-stack browser smoke test, dependency audit, and build) passed on 2026-07-19. It is **not** a certified or production-approved municipal system and must not be used with real citizen data; current limitations are documented below.
+**Project status:** functional, access-controlled portfolio demo deployed at `kommune.norvix.no` with synthetic data, production-like infrastructure, and automated test coverage. CI (including PostgreSQL API e2e tests, a full-stack browser smoke test, dependency audit, and build) passed on 2026-07-19. It is **not** a certified or production-approved municipal system and must not be used with real citizen data; current limitations are documented below.
 
 ## Product Walkthrough
 
@@ -315,7 +315,7 @@ AI deployment mode is controlled server-side:
 
 After deploy, log in internally, open Operations, verify the AI Configuration panel, then run AI triage on a seeded or synthetic case.
 
-Deployment status: production-like assets are implemented for protected HTTPS portfolio hosting. The normal portfolio demo uses deterministic `AI_PROVIDER=mock`; real OpenAI verification is isolated in the manually triggered, protected `OpenAI Smoke` GitHub Actions workflow. This is still a portfolio/demo deployment, not a formally approved municipal production environment.
+Deployment status: the protected home-server HTTPS demo was deployed and passed its authenticated public smoke test on 2026-07-19. It uses deterministic `AI_PROVIDER=mock`; real OpenAI verification is isolated in the manually triggered, protected `OpenAI Smoke` GitHub Actions workflow. This is still a portfolio/demo deployment, not a formally approved municipal production environment.
 
 ## Testing Status
 

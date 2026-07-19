@@ -2,6 +2,8 @@
 
 This runbook deploys KommuneFlow AI as a protected, synthetic-data portfolio demo on the existing home-server Docker and Caddy infrastructure. It is not a production municipal deployment and must not contain real citizen data.
 
+Deployment status: verified on the physical home server on 2026-07-19. All four services were healthy, network isolation and zero host-port publication were confirmed, Let's Encrypt issued the origin certificate, and the authenticated public smoke test passed at `https://kommune.norvix.no`.
+
 ## Architecture
 
 ```text
