@@ -30,6 +30,11 @@ const allowedMimeTypes = new Set([
   'image/png',
 ]);
 const allowedExtensions = new Set(['.pdf', '.jpg', '.jpeg', '.png']);
+const allowedExtensionsByMimeType: Record<string, ReadonlySet<string>> = {
+  'application/pdf': new Set(['.pdf']),
+  'image/jpeg': new Set(['.jpg', '.jpeg']),
+  'image/png': new Set(['.png']),
+};
 
 @Injectable()
 export class DocumentsService {
@@ -429,6 +434,12 @@ export function validateDocumentFile(file: Express.Multer.File) {
 
   if (!allowedExtensions.has(extension)) {
     throw new BadRequestException('Unsupported document file extension.');
+  }
+
+  if (!allowedExtensionsByMimeType[file.mimetype]?.has(extension)) {
+    throw new BadRequestException(
+      'Document file extension does not match MIME type.',
+    );
   }
 
   if (!fileMagicBytesMatch(file.buffer, file.mimetype)) {
