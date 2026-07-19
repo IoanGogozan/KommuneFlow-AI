@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { unlink } from 'node:fs/promises';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -13,6 +17,7 @@ import {
 
 @Injectable()
 export class PrivacyService {
+  private static readonly activeRetentionTenants = new Set<string>();
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
@@ -66,6 +71,32 @@ export class PrivacyService {
   }
 
   async runRetentionCleanup(user: CurrentUser, input: RetentionCleanupInput) {
+    if (
+      input.confirm &&
+      PrivacyService.activeRetentionTenants.has(user.tenantId)
+    ) {
+      throw new ConflictException(
+        'A retention cleanup is already running for this tenant.',
+      );
+    }
+
+    if (input.confirm) {
+      PrivacyService.activeRetentionTenants.add(user.tenantId);
+    }
+
+    try {
+      return await this.executeRetentionCleanup(user, input);
+    } finally {
+      if (input.confirm) {
+        PrivacyService.activeRetentionTenants.delete(user.tenantId);
+      }
+    }
+  }
+
+  private async executeRetentionCleanup(
+    user: CurrentUser,
+    input: RetentionCleanupInput,
+  ) {
     const policy = await this.ensureRetentionPolicy(user.tenantId);
     const now = new Date();
     const cutoffs = {
@@ -122,30 +153,41 @@ export class PrivacyService {
       filesAlreadyMissing: 0,
       cleanupFailures: 0,
     };
+    const skipped = {
+      closedCases: 0,
+      documents: 0,
+    };
 
     if (input.confirm) {
-      const [
-        deletedClosedCases,
-        deletedDocumentCleanup,
-        deletedAuditEvents,
-        deletedAnalytics,
-      ] = await Promise.all([
-        this.prisma.case.deleteMany({ where: where.closedCases }),
-        this.deleteExpiredDocumentFiles(where.deletedDocuments),
-        this.prisma.auditEvent.deleteMany({ where: where.auditEvents }),
-        this.prisma.analyticsDailySnapshot.deleteMany({
-          where: where.analytics,
-        }),
-      ]);
+      const closedCaseCleanup = await this.cleanupClosedCases(
+        user.tenantId,
+        where.closedCases,
+      );
+      deleted.closedCases = closedCaseCleanup.casesDeleted;
+      skipped.closedCases = closedCaseCleanup.casesSkipped;
+      skipped.documents = closedCaseCleanup.documentsSkipped;
+      addStorageCounts(documentStorage, closedCaseCleanup);
 
-      deleted.closedCases = deletedClosedCases.count;
+      const standaloneDeletedDocumentWhere = {
+        ...where.deletedDocuments,
+        ...(closedCaseCleanup.caseIds.length > 0
+          ? { caseId: { notIn: closedCaseCleanup.caseIds } }
+          : {}),
+      };
+      const [deletedDocumentCleanup, deletedAuditEvents, deletedAnalytics] =
+        await Promise.all([
+          this.deleteExpiredDocumentFiles(standaloneDeletedDocumentWhere),
+          this.prisma.auditEvent.deleteMany({ where: where.auditEvents }),
+          this.prisma.analyticsDailySnapshot.deleteMany({
+            where: where.analytics,
+          }),
+        ]);
+
       deleted.deletedDocuments = deletedDocumentCleanup.metadataDeleted;
       deleted.auditEvents = deletedAuditEvents.count;
       deleted.analyticsSnapshots = deletedAnalytics.count;
-      documentStorage.filesDeleted = deletedDocumentCleanup.filesDeleted;
-      documentStorage.filesAlreadyMissing =
-        deletedDocumentCleanup.filesAlreadyMissing;
-      documentStorage.cleanupFailures = deletedDocumentCleanup.cleanupFailures;
+      addStorageCounts(documentStorage, deletedDocumentCleanup);
+      skipped.documents += deletedDocumentCleanup.cleanupFailures;
     }
 
     const result = {
@@ -159,6 +201,7 @@ export class PrivacyService {
         analyticsSnapshots: analytics,
       },
       deleted,
+      skipped,
       documentStorage,
     };
 
@@ -173,6 +216,7 @@ export class PrivacyService {
       metadata: {
         candidates: result.candidates,
         deleted: result.deleted,
+        skipped: result.skipped,
         documentStorage: result.documentStorage,
       },
     });
@@ -188,6 +232,7 @@ export class PrivacyService {
           mode: result.mode,
           candidates: result.candidates,
           deleted: result.deleted,
+          skipped: result.skipped,
           documentStorage: result.documentStorage,
         },
       },
@@ -211,12 +256,65 @@ export class PrivacyService {
     return result;
   }
 
+  private async cleanupClosedCases(
+    tenantId: string,
+    where: { tenantId: string; closedAt: { not: null; lt: Date } },
+  ) {
+    const cases = await this.prisma.case.findMany({
+      where,
+      select: {
+        id: true,
+        documents: { select: { id: true, storageKey: true } },
+      },
+    });
+    const result = {
+      caseIds: cases.map((caseRecord) => caseRecord.id),
+      casesDeleted: 0,
+      casesSkipped: 0,
+      documentsSkipped: 0,
+      filesDeleted: 0,
+      filesAlreadyMissing: 0,
+      cleanupFailures: 0,
+    };
+
+    for (const caseRecord of cases) {
+      let caseCleanupFailed = false;
+      for (const document of caseRecord.documents) {
+        const file = await this.deleteDocumentFileIfPresent(
+          document.storageKey,
+        );
+        if (!file.ok) {
+          caseCleanupFailed = true;
+          result.cleanupFailures += 1;
+          result.documentsSkipped += 1;
+        } else if (file.status === 'deleted') {
+          result.filesDeleted += 1;
+        } else {
+          result.filesAlreadyMissing += 1;
+        }
+      }
+
+      if (caseCleanupFailed) {
+        result.casesSkipped += 1;
+        continue;
+      }
+
+      const deletion = await this.prisma.case.deleteMany({
+        where: { id: caseRecord.id, tenantId },
+      });
+      result.casesDeleted += deletion.count;
+    }
+
+    return result;
+  }
+
   private async deleteExpiredDocumentFiles(where: {
     tenantId: string;
     deletedAt: {
       not: null;
       lt: Date;
     };
+    caseId?: { notIn: string[] };
   }) {
     const documents = await this.prisma.caseDocument.findMany({
       where,
@@ -483,6 +581,23 @@ export class PrivacyService {
       update: {},
     });
   }
+}
+
+function addStorageCounts(
+  target: {
+    filesDeleted: number;
+    filesAlreadyMissing: number;
+    cleanupFailures: number;
+  },
+  source: {
+    filesDeleted: number;
+    filesAlreadyMissing: number;
+    cleanupFailures: number;
+  },
+) {
+  target.filesDeleted += source.filesDeleted;
+  target.filesAlreadyMissing += source.filesAlreadyMissing;
+  target.cleanupFailures += source.cleanupFailures;
 }
 
 function daysBefore(date: Date, days: number) {
