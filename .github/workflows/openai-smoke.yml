@@ -1,0 +1,79 @@
+name: OpenAI Smoke
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: openai-smoke-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  openai-smoke:
+    name: One synthetic OpenAI triage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: kommuneflow_ai_openai_smoke
+          POSTGRES_USER: kommuneflow
+          POSTGRES_PASSWORD: openai_smoke_database_password
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U kommuneflow -d kommuneflow_ai_openai_smoke"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      CI: "false"
+      AI_PROVIDER: openai
+      OPENAI_SMOKE_ALLOW_REAL: "true"
+      OPENAI_SMOKE_DEMO_PASSWORD: OpenAISmokeSyntheticPassword123!
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
+      OPENAI_TIMEOUT_MS: ${{ vars.OPENAI_TIMEOUT_MS || '20000' }}
+      DATABASE_URL: postgresql://kommuneflow:openai_smoke_database_password@localhost:5433/kommuneflow_ai_openai_smoke
+      JWT_SECRET: openai-smoke-jwt-secret
+      SESSION_SECRET: openai-smoke-session-secret
+      APP_BASE_URL: http://localhost:3000
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
+      UPLOAD_STORAGE_PATH: ./storage/openai-smoke-uploads
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require protected OpenAI secret
+        shell: bash
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "OPENAI_API_KEY repository secret is required for this manual workflow."
+            exit 1
+          fi
+          echo "::add-mask::$OPENAI_API_KEY"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare synthetic database
+        run: |
+          pnpm --filter @kommuneflow/api prisma:generate
+          pnpm --filter @kommuneflow/api prisma migrate deploy
+          SEED_DEMO_PASSWORD="OpenAISmokeSyntheticPassword123!" pnpm --filter @kommuneflow/api prisma:seed
+
+      - name: Run exactly one protected OpenAI smoke scenario
+        run: pnpm --filter @kommuneflow/api test:e2e:ci -- openai-smoke.manual.e2e-spec.ts

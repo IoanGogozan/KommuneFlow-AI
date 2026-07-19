@@ -152,6 +152,12 @@ Purpose: verify real SSB import into local persisted tables.
 
 ## OpenAI Real Triage
 
+Real OpenAI verification is performed only through the protected, manually triggered `OpenAI Smoke` GitHub Actions workflow. Standard CI, local development, and the normal portfolio demo use `AI_PROVIDER=mock`.
+
+Configure `OPENAI_API_KEY` as a GitHub Actions repository secret. Optional repository variables are `OPENAI_MODEL` and `OPENAI_TIMEOUT_MS`. Never provide the key as a workflow input or copy it into logs or artifacts.
+
+The legacy local procedure below is retained for troubleshooting reference only and is not the supported verification path.
+
 Purpose: verify the real OpenAI provider locally without exposing secrets.
 
 1. Confirm CI is not running this check.
