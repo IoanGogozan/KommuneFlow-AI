@@ -11,6 +11,14 @@ import {
 
 export function configureApp(app: INestApplication) {
   const originValidationMiddleware = new OriginValidationMiddleware();
+  const express = app.getHttpAdapter().getInstance() as {
+    set(name: string, value: unknown): void;
+  };
+
+  // The API is reachable only through project-local and global Caddy proxies.
+  // Trust private proxy hops so Express derives request.ip from their forwarded
+  // chain, while direct public senders cannot spoof X-Forwarded-For.
+  express.set('trust proxy', ['loopback', 'linklocal', 'uniquelocal']);
 
   app.use(
     helmet({
