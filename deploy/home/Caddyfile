@@ -1,0 +1,38 @@
+{
+	servers {
+		trusted_proxies static private_ranges
+		trusted_proxies_strict
+	}
+}
+
+:8080 {
+	encode zstd gzip
+
+	route {
+		@health path /_gateway/health
+		respond @health "ok" 200
+
+		basic_auth {
+			{$DEMO_BASIC_AUTH_USER} {$DEMO_BASIC_AUTH_HASH}
+		}
+
+		header {
+			Strict-Transport-Security "max-age=31536000; includeSubDomains"
+			X-Content-Type-Options "nosniff"
+			Referrer-Policy "strict-origin-when-cross-origin"
+			X-Frame-Options "DENY"
+		}
+
+		handle /api/* {
+			request_body {
+				max_size 60MB
+			}
+
+			reverse_proxy api:3101
+		}
+
+		handle {
+			reverse_proxy web:3000
+		}
+	}
+}
