@@ -298,6 +298,12 @@ The repository includes production-like deployment assets:
 - `scripts/restore-postgres.sh`
 - `scripts/smoke-test.sh`
 
+### Home-server portfolio deployment
+
+The protected home-server demo runs behind the server's global Caddy reverse proxy. Only the project gateway joins the shared `proxy` network; PostgreSQL, API, and web stay on a private project network, and no application service publishes host ports. Basic Auth protects the full demo, AI uses the mock provider, and only synthetic data is permitted.
+
+This deployment is not approved for real municipal use. Automated backup and restore operations remain future work. See [Home-Server Deployment](./docs/HOME_SERVER_DEPLOYMENT.md) for topology, secrets, release, seed, DNS, and verification steps.
+
 Basic production flow:
 
 ```bash
@@ -333,7 +339,7 @@ AI deployment mode is controlled server-side:
 
 After deploy, log in internally, open Operations, verify the AI Configuration panel, then run AI triage on a seeded or synthetic case.
 
-Deployment status: production assets are implemented, the protected Hetzner HTTPS demo is online, and live smoke checks passed on 2026-05-19. The normal portfolio demo uses deterministic `AI_PROVIDER=mock`; real OpenAI verification is isolated in the manually triggered, protected `OpenAI Smoke` GitHub Actions workflow. This is still a portfolio/demo deployment, not a formally approved municipal production environment.
+Deployment status: production-like assets are implemented for protected HTTPS portfolio hosting. The normal portfolio demo uses deterministic `AI_PROVIDER=mock`; real OpenAI verification is isolated in the manually triggered, protected `OpenAI Smoke` GitHub Actions workflow. This is still a portfolio/demo deployment, not a formally approved municipal production environment.
 
 ## Testing Status
 
@@ -447,7 +453,7 @@ See [Demo Script](./docs/DEMO_SCRIPT.md) for a shorter live walkthrough.
 
 ## Known Limitations
 
-- Protected Hetzner HTTPS demo is online and live smoke checks pass, but formal production operations are not complete.
+- A protected HTTPS portfolio demo is available, but formal production operations are not complete.
 - Citizen status lookup is implemented with case reference and access code, but a richer citizen portal is still future work.
 - Email confirmation is logged through a mock provider; real SMTP/transactional email is future production work.
 - Document OCR/PDF text extraction is not implemented.
