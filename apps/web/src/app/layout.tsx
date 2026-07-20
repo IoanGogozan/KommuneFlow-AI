@@ -13,8 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KommuneFlow AI",
-  description: "Citizen case intake for municipal services.",
+  title: {
+    default: "KommuneFlow AI",
+    template: "%s | KommuneFlow AI",
+  },
+  description:
+    "Municipal case intake, human-reviewed AI triage, case handling, privacy, and analytics.",
 };
 
 export default function RootLayout({
