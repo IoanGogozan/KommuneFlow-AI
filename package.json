@@ -29,7 +29,8 @@
   "pnpm": {
     "overrides": {
       "@hono/node-server": ">=1.19.13",
-      "postcss": ">=8.5.10"
+      "postcss": ">=8.5.10",
+      "sharp": "0.35.3"
     }
   }
 }
