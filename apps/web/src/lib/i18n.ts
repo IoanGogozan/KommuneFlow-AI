@@ -65,6 +65,13 @@ export type IntakeDictionary = {
   successMunicipalityLabel: string;
   successNextStepsLabel: string;
   successNextStepsText: string;
+  copyReference: string;
+  copyAccessCode: string;
+  copied: string;
+  copyFailed: string;
+  checkThisCase: string;
+  submitAnotherRequest: string;
+  printDetails: string;
   caseIdLabel: string;
   caseReferenceLabel: string;
   statusAccessCodeLabel: string;
@@ -164,6 +171,13 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     successNextStepsLabel: "Neste steg",
     successNextStepsText:
       "Bruk saksreferansen og tilgangskoden i fanen Sjekk eksisterende sak for å teste statusoppslag med en gang.",
+    copyReference: "Kopier saksreferanse",
+    copyAccessCode: "Kopier tilgangskode",
+    copied: "Kopiert",
+    copyFailed: "Kunne ikke kopiere. Marker og kopier verdien manuelt.",
+    checkThisCase: "Sjekk denne saken nå",
+    submitAnotherRequest: "Send en ny henvendelse",
+    printDetails: "Skriv ut detaljer",
     caseIdLabel: "Saks-ID",
     caseReferenceLabel: "Saksreferanse",
     statusAccessCodeLabel: "Tilgangskode",
@@ -270,6 +284,13 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     successNextStepsLabel: "Next steps",
     successNextStepsText:
       "Use the case reference and access code in the Check existing case tab to test status lookup immediately.",
+    copyReference: "Copy reference",
+    copyAccessCode: "Copy access code",
+    copied: "Copied",
+    copyFailed: "Could not copy. Select and copy the value manually.",
+    checkThisCase: "Check this case now",
+    submitAnotherRequest: "Submit another request",
+    printDetails: "Print details",
     caseIdLabel: "Case ID",
     caseReferenceLabel: "Case reference",
     statusAccessCodeLabel: "Access code",

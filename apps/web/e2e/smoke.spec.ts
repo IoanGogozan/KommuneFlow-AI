@@ -152,10 +152,10 @@ test("public citizen intake and status lookup work through the browser", async (
   await expect(page.getByText("KF-2026-0001")).toBeVisible();
   await expect(page.getByText("ABC123")).toBeVisible();
 
-  await page.getByRole("button", { name: "Check status" }).click();
-  await page.getByLabel("Case reference").fill("KF-2026-0001");
-  await page.getByLabel("Access code").fill("ABC123");
-  await page.getByRole("button", { name: "Check status" }).click();
+  await page.getByRole("button", { name: "Check this case now" }).click();
+  await expect(page.getByLabel("Case reference")).toHaveValue("KF-2026-0001");
+  await expect(page.getByLabel("Access code")).toHaveValue("ABC123");
+  await expect(page).not.toHaveURL(/ABC123/);
 
   await expect(page.getByText("Water leak near school entrance")).toBeVisible();
   await expect(page.getByText("Waiting for you")).toBeVisible();

@@ -80,6 +80,9 @@ export function IntakeForm({
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [hasNoAddress, setHasNoAddress] = useState(false);
   const [result, setResult] = useState<SubmissionResult | null>(null);
+  const [statusCaseReference, setStatusCaseReference] = useState("");
+  const [statusAccessCode, setStatusAccessCode] = useState("");
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   function selectTenant(slug: string) {
     const tenant = demoTenants.find((item) => item.slug === slug);
@@ -239,6 +242,10 @@ export function IntakeForm({
 
   async function handleStatusLookup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    await lookupStatus(statusCaseReference, statusAccessCode);
+  }
+
+  async function lookupStatus(caseReference: string, accessCode: string) {
     if (!selectedTenant) {
       setStatusLookupError(dictionary.tenantRequired);
       return;
@@ -247,10 +254,10 @@ export function IntakeForm({
     setStatusResult(null);
     setIsCheckingStatus(true);
 
-    const formData = new FormData(event.currentTarget);
-    const caseReference = String(formData.get("caseReference") ?? "");
-    const statusAccessCode = String(formData.get("statusAccessCode") ?? "");
-    const query = new URLSearchParams({ caseReference, statusAccessCode });
+    const query = new URLSearchParams({
+      caseReference,
+      statusAccessCode: accessCode,
+    });
 
     try {
       const response = await fetch(
@@ -270,9 +277,31 @@ export function IntakeForm({
     }
   }
 
+  async function copyValue(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyFeedback(dictionary.copied);
+    } catch {
+      setCopyFeedback(dictionary.copyFailed);
+    }
+  }
+
+  async function checkSubmittedCase() {
+    if (!result) {
+      return;
+    }
+    const reference = result.caseReference;
+    const accessCode = result.statusAccessCode;
+    setStatusCaseReference(reference);
+    setStatusAccessCode(accessCode);
+    setResult(null);
+    setActiveTab("status");
+    await lookupStatus(reference, accessCode);
+  }
+
   if (result) {
     return (
-      <section className="border border-[#003b71] bg-white p-6">
+      <section className="submission-success border border-[#003b71] bg-white p-6">
         <div className="bg-[#eaf4fb] p-4">
           <h2 className="text-2xl font-semibold text-[#003b71]">
             {dictionary.successTitle}
@@ -315,23 +344,28 @@ export function IntakeForm({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            setResult(null);
-            setActiveTab("status");
-          }}
-          className="mt-6 bg-[#003b71] px-4 py-3 text-sm font-semibold text-white hover:bg-[#002f5a]"
-        >
-          {dictionary.statusLookupSubmit}
-        </button>
-        <button
-          type="button"
-          onClick={() => setResult(null)}
-          className="ml-3 mt-6 border-2 border-[#003b71] bg-white px-4 py-3 text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb]"
-        >
-          {dictionary.newCase}
-        </button>
+        <div className="submission-actions mt-6 grid gap-3 sm:grid-cols-2">
+          <button type="button" onClick={() => copyValue(result.caseReference)} className="border-2 border-[#003b71] bg-white px-4 py-3 text-sm font-semibold text-[#003b71]">
+            {dictionary.copyReference}
+          </button>
+          <button type="button" onClick={() => copyValue(result.statusAccessCode)} className="border-2 border-[#003b71] bg-white px-4 py-3 text-sm font-semibold text-[#003b71]">
+            {dictionary.copyAccessCode}
+          </button>
+          <button type="button" onClick={checkSubmittedCase} className="bg-[#003b71] px-4 py-3 text-sm font-semibold text-white">
+            {dictionary.checkThisCase}
+          </button>
+          <button type="button" onClick={() => { setResult(null); setStatusCaseReference(""); setStatusAccessCode(""); setStatusResult(null); }} className="border-2 border-[#003b71] bg-white px-4 py-3 text-sm font-semibold text-[#003b71]">
+            {dictionary.submitAnotherRequest}
+          </button>
+          <button type="button" onClick={() => window.print()} className="border-2 border-slate-500 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+            {dictionary.printDetails}
+          </button>
+        </div>
+        {copyFeedback ? (
+          <p role="status" className="mt-3 text-sm font-medium text-[#003b71]">
+            {copyFeedback}
+          </p>
+        ) : null}
       </section>
     );
   }
@@ -683,11 +717,15 @@ export function IntakeForm({
             label={dictionary.caseReferenceLabel}
             name="caseReference"
             required
+            value={statusCaseReference}
+            onChange={setStatusCaseReference}
           />
           <Field
             label={dictionary.statusAccessCodeLabel}
             name="statusAccessCode"
             required
+            value={statusAccessCode}
+            onChange={setStatusAccessCode}
           />
         </div>
         <button
@@ -704,6 +742,12 @@ export function IntakeForm({
         ) : null}
         {statusResult ? (
           <dl className="mt-5 grid gap-3 bg-[#f5f9fc] p-4 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-600">{dictionary.tenantLabel}</dt>
+              <dd className="font-medium text-[#003b71]">
+                {selectedTenant?.name ?? "-"}
+              </dd>
+            </div>
             <div className="flex justify-between gap-4">
               <dt className="text-slate-600">
                 {dictionary.caseReferenceLabel}
@@ -803,12 +847,16 @@ function Field({
   name,
   type = "text",
   required = false,
+  value,
+  onChange,
 }: {
   hint?: string;
   label: string;
   name: string;
   type?: string;
   required?: boolean;
+  value?: string;
+  onChange?: (value: string) => void;
 }) {
   return (
     <label className="grid gap-2">
@@ -819,6 +867,10 @@ function Field({
         name={name}
         type={type}
         required={required}
+        value={value}
+        onChange={
+          onChange ? (event) => onChange(event.target.value) : undefined
+        }
         className="border-2 border-[#c8d9e8] px-3 py-2 text-slate-950 outline-none focus:border-[#003b71]"
       />
     </label>
