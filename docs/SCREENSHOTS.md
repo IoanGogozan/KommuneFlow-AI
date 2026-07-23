@@ -10,7 +10,8 @@ Generated locally on 2026-07-23 with the seeded synthetic dataset at a consisten
 | `04-submission-success.png` | Submission success and save actions |
 | `05-status-lookup.png` | Prefilled citizen status lookup |
 | `06-internal-dashboard.png` | Employee work dashboard |
-| `07-case-overview.png` | Case Overview |
+| `07-case-list.png` | Filterable employee case list |
+| `07-case-overview.png` | Opened case with Overview selected |
 | `08-ai-review.png` | AI review and official/suggested comparison |
 | `09-workflow-activity.png` | Workflow, notes, and activity |
 
@@ -19,5 +20,14 @@ The captures contain only local synthetic data. No Basic Auth credentials, passw
 Regenerate with:
 
 ```bash
-DEMO_PASSWORD='<local seeded password>' pnpm screenshots:demo
+NODE_ENV=test \
+SCREENSHOT_DATA_ALLOW_RESET=true \
+DATABASE_URL='postgresql://.../kommuneflow_screenshot' \
+DEMO_PASSWORD='<local seeded password>' \
+pnpm screenshots:demo
 ```
+
+Screenshot generation refuses production configuration and database names that
+do not contain `screenshot` or `test`. It resets and seeds only the explicitly
+selected screenshot database before capture, so repeated runs do not accumulate
+synthetic cases.

@@ -1,5 +1,7 @@
 import { mkdir } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { chromium } from "playwright";
+import { assertScreenshotDatabaseSafety } from "./screenshot-data-safety.mjs";
 
 const baseUrl = trimTrailingSlash(
   process.env.WEB_BASE_URL ?? "http://localhost:3000",
@@ -77,9 +79,9 @@ try {
 
   const caseId = await openFirstCase(page);
   await screenshot(page, "07-case-overview.png");
-  await page.getByRole("tab", { name: /AI review|KI-gjennomgang/i }).click();
+  await page.getByRole("button", { name: /AI review|KI-gjennomgang/i }).click();
   await screenshot(page, "08-ai-review.png");
-  await page.getByRole("tab", { name: /Workflow|Arbeidsflyt/i }).click();
+  await page.getByRole("button", { name: /Workflow|Arbeidsflyt/i }).click();
   await screenshot(page, "09-workflow-activity.png");
 
   await captureOptional(page, "/internal/privacy", "10-privacy-dashboard.png", [
@@ -219,8 +221,19 @@ async function openFirstCase(page) {
 
   await caseLink.click();
   await page.waitForLoadState("networkidle");
+  await page
+    .getByRole("button", { name: /Overview|Oversikt/i })
+    .waitFor();
+  await page
+    .getByRole("button", { name: /Overview|Oversikt/i })
+    .click();
+  await page.getByRole("heading", { level: 1 }).waitFor();
+  await page.locator('section[aria-label="Case overview"]').waitFor();
   return href.split("/").at(-1);
 }
+
+assertScreenshotDatabaseSafety(process.env);
+resetScreenshotDatabase();
 
 async function clickIfVisible(page, name) {
   const button = page.getByRole("button", { name }).first();
@@ -295,4 +308,22 @@ async function assertHasNumbers(page) {
 
 function trimTrailingSlash(value) {
   return value.replace(/\/$/, "");
+}
+
+function resetScreenshotDatabase() {
+  const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+  const commandEnvironment = {
+    ...process.env,
+    SEED_DEMO_PASSWORD: demoPassword,
+  };
+
+  execFileSync(
+    pnpm,
+    ["--filter", "@kommuneflow/api", "exec", "prisma", "migrate", "reset", "--force"],
+    { env: commandEnvironment, stdio: "inherit" },
+  );
+  execFileSync(pnpm, ["--filter", "@kommuneflow/api", "prisma:seed"], {
+    env: commandEnvironment,
+    stdio: "inherit",
+  });
 }

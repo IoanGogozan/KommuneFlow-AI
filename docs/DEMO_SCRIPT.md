@@ -24,3 +24,7 @@ Use synthetic data only. Interactive routes require protected demo credentials s
 - AI output is untrusted, schema-validated decision support.
 - The normal demo uses deterministic mock AI and synthetic data.
 - This is a functional portfolio demonstration, not an approved municipal production system.
+
+Screenshot evidence keeps the case list and opened Overview distinct:
+`07-case-list.png` shows discovery/filtering, while `07-case-overview.png`
+shows the actual opened case before AI review.

@@ -15,6 +15,9 @@ import type { InternalCurrentUser } from "@/lib/internal-user";
 import { useInternalSession } from "@/lib/use-internal-session";
 import { AccessDenied } from "../../../ui/access-denied";
 import { InternalShell } from "../../../ui/internal-shell";
+import { CaseAiReview } from "./case-detail/case-ai-review";
+import { CaseOverview } from "./case-detail/case-overview";
+import { CaseWorkflow } from "./case-detail/case-workflow";
 
 type CaseDetailResponse = {
   id: string;
@@ -607,20 +610,20 @@ export function CaseDetail({ caseId }: { caseId: string }) {
       </Link>
 
       {!canModifyThisCase ? <ReadOnlyNotice t={t} /> : null}
-      <div className="mt-5 flex flex-wrap gap-1 border border-[#c8d9e8] bg-white p-1" role="tablist" aria-label={t.nav.caseDetail}>
+      <div className="mt-5 flex flex-wrap gap-1 border border-[#c8d9e8] bg-white p-1" aria-label={t.nav.caseDetail}>
         {([
           ["overview", t.caseDetail.overviewTab],
           ["ai", t.caseDetail.aiReviewTab],
           ["workflow", t.caseDetail.workflowTab],
         ] as const).map(([section, label]) => (
-          <button key={section} type="button" role="tab" aria-selected={activeSection === section} onClick={() => setActiveSection(section)} className={activeSection === section ? "bg-[#003b71] px-4 py-2 text-sm font-semibold text-white" : "px-4 py-2 text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb]"}>
+          <button key={section} type="button" aria-pressed={activeSection === section} onClick={() => setActiveSection(section)} className={activeSection === section ? "bg-[#003b71] px-4 py-2 text-sm font-semibold text-white" : "px-4 py-2 text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb]"}>
             {label}
           </button>
         ))}
       </div>
 
       {activeSection === "overview" ? (
-        <div role="tabpanel">
+        <CaseOverview>
           {caseRecord.status === "triage_pending" && aiResult?.status === "completed" ? (
             <button type="button" onClick={() => setActiveSection("ai")} className="mt-5 border border-[#c8d9e8] bg-[#eaf4fb] px-4 py-3 text-sm font-semibold text-[#003b71]">
               {t.caseDetail.aiReadyPrompt}
@@ -629,11 +632,11 @@ export function CaseDetail({ caseId }: { caseId: string }) {
           <CaseSummaryCard caseRecord={caseRecord} t={t} />
           <CitizenAddressCard caseAddress={caseAddress} t={t} />
           <DocumentsCard canUpload={canUploadDocumentToThisCase} caseId={caseId} documents={documents} onUploadDocument={uploadDocument} t={t} />
-        </div>
+        </CaseOverview>
       ) : null}
 
       {activeSection === "ai" ? (
-        <div role="tabpanel">
+        <CaseAiReview>
           <AITriageCard
             aiResult={aiResult}
             officialCategory={caseRecord.category}
@@ -660,17 +663,17 @@ export function CaseDetail({ caseId }: { caseId: string }) {
             reviewUrgency={reviewUrgency}
             t={t}
           />
-        </div>
+        </CaseAiReview>
       ) : null}
 
       {activeSection === "workflow" ? (
-        <div role="tabpanel">
+        <CaseWorkflow>
           <section className="mt-5 grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
             <CaseWorkflowCard canUpdate={canModifyThisCase} currentStatus={caseRecord.status} error={statusUpdateError} onSubmit={updateStatus} setStatus={setStatus} status={status} t={t} />
             <InternalNotesCard canAddNote={canModifyThisCase} error={error} notes={caseRecord.internalNotes} onSubmit={addNote} t={t} />
           </section>
           <RecentActivityCard activity={activity} error={activityError} t={t} />
-        </div>
+        </CaseWorkflow>
       ) : null}
     </InternalShell>
   );
@@ -688,9 +691,9 @@ function CaseSummaryCard({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm text-slate-500">{caseRecord.id}</p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-950">
+          <h2 className="mt-2 text-3xl font-semibold text-slate-950">
             {caseRecord.title}
-          </h1>
+          </h2>
         </div>
         <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-800">
           {getStatusLabel(caseRecord.status, t)}
