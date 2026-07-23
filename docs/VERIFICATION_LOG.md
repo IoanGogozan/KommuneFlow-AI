@@ -1,81 +1,57 @@
 # Verification Log
 
-Use this file as a lightweight record of the latest local verification baseline. Do not paste secrets, cookies, API keys, status access codes, or real citizen data into this log.
+No secrets, cookies, API keys, deployed access codes, or real citizen data are recorded here.
 
-## Environment
+## 2026-07-23 UX remediation baseline
 
-Last verified: 2026-05-19
+| Item | Value |
+| --- | --- |
+| Verified source commit | `573d6c94e1e1c82ed142e93663127f799ce97a34` |
+| Environment | Local Windows 11 / PowerShell / Docker Desktop |
+| Node | `v26.2.0` |
+| pnpm | `10.28.2` |
+| Python | `3.14.4` |
+| AI provider | deterministic mock |
+| Data | local synthetic seed only |
 
-| Item    | Value                          |
-| ------- | ------------------------------ |
-| Machine | Local Windows / Docker Desktop |
-| Node    | v24-compatible local runtime   |
-| pnpm    | 10.28.2                        |
-| Python  | 3.14.4                         |
+## Automated release gate
 
-## Automated Checks
+| Command | Exact result |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | PASS — lockfile current, dependencies already up to date |
+| `pnpm lint` | PASS — API and web lint completed |
+| `pnpm typecheck` | PASS — API, web, and shared package type checks completed |
+| `pnpm --filter @kommuneflow/api test:cov:ci` | PASS — 37 suites, 218 tests; statements 82.95%, branches 71.03%, functions 87.60%, lines 82.78% |
+| `pnpm --filter @kommuneflow/api test:e2e:ci` | PASS — 3 suites passed, 1 skipped; 29 tests passed, 1 skipped |
+| `pnpm --filter @kommuneflow/web test` | PASS — 3 files, 14 tests |
+| `pnpm --filter @kommuneflow/web test:e2e` | PASS — 5 Chromium tests |
+| `pnpm --filter @kommuneflow/web test:e2e:fullstack` | PASS on clean rerun — 1 Chromium workflow test |
+| `pnpm test:etl` | PASS — 22 tests |
+| `pnpm audit:deps` | PASS — no known vulnerabilities |
+| `pnpm build` | PASS — API, web, and shared builds completed |
+| `docker compose -f compose.home.yml --env-file .env.home.example config --quiet` | PASS |
+| Caddy `validate --config /etc/caddy/Caddyfile` in `caddy:2-alpine` | PASS — valid configuration |
+| `docker compose -f compose.home.yml --env-file .env.home.example build` | PASS — API and web images built |
+| `pnpm screenshots:demo` | PASS — nine required UX screenshots generated from local synthetic data |
 
-Latest full local release gate:
+The first full-stack attempt was not a product assertion: Playwright correctly refused to start while the screenshot API occupied port 3101. After stopping that local stack, a second attempt reached login but received `401` because its default password differed from the local seed override. The exact command then passed with `FULLSTACK_DEMO_PASSWORD` supplied from the local ignored `.env`; the value was not printed, logged, or committed.
 
-```bash
-pnpm test:all
-```
+## UX verification
 
-Result: PASS
+| Workflow | Result | Evidence |
+| --- | --- | --- |
+| Landing page | PASS | Browser tests plus `01-landing.png` |
+| Protected-route gate | PASS | Deployment smoke assertions cover public `/` and protected `/nb`, `/en`, `/internal/login`; Caddy config validated |
+| Citizen intake | PASS | Component/browser tests plus English and Norwegian captures |
+| Address selection | PASS | Component tests cover multiple results, non-first selection, no-address mode, and tenant-change reset |
+| Document upload | PASS | Component/browser tests cover list, remove, multipart submission, and existing API validation |
+| Submission success | PASS | Copy/fallback tests plus `04-submission-success.png` |
+| Status lookup | PASS | Automatic prefill/lookup browser test plus `05-status-lookup.png` |
+| Employee login | PASS | Browser test and local screenshot workflow |
+| Case Overview | PASS | Default-tab browser assertion plus `07-case-overview.png` |
+| AI review | PASS | Full-stack official-before/after assertion plus `08-ai-review.png` |
+| Workflow update | PASS | Browser status mutation plus `09-workflow-activity.png` |
 
-Included checks:
+## Deployment status
 
-| Check                                        | Result | Notes                                                             |
-| -------------------------------------------- | ------ | ----------------------------------------------------------------- |
-| `pnpm lint`                                  | PASS   | API and web lint passed.                                          |
-| `pnpm typecheck`                             | PASS   | API, web, and shared packages passed.                             |
-| `pnpm --filter @kommuneflow/api test:cov:ci` | PASS   | API Jest suite: 35 suites, 212 tests; coverage thresholds passed. |
-| `pnpm --filter @kommuneflow/api test:e2e:ci` | PASS   | API e2e suite: 20 tests with `AI_PROVIDER=mock`.                  |
-| `pnpm --filter @kommuneflow/web test`        | PASS   | Web Vitest suite: 2 files, 6 tests.                               |
-| `pnpm --filter @kommuneflow/web test:e2e`    | PASS   | Playwright browser smoke suite: 3 tests.                          |
-| `pnpm test:etl`                              | PASS   | Python ELT pytest suite: 22 tests.                                |
-
-Last recorded API coverage:
-
-| Metric     | Value  |
-| ---------- | ------ |
-| Statements | 82.36% |
-| Branches   | 69.79% |
-| Functions  | 87.19% |
-| Lines      | 82.13% |
-
-## Manual Verification Checklist
-
-Record exact date, command, account, environment, and result when manual checks are performed.
-
-| Workflow                       | Result  | Evidence                                                                                                                                                                                                                                                                                               |
-| ------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Kartverket real address lookup | PENDING | Use `docs/integrations/manual-verification.md#kartverket-real-address-lookup`.                                                                                                                                                                                                                         |
-| SSB import                     | PENDING | Use `docs/integrations/manual-verification.md#ssb-population-import`.                                                                                                                                                                                                                                  |
-| OpenAI real triage             | PENDING | Run the protected, manually triggered `OpenAI Smoke` workflow.                                                                                                                                                                                                                                         |
-| Analytics rebuild              | PENDING | Use `docs/integrations/manual-verification.md#analytics-rebuild`.                                                                                                                                                                                                                                      |
-| Document upload/download       | PENDING | Use `docs/integrations/manual-verification.md#document-upload-and-download`.                                                                                                                                                                                                                           |
-| Citizen status lookup          | PENDING | Use `docs/integrations/manual-verification.md#citizen-status-lookup`.                                                                                                                                                                                                                                  |
-| Hetzner live smoke test        | PASS    | 2026-05-19: HTTPS demo checked for web root, `/nb`, health, readiness, internal login page, internal demo login, `/auth/me`, `/cases`, and `/ai/status`. The normal portfolio configuration is now documented as `AI_PROVIDER=mock`; real OpenAI verification belongs to the separate manual workflow. |
-
-## Manual Verification Notes Template
-
-```txt
-Date:
-Operator:
-Local branch/commit:
-Environment variables changed:
-Command or UI path:
-Account used:
-External API called: yes/no
-Result: PASS/FAIL
-Request ID, if applicable:
-Operational event evidence:
-Notes:
-```
-
-## Rules
-
-- CI and automated tests must use mock providers for Kartverket, SSB, and OpenAI.
-- Do not commit real external API response payloads unless they are intentionally curated fixtures.
-- Do not paste secrets, citizen PII, `OPENAI_API_KEY`, status access codes, cookies, or auth tokens into this log.
+The modified version has not yet been deployed in this record. Live verification must be appended only after the final branch is deployed to the home server and the unauthenticated/authenticated smoke checks and manual UX walkthrough pass.

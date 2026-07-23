@@ -53,33 +53,34 @@ try {
     viewport: { width: 1440, height: 1000 },
   });
 
-  await capture(page, "/nb", "01-public-intake-nb.png");
+  await capture(page, "/", "01-landing.png");
+  await capture(page, "/en", "02-citizen-intake-en.png");
+  await capture(page, "/nb", "03-citizen-intake-nb.png");
   await assertText(page, "Kristiansand Kommune");
   await assertText(page, "Arendal Kommune");
   await assertText(page, "Grimstad Kommune");
   await assertNoText(page, forbiddenNb);
 
-  await capturePublicStatusLookup(page);
+  await captureSubmissionAndStatus(page);
 
-  await capture(page, "/internal/login", "03-internal-login.png");
+  await capture(page, "/internal/login", "06-internal-login.png");
   await login(page, demoEmail, demoPassword);
 
-  await capture(page, "/internal", "04-internal-overview.png");
+  await capture(page, "/internal", "06-internal-dashboard.png");
   await assertText(page, "KommuneFlow AI");
 
-  await capture(page, "/internal/cases", "05-case-list.png");
-  await assertText(page, "These are the cases you are allowed to access");
+  await capture(page, "/internal/cases", "07-case-list.png");
+  await assertAnyText(page, [
+    "These are the cases you are allowed to access",
+    "Dette er sakene du har tilgang til",
+  ]);
 
   const caseId = await openFirstCase(page);
-  await screenshot(page, "06-case-detail-documents.png");
-  await assertText(page, "Documents");
-
-  await capture(page, `/internal/cases/${caseId}`, "07-ai-triage-section.png", {
-    locatorText: "AI triage",
-  });
-
-  await captureAnalytics(page);
-  await capture(page, "/internal/operations", "09-operations-dashboard.png");
+  await screenshot(page, "07-case-overview.png");
+  await page.getByRole("tab", { name: /AI review|KI-gjennomgang/i }).click();
+  await screenshot(page, "08-ai-review.png");
+  await page.getByRole("tab", { name: /Workflow|Arbeidsflyt/i }).click();
+  await screenshot(page, "09-workflow-activity.png");
 
   await captureOptional(page, "/internal/privacy", "10-privacy-dashboard.png", [
     "Privacy",
@@ -118,12 +119,24 @@ try {
   await browser.close();
 }
 
-async function capturePublicStatusLookup(page) {
+async function captureSubmissionAndStatus(page) {
   await page.goto(`${baseUrl}/en`, { waitUntil: "networkidle" });
   await hideDevelopmentChrome(page);
-  await clickIfVisible(page, /Check existing case/i);
-  await assertText(page, "reference");
-  await screenshot(page, "02-public-status-lookup.png");
+  await page.getByRole("combobox").first().selectOption("kristiansand");
+  await page.getByLabel("Name").fill("Demo Citizen");
+  await page.getByLabel("Email").fill("demo.citizen@example.local");
+  await page.getByRole("checkbox", { name: /does not concern a specific address/i }).check();
+  await page.getByLabel("Title").fill("Streetlight not working");
+  await page.getByLabel("Description").fill(
+    "The streetlight beside the synthetic demo address has stopped working.",
+  );
+  await page.getByRole("checkbox", { name: /Privacy/i }).check();
+  await page.getByRole("button", { name: "Submit", exact: true }).click();
+  await page.getByText("Request registered").waitFor();
+  await screenshot(page, "04-submission-success.png");
+  await page.getByRole("button", { name: "Check this case now" }).click();
+  await page.getByText("Case status").waitFor();
+  await screenshot(page, "05-status-lookup.png");
 }
 
 async function captureAnalytics(page) {
@@ -253,6 +266,15 @@ async function assertText(page, expected) {
   const text = await page.locator("body").innerText();
   if (!text.includes(expected)) {
     throw new Error(`Expected page text to include "${expected}".`);
+  }
+}
+
+async function assertAnyText(page, expectedValues) {
+  const text = await page.locator("body").innerText();
+  if (!expectedValues.some((expected) => text.includes(expected))) {
+    throw new Error(
+      `Expected page text to include one of: ${expectedValues.join(", ")}.`,
+    );
   }
 }
 

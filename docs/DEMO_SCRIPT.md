@@ -1,75 +1,26 @@
 # Demo Script
 
-## Goal
+## Five-minute walkthrough
 
-Show KommuneFlow AI as a realistic Norwegian municipal workflow platform with citizen intake, address validation, document handling, human-reviewed AI, analytics, privacy, security, observability, and deployment discipline.
+Use synthetic data only. Interactive routes require protected demo credentials supplied separately; never show passwords in a recording or screenshot.
 
-## Setup
+1. Open `/` and explain the three-step workflow: citizen request, structured AI suggestion, employee review and processing.
+2. Enter `/en`, explicitly select a municipality, provide synthetic contact details, choose an address result or no-address mode, describe the request, and optionally attach a safe demo document.
+3. Submit. Copy or save the case reference and access code.
+4. Select **Check this case now** and show that both values are already filled and status loads without retyping.
+5. Open `/internal/login` and sign in with the protected recruiter or department-admin demo account.
+6. Open **Cases**, locate the submitted or seeded synthetic case, and open it.
+7. Begin in **Overview**. Read the citizen description, official classification, address, and documents before discussing AI.
+8. Open **AI review**. Compare official values with the schema-validated suggestion and explain that official fields do not change until an employee accepts or corrects it.
+9. Accept or correct the suggestion, then show the updated official values.
+10. Open **Workflow**, update status if appropriate, and show internal notes and recent auditable activity.
+11. If time remains, show Analytics and briefly compare case-worker, auditor, and admin navigation to demonstrate server-backed RBAC and tenant scope.
 
-Run locally:
+## Talking points
 
-```bash
-docker compose up -d postgres
-pnpm --filter @kommuneflow/api prisma:migrate
-pnpm --filter @kommuneflow/api prisma:seed
-pnpm dev
-```
-
-Open:
-
-- citizen portal: `http://localhost:3000/nb` or `http://localhost:3000/en`
-- internal login: `http://localhost:3000/internal/login`
-- API health: `http://localhost:3101/api/v1/health`
-
-Local demo credentials:
-
-```txt
-department.admin@kristiansand.local
-DemoPassword123!
-```
-
-These credentials are for local or separately protected demos only. Do not expose them in an open public deployment.
-
-The seed includes Kristiansand, Arendal, and Grimstad tenants, five departments per tenant, 22 realistic cases, documents, AI reviews, SSB population records, analytics snapshots, audit events, operational events, and email logs.
-
-## Walkthrough
-
-1. Open the citizen portal and switch between Norwegian Bokmal and English.
-2. Submit a realistic citizen case with an address and a PDF/PNG/JPG document.
-3. Mention that Kartverket address search validates and normalizes addresses, while CI uses mocked external APIs.
-4. Explain document validation: size, extension, MIME type, magic bytes, and unsafe filename checks.
-5. Log in as `department.admin@kristiansand.local`.
-6. Switch the internal UI language between Norwegian Bokmal and English.
-7. Open the case dashboard and show realistic seeded cases across statuses and departments.
-8. Open the submitted case or an existing seeded case.
-9. Show tenant-scoped detail, Kartverket address enrichment, status workflow, internal notes, and document list.
-10. Download a document and explain that download is authenticated, tenant-scoped, permission-checked, and audited.
-11. Run AI triage.
-12. Explain `AIProvider`, deterministic mock AI for tests/demo, optional OpenAI provider, timeout/retry handling, and Zod output validation.
-13. Accept or correct the AI suggestion.
-14. Explain that official case fields change only after human review.
-15. Update case status and add an internal note.
-16. Open analytics and run aggregation for the current range.
-17. Show effect metrics: triage time, close time, waiting cases, AI acceptance/correction, AI failures, estimated minutes saved, and cases per 1,000 inhabitants.
-18. Explain SSB enrichment from table `07459` and local idempotent imports.
-19. Open operations and show health, readiness, Kartverket metrics, SSB import status, AI metrics, failed logins, permission denials, rate-limit blocks, document upload failures, and maintenance status.
-20. Discuss privacy features: export, profile identifier anonymization, retention policy, cleanup dry-run/delete, and privacy docs.
-21. Discuss deployment assets: Dockerfiles, production Compose, Caddy HTTPS, backup/restore, and smoke test.
-
-## Interview Talking Points
-
-- Tenant isolation is enforced server-side in database queries.
-- RBAC is centralized through permissions and guards.
+- Tenant isolation and authorization are enforced server-side.
 - Auditors are read-only.
-- AI output is untrusted, validated, and human-reviewed.
-- Analytics is aggregated and avoids citizen identifiers.
-- Kartverket and SSB are real public-sector integrations, but CI mocks external APIs.
-- Documents are private, validated, and audited.
-- Operational events back the metrics dashboard instead of relying on empty counters.
-- Retention cleanup is dry-run capable.
-- Python ELT demonstrates data engineering work alongside the TypeScript app.
-- The protected Hetzner HTTPS demo is online and live smoke checked; describe it as a portfolio demo, not a real municipal production deployment.
-
-## Short Pitch
-
-KommuneFlow AI demonstrates how a municipal case workflow can combine secure multi-tenant backend design, bilingual citizen and internal UI, Norwegian public data integrations, privacy operations, document handling, human-reviewed AI, operational observability, and analytics in a production-like TypeScript and Python stack.
+- Private documents are validated, permission-checked, and audited.
+- AI output is untrusted, schema-validated decision support.
+- The normal demo uses deterministic mock AI and synthetic data.
+- This is a functional portfolio demonstration, not an approved municipal production system.
