@@ -2,6 +2,56 @@ import { expect, type Page, type Route, test } from "@playwright/test";
 
 const apiBaseUrl = "http://localhost:3101/api/v1";
 
+test("portfolio landing exposes only functional, protected-flow links", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: /Municipal case management/,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Demo credentials required for interactive routes."),
+  ).toBeVisible();
+
+  await expect(page.getByRole("link", { name: "View citizen flow" })).toHaveAttribute(
+    "href",
+    "/en",
+  );
+  await expect(
+    page.getByRole("link", { name: "Open employee workspace" }),
+  ).toHaveAttribute("href", "/internal/login");
+  await expect(page.getByRole("link", { name: "Norsk demo" })).toHaveAttribute(
+    "href",
+    "/nb",
+  );
+  await expect(page.getByRole("button")).toHaveCount(0);
+
+  const functionalLinks = page.getByRole("link");
+  const linkCount = await functionalLinks.count();
+  for (let index = 0; index < linkCount; index += 1) {
+    await page.keyboard.press("Tab");
+    await expect(functionalLinks.nth(index)).toBeFocused();
+  }
+});
+
+test("portfolio landing has no horizontal overflow at 320 pixels", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await page.goto("/");
+
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+});
+
 test("public citizen intake and status lookup work through the browser", async ({
   page,
 }) => {
