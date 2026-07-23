@@ -14,6 +14,12 @@ export const internalDictionaryEn = {
     privacy: "Privacy",
     publicIntake: "Public intake",
     signOut: "Sign out",
+    menu: "Menu",
+    work: "Work",
+    insights: "Insights",
+    governance: "Governance",
+    administration: "Administration",
+    system: "System",
   },
   common: {
     app: "KommuneFlow AI",
@@ -82,6 +88,7 @@ export const internalDictionaryEn = {
     description:
       "Case counts are based on the cases available to your role, tenant and department.",
     accessibleCases: "accessible cases",
+    needsAttention: "Needs attention",
     statuses: {
       new: "New cases",
       triage_pending: "Triage pending",
