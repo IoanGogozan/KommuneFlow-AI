@@ -9,6 +9,115 @@ describe("IntakeForm", () => {
     vi.stubGlobal("fetch", vi.fn());
   });
 
+  it("starts without a municipality and only accepts valid explicit preselection", () => {
+    const { rerender } = render(
+      <IntakeForm dictionary={dictionaries.en} locale="en" />,
+    );
+    expect(screen.getAllByRole("combobox")[0]).toHaveValue("");
+
+    rerender(
+      <IntakeForm
+        key="invalid"
+        dictionary={dictionaries.en}
+        locale="en"
+        initialTenantSlug="not-a-tenant"
+      />,
+    );
+    expect(screen.getAllByRole("combobox")[0]).toHaveValue("");
+
+    rerender(
+      <IntakeForm
+        key="valid"
+        dictionary={dictionaries.en}
+        locale="en"
+        initialTenantSlug="arendal"
+      />,
+    );
+    expect(screen.getAllByRole("combobox")[0]).toHaveValue("arendal");
+  });
+
+  it("shows multiple addresses, selects a non-first result, and clears it on municipality change", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        results: [
+          {
+            normalizedAddress: "Storgata 10, Arendal",
+            municipalityCode: "4203",
+            municipalityName: "Arendal",
+            postalCode: "4836",
+          },
+          {
+            normalizedAddress: "Storgata 12, Arendal",
+            municipalityCode: "4203",
+            municipalityName: "Arendal",
+            postalCode: "4836",
+          },
+        ],
+      }),
+    );
+    const user = userEvent.setup();
+    render(
+      <IntakeForm
+        dictionary={dictionaries.en}
+        locale="en"
+        initialTenantSlug="arendal"
+      />,
+    );
+
+    await user.type(screen.getByLabelText("Address"), "Storgata");
+    await user.click(screen.getByRole("button", { name: "Search address" }));
+    expect(
+      await screen.findByRole("button", { name: /Storgata 10/ }),
+    ).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /Storgata 12/ }));
+    expect(screen.getByText("Address confirmed")).toBeVisible();
+
+    await user.selectOptions(screen.getAllByRole("combobox")[0], "grimstad");
+    expect(screen.queryByText("Address confirmed")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Address")).toHaveValue("");
+  });
+
+  it("supports no-address mode and lists and removes selected documents", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <IntakeForm
+        dictionary={dictionaries.en}
+        locale="en"
+        initialTenantSlug="arendal"
+      />,
+    );
+    await user.click(
+      screen.getByRole("checkbox", {
+        name: "This request does not concern a specific address",
+      }),
+    );
+
+    const fileInput = container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    fireEvent.change(fileInput, {
+      target: {
+        files: [
+          new File(["one"], "one.pdf", { type: "application/pdf" }),
+          new File(["two"], "two.png", { type: "image/png" }),
+        ],
+      },
+    });
+    expect(screen.getByText("one.pdf")).toBeVisible();
+    expect(screen.getByText("two.png")).toBeVisible();
+    await user.click(screen.getAllByRole("button", { name: "Remove" })[0]);
+    expect(screen.queryByText("one.pdf")).not.toBeInTheDocument();
+    expect(screen.getByText("two.png")).toBeVisible();
+  });
+
+  it("uses correct Bokmål characters", () => {
+    const norwegianText = JSON.stringify(dictionaries.nb);
+    expect(norwegianText).toContain("å");
+    expect(norwegianText).toContain("ø");
+    expect(norwegianText).toContain("Søk");
+    expect(norwegianText).toContain("oppfølging");
+  });
+
   it("submits public intake as multipart payload with confirmed address and document", async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock
@@ -48,7 +157,7 @@ describe("IntakeForm", () => {
     await user.type(screen.getByLabelText("Address"), "Storgata 12");
     await user.click(screen.getByRole("button", { name: "Search address" }));
     await user.click(
-      await screen.findByRole("button", { name: "Confirm address" }),
+      await screen.findByRole("button", { name: /Storgata 12, Arendal/ }),
     );
     await user.type(screen.getByLabelText("Title"), "Water leak near school");
     await user.type(
@@ -118,7 +227,13 @@ describe("IntakeForm", () => {
       .mockResolvedValueOnce(new Response(null, { status: 404 }));
     const user = userEvent.setup();
 
-    render(<IntakeForm dictionary={dictionaries.en} locale="en" />);
+    render(
+      <IntakeForm
+        dictionary={dictionaries.en}
+        locale="en"
+        initialTenantSlug="kristiansand"
+      />,
+    );
 
     await user.click(screen.getByRole("tab", { name: "Check existing case" }));
     await user.type(screen.getByLabelText("Case reference"), "KF-2026-0001");
@@ -150,7 +265,13 @@ describe("IntakeForm", () => {
       .mockResolvedValueOnce(new Response(null, { status: 400 }));
     const user = userEvent.setup();
 
-    render(<IntakeForm dictionary={dictionaries.en} locale="en" />);
+    render(
+      <IntakeForm
+        dictionary={dictionaries.en}
+        locale="en"
+        initialTenantSlug="kristiansand"
+      />,
+    );
 
     await user.type(screen.getByLabelText("Address"), "Bad address");
     await user.click(screen.getByRole("button", { name: "Search address" }));
@@ -185,7 +306,13 @@ describe("IntakeForm", () => {
     );
     const user = userEvent.setup();
 
-    render(<IntakeForm dictionary={dictionaries.en} locale="en" />);
+    render(
+      <IntakeForm
+        dictionary={dictionaries.en}
+        locale="en"
+        initialTenantSlug="kristiansand"
+      />,
+    );
 
     await user.type(screen.getByLabelText("Name"), "Ada Citizen");
     await user.type(screen.getByLabelText("Email"), "ada@example.local");

@@ -10,6 +10,8 @@ export type IntakeDictionary = {
   title: string;
   intro: string;
   tenantLabel: string;
+  tenantPlaceholder: string;
+  tenantRequired: string;
   tenantHelp: string;
   submitNewRequestTab: string;
   checkExistingCaseTab: string;
@@ -39,14 +41,22 @@ export type IntakeDictionary = {
   addressChange: string;
   addressNoResults: string;
   addressError: string;
+  addressNotApplicable: string;
   caseTitleLabel: string;
+  caseTitleHint: string;
   descriptionLabel: string;
+  descriptionHint: string;
   documentsLabel: string;
   documentsHelp: string;
   documentsChooseFiles: string;
   documentsNoFilesSelected: string;
+  documentsSelected: string;
+  documentsRemove: string;
+  documentsValidationError: string;
   privacyLabel: string;
   privacyText: string;
+  privacyDetailsSummary: string;
+  privacyDetailsText: string;
   submit: string;
   submitting: string;
   successTitle: string;
@@ -83,6 +93,8 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     intro:
       "Beskriv saken din, så registrerer kommunen den for videre behandling.",
     tenantLabel: "Kommune",
+    tenantPlaceholder: "Velg kommune…",
+    tenantRequired: "Velg en kommune før du fortsetter.",
     tenantHelp:
       "Velg kommunen saken gjelder. Henvendelsen lagres hos valgt kommune.",
     submitNewRequestTab: "Send ny henvendelse",
@@ -91,22 +103,22 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
       "Velg riktig kommune slik at saken registreres hos riktig mottaker.",
     sectionContactTitle: "Kontaktinformasjon",
     sectionContactHelp:
-      "Oppgi kontaktinformasjon kommunen kan bruke ved oppfolging.",
+      "Oppgi kontaktinformasjon kommunen kan bruke ved oppfølging.",
     sectionAddressTitle: "Adresse",
     sectionAddressHelp:
-      "Sok og bekreft adressen hvis saken gjelder et bestemt sted.",
+      "Søk og bekreft adressen hvis saken gjelder et bestemt sted.",
     sectionRequestTitle: "Detaljer om henvendelsen",
     sectionRequestHelp:
-      "Beskriv hva saken gjelder. Jo tydeligere beskrivelse, desto enklere er det a behandle saken.",
+      "Beskriv hva saken gjelder. Jo tydeligere beskrivelse, desto enklere er det å behandle saken.",
     sectionDocumentsTitle: "Dokumenter",
     sectionDocumentsHelp:
-      "Legg ved relevante filer hvis de hjelper kommunen a forsta saken.",
+      "Legg ved relevante filer hvis de hjelper kommunen å forstå saken.",
     sectionPrivacyTitle: "Personvernbekreftelse",
     sectionPrivacyHelp:
       "Bekreft at kommunen kan bruke opplysningene til a registrere og behandle saken.",
     sectionSubmitTitle: "Send inn",
     sectionSubmitHelp:
-      "Kontroller informasjonen og send inn henvendelsen nar alt er klart.",
+      "Kontroller informasjonen og send inn henvendelsen når alt er klart.",
     nameLabel: "Navn",
     emailLabel: "E-post",
     phoneLabel: "Telefon",
@@ -121,26 +133,37 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     addressChange: "Endre adresse",
     addressNoResults: "Fant ingen adresseforslag.",
     addressError: "Kunne ikke validere adressen nå.",
+    addressNotApplicable: "Denne henvendelsen gjelder ikke en bestemt adresse",
     caseTitleLabel: "Tittel",
+    caseTitleHint: "En kort oppsummering, for eksempel «Gatelys virker ikke».",
     descriptionLabel: "Beskrivelse",
+    descriptionHint:
+      "Forklar hva som har skjedd, hvor det skjedde, og hvilken hjelp du trenger.",
     documentsLabel: "Dokumenter",
     documentsHelp:
       "Valgfritt. Last opp PDF, PNG eller JPG. Maks 10 MB per fil.",
     documentsChooseFiles: "Velg filer",
     documentsNoFilesSelected: "Ingen filer valgt",
+    documentsSelected: "Valgte dokumenter",
+    documentsRemove: "Fjern",
+    documentsValidationError:
+      "Velg opptil fem PDF-, PNG- eller JPG-filer på maksimalt 10 MB hver.",
     privacyLabel: "Personvern",
     privacyText:
-      "Jeg forstår at opplysningene og eventuelle dokumenter brukes til å registrere og behandle henvendelsen min. Tilgang loggføres, og data kan eksporteres eller håndteres etter kommunens retensjonsregler.",
+      "Jeg forstår at opplysningene mine og opplastede dokumenter brukes til å registrere og behandle henvendelsen.",
+    privacyDetailsSummary: "Mer om personvern og lagring",
+    privacyDetailsText:
+      "Viktige handlinger og dokumenttilgang loggføres. Kommunen kan tilby dataeksport og personvernoperasjoner, og opplysninger håndteres etter dokumenterte regler for oppbevaring og sletting.",
     submit: "Send inn",
     submitting: "Sender inn...",
     successTitle: "Henvendelsen er registrert",
     successText: "Kommunen har mottatt saken og vil behandle den videre.",
     successSaveCodeWarning:
-      "Lagre denne tilgangskoden. Du trenger den for a sjekke saksstatus.",
+      "Lagre denne tilgangskoden. Du trenger den for å sjekke saksstatus.",
     successMunicipalityLabel: "Kommune",
     successNextStepsLabel: "Neste steg",
     successNextStepsText:
-      "Bruk saksreferansen og tilgangskoden i fanen Sjekk eksisterende sak for a teste statusoppslag med en gang.",
+      "Bruk saksreferansen og tilgangskoden i fanen Sjekk eksisterende sak for å teste statusoppslag med en gang.",
     caseIdLabel: "Saks-ID",
     caseReferenceLabel: "Saksreferanse",
     statusAccessCodeLabel: "Tilgangskode",
@@ -177,6 +200,8 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     intro:
       "Describe your case and the municipality will register it for processing.",
     tenantLabel: "Municipality",
+    tenantPlaceholder: "Select municipality…",
+    tenantRequired: "Select a municipality before continuing.",
     tenantHelp:
       "Choose the municipality for this case. The request is stored under the selected municipality.",
     submitNewRequestTab: "Submit new request",
@@ -215,15 +240,26 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     addressChange: "Change address",
     addressNoResults: "No address suggestions found.",
     addressError: "Could not validate the address right now.",
+    addressNotApplicable: "This request does not concern a specific address",
     caseTitleLabel: "Title",
+    caseTitleHint: "A short summary, such as “Streetlight not working”.",
     descriptionLabel: "Description",
+    descriptionHint:
+      "Explain what happened, where it happened, and what help is needed.",
     documentsLabel: "Documents",
     documentsHelp: "Optional. Upload PDF, PNG, or JPG. Maximum 10 MB per file.",
     documentsChooseFiles: "Choose files",
     documentsNoFilesSelected: "No files selected",
+    documentsSelected: "Selected documents",
+    documentsRemove: "Remove",
+    documentsValidationError:
+      "Choose up to five PDF, PNG, or JPG files of no more than 10 MB each.",
     privacyLabel: "Privacy",
     privacyText:
-      "I understand that my information and any documents are used to register and process this request. Access is audited, and data may be exported or handled according to the municipality's retention policy.",
+      "I understand that my information and uploaded documents will be used to register and process this request.",
+    privacyDetailsSummary: "More about privacy and retention",
+    privacyDetailsText:
+      "Important actions and document access are audited. The municipality can provide data export and privacy operations, and information is handled under documented retention and deletion rules.",
     submit: "Submit",
     submitting: "Submitting...",
     successTitle: "Request registered",

@@ -7,10 +7,14 @@ type PageProps = {
   params: Promise<{
     locale: string;
   }>;
+  searchParams: Promise<{
+    municipality?: string;
+  }>;
 };
 
-export default async function IntakePage({ params }: PageProps) {
+export default async function IntakePage({ params, searchParams }: PageProps) {
   const { locale: localeParam } = await params;
+  const { municipality } = await searchParams;
 
   if (!isLocale(localeParam)) {
     notFound();
@@ -64,8 +68,8 @@ export default async function IntakePage({ params }: PageProps) {
           </div>
         </header>
 
-        <section className="grid flex-1 gap-8 py-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
-          <div className="pt-3 lg:sticky lg:top-8">
+        <section className="mx-auto w-full max-w-3xl flex-1 py-8">
+          <div>
             <p className="mb-4 inline-flex bg-[#eaf4fb] px-3 py-1 text-sm font-semibold text-[#003b71]">
               {dictionary.badge}
             </p>
@@ -77,7 +81,13 @@ export default async function IntakePage({ params }: PageProps) {
             </p>
           </div>
 
-          <IntakeForm dictionary={dictionary} locale={localeParam} />
+          <div className="mt-8">
+            <IntakeForm
+              dictionary={dictionary}
+              locale={localeParam}
+              initialTenantSlug={municipality}
+            />
+          </div>
         </section>
       </div>
     </main>

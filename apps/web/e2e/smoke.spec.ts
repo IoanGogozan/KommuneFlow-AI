@@ -29,7 +29,7 @@ test("portfolio landing exposes only functional, protected-flow links", async ({
     "href",
     "/nb",
   );
-  await expect(page.getByRole("button")).toHaveCount(0);
+  await expect(page.locator("main").getByRole("button")).toHaveCount(0);
 
   const functionalLinks = page.getByRole("link");
   const linkCount = await functionalLinks.count();
@@ -129,9 +129,9 @@ test("public citizen intake and status lookup work through the browser", async (
   await page.getByLabel("Name").fill("Ada Citizen");
   await page.getByLabel("Email").fill("ada@example.local");
   await page.getByLabel("Phone").fill("+47 40000000");
-  await page.getByLabel("Address").fill("Storgata 12");
+  await page.getByRole("textbox", { name: "Address", exact: true }).fill("Storgata 12");
   await page.getByRole("button", { name: "Search address" }).click();
-  await page.getByRole("button", { name: "Confirm address" }).click();
+  await page.getByRole("button", { name: /Storgata 12, Arendal/ }).click();
   await page.getByLabel("Title").fill("Water leak near school entrance");
   await page
     .getByLabel("Description")
