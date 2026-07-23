@@ -142,7 +142,22 @@ check "web home" "$BASE_URL/" "200,307,308"
 check "public intake $SMOKE_PUBLIC_LOCALE" "$BASE_URL/$SMOKE_PUBLIC_LOCALE" "200"
 check "api health" "$BASE_URL/api/v1/health" "200"
 check "api readiness" "$BASE_URL/api/v1/readiness" "200"
-check "internal login" "$BASE_URL/internal/login" "200"
+if [[ -n "$SMOKE_BASIC_AUTH_USER" && -n "$SMOKE_BASIC_AUTH_PASSWORD" ]]; then
+  saved_user="$SMOKE_BASIC_AUTH_USER"
+  saved_password="$SMOKE_BASIC_AUTH_PASSWORD"
+  SMOKE_BASIC_AUTH_USER=""
+  SMOKE_BASIC_AUTH_PASSWORD=""
+  check "public portfolio landing without Basic Auth" "$BASE_URL/" "200"
+  check "Norwegian citizen portal without Basic Auth" "$BASE_URL/nb" "401"
+  check "English citizen portal without Basic Auth" "$BASE_URL/en" "401"
+  check "internal login without Basic Auth" "$BASE_URL/internal/login" "401"
+  SMOKE_BASIC_AUTH_USER="$saved_user"
+  SMOKE_BASIC_AUTH_PASSWORD="$saved_password"
+fi
+
+check "Norwegian citizen portal with Basic Auth" "$BASE_URL/nb" "200"
+check "English citizen portal with Basic Auth" "$BASE_URL/en" "200"
+check "internal login with Basic Auth" "$BASE_URL/internal/login" "200"
 login_internal_user
 
 echo "Smoke test completed for $BASE_URL"
