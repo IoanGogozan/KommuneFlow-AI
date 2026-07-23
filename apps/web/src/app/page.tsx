@@ -66,7 +66,7 @@ export default function Home() {
           <a className={styles.sourceLink} href="https://github.com/IoanGogozan/KommuneFlow-AI" target="_blank" rel="noreferrer">
             Source <Icon name="external" />
           </a>
-          <Link className={styles.navCta} href="/nb">Open demo <Icon name="arrow" /></Link>
+          <Link className={styles.navCta} href="/nb" prefetch={false}>Open demo <Icon name="arrow" /></Link>
         </div>
       </nav>
 
@@ -79,8 +79,8 @@ export default function Home() {
             privacy, and operational insight into one coherent municipal workflow.
           </p>
           <div className={styles.heroActions}>
-            <Link className={styles.primaryCta} href="/nb">Explore the citizen flow <Icon name="arrow" /></Link>
-            <Link className={styles.secondaryCta} href="/internal/login">Open employee workspace</Link>
+            <Link className={styles.primaryCta} href="/nb" prefetch={false}>Explore the citizen flow <Icon name="arrow" /></Link>
+            <Link className={styles.secondaryCta} href="/internal/login" prefetch={false}>Open employee workspace</Link>
           </div>
           <div className={styles.trustLine}>
             <span><Icon name="check" /> Synthetic data only</span>
@@ -157,7 +157,7 @@ export default function Home() {
           <p className={styles.kicker}>A complete case journey</p>
           <h2>One request.<br />A visible path forward.</h2>
           <p>Follow a realistic flow from a citizen&apos;s first message to a reviewed, routed, and traceable municipal case.</p>
-          <Link className={styles.darkCta} href="/nb">Start the walkthrough <Icon name="arrow" /></Link>
+          <Link className={styles.darkCta} href="/nb" prefetch={false}>Start the walkthrough <Icon name="arrow" /></Link>
         </div>
         <div className={styles.steps}>
           {steps.map(([number, title, text]) => (
@@ -213,8 +213,8 @@ export default function Home() {
       <section className={styles.finalCta}>
         <div><p className={styles.kicker}>See the whole flow</p><h2>Submit a request.<br />Then work the case.</h2></div>
         <div className={styles.finalActions}>
-          <Link className={styles.lightCta} href="/nb">Open citizen portal <Icon name="arrow" /></Link>
-          <Link className={styles.outlineCta} href="/internal/login">Employee sign in</Link>
+          <Link className={styles.lightCta} href="/nb" prefetch={false}>Open citizen portal <Icon name="arrow" /></Link>
+          <Link className={styles.outlineCta} href="/internal/login" prefetch={false}>Employee sign in</Link>
           <p>Synthetic data only · Portfolio demonstration · No real citizen data</p>
         </div>
       </section>
@@ -222,7 +222,7 @@ export default function Home() {
       <footer className={styles.footer}>
         <div className={styles.brand}><Logo /><span>KommuneFlow <b>AI</b></span></div>
         <p>A municipal service workflow demonstration by Norvix AS.</p>
-        <div><a href="https://github.com/IoanGogozan/KommuneFlow-AI" target="_blank" rel="noreferrer">View source <Icon name="external" /></a><Link href="/nb">Open demo <Icon name="arrow" /></Link></div>
+        <div><a href="https://github.com/IoanGogozan/KommuneFlow-AI" target="_blank" rel="noreferrer">View source <Icon name="external" /></a><Link href="/nb" prefetch={false}>Open demo <Icon name="arrow" /></Link></div>
       </footer>
     </main>
   );

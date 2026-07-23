@@ -6,7 +6,7 @@ KommuneFlow AI is a **B2B multi-tenant SaaS portfolio demo** for municipal case 
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Open_Application-005293?style=for-the-badge)](https://kommune.norvix.no)
 
-> The live demo is access-controlled and contains synthetic data only. Demo access can be provided for portfolio review.
+> The portfolio landing page is public. The interactive demo and all application routes are access-controlled and contain synthetic data only. Demo access can be provided for portfolio review.
 
 ![KommuneFlow AI citizen intake](./docs/screenshots/01-public-intake-nb.png)
 
