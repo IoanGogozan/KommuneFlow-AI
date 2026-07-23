@@ -13,6 +13,51 @@ describe("IntakeForm", () => {
     });
   });
 
+  it("keeps the public heading and introduction aligned with the active tab", async () => {
+    const user = userEvent.setup();
+    render(<IntakeForm dictionary={dictionaries.en} locale="en" />);
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Submit a request" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Describe your case and the municipality will register it for processing.",
+      ),
+    ).toBeVisible();
+
+    await user.click(screen.getByRole("tab", { name: "Check existing case" }));
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Check a case" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Enter your case reference and access code to view its current status.",
+      ),
+    ).toBeVisible();
+
+    await user.click(screen.getByRole("tab", { name: "Submit new request" }));
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Submit a request" }),
+    ).toBeVisible();
+  });
+
+  it("uses the intended section and success copy without incorrect Bokmål phrases", () => {
+    const serialized = JSON.stringify(dictionaries);
+    expect(serialized).not.toContain("til a registrere");
+    expect(serialized).not.toContain("for a se status");
+    expect(dictionaries.en.sectionContactTitle).toBe(
+      "Municipality and contact",
+    );
+    expect(dictionaries.en.sectionDocumentsTitle).toBe(
+      "Supporting documents",
+    );
+    expect(dictionaries.nb.sectionSubmitTitle).toBe("Bekreft og send inn");
+    expect(dictionaries.en.successNextStepsText).toContain(
+      "Check this case now",
+    );
+  });
+
   it("starts without a municipality and only accepts valid explicit preselection", () => {
     const { rerender } = render(
       <IntakeForm dictionary={dictionaries.en} locale="en" />,
@@ -247,9 +292,17 @@ describe("IntakeForm", () => {
     await screen.findByText("Water leak near school");
     expect(screen.getByText("Waiting for you")).toBeInTheDocument();
     expect(screen.getByText("Technical Department")).toBeInTheDocument();
-    expect(fetchMock.mock.calls[0][0]).toBe(
-      "http://localhost:3101/api/v1/public/tenants/kristiansand/cases/status?caseReference=KF-2026-0001&statusAccessCode=ABC123",
-    );
+    expect(fetchMock.mock.calls[0]).toEqual([
+      "http://localhost:3101/api/v1/public/tenants/kristiansand/cases/status",
+      expect.objectContaining({
+        method: "POST",
+        cache: "no-store",
+        body: JSON.stringify({
+          caseReference: "KF-2026-0001",
+          statusAccessCode: "ABC123",
+        }),
+      }),
+    ]);
 
     await user.clear(screen.getByLabelText("Case reference"));
     await user.type(screen.getByLabelText("Case reference"), "KF-2026-BAD");

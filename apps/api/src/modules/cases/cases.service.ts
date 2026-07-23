@@ -24,7 +24,7 @@ import {
   CreateInternalNoteInput,
   CreatePublicCaseInput,
   ListCasesQuery,
-  PublicCaseStatusQuery,
+  PublicCaseStatusInput,
   UpdateCaseStatusInput,
 } from './cases.schemas';
 
@@ -142,7 +142,7 @@ export class CasesService {
     };
   }
 
-  async findPublicStatus(tenantSlug: string, query: PublicCaseStatusQuery) {
+  async findPublicStatus(tenantSlug: string, query: PublicCaseStatusInput) {
     const caseRecord = await this.prisma.case.findFirst({
       where: {
         tenant: { slug: tenantSlug },

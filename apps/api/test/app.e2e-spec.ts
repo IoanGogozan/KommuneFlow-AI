@@ -370,13 +370,13 @@ describe('AppController (e2e)', () => {
     warnSpy.mockRestore();
   });
 
-  it('does not include query-string secrets in error paths or logs', async () => {
+  it('does not include status access codes in error paths, responses, or logs', async () => {
     const requestId = 'req_safe-path-12345678';
     const warnSpy = jest.spyOn(appLogger, 'warn').mockImplementation();
 
     const response = await request(app.getHttpServer())
-      .get('/api/v1/public/tenants/arendal/cases/status')
-      .query({
+      .post('/api/v1/public/tenants/arendal/cases/status')
+      .send({
         caseReference: 'KF-2026-SECRET',
         statusAccessCode: 'SECRET-CODE-123',
       })
@@ -395,8 +395,20 @@ describe('AppController (e2e)', () => {
       }),
     );
     expect(JSON.stringify(warnSpy.mock.calls)).not.toContain('SECRET-CODE-123');
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.headers.pragma).toBe('no-cache');
 
     warnSpy.mockRestore();
+  });
+
+  it('does not retain the deprecated GET status endpoint', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/public/tenants/arendal/cases/status')
+      .query({
+        caseReference: 'KF-2026-0001',
+        statusAccessCode: 'SECRET-CODE-123',
+      })
+      .expect(404);
   });
 
   it('/api/v1/health (GET)', async () => {
@@ -681,13 +693,15 @@ describe('AppController (e2e)', () => {
     });
 
     const publicStatusResponse = await request(app.getHttpServer())
-      .get(`/api/v1/public/tenants/${tenantSlug}/cases/status`)
-      .query({
+      .post(`/api/v1/public/tenants/${tenantSlug}/cases/status`)
+      .send({
         caseReference: publicCaseBody.caseReference.toLowerCase(),
         statusAccessCode: publicCaseBody.statusAccessCode.toLowerCase(),
       })
       .expect(200);
 
+    expect(publicStatusResponse.headers['cache-control']).toBe('no-store');
+    expect(publicStatusResponse.headers.pragma).toBe('no-cache');
     expect(publicStatusResponse.body).toMatchObject({
       caseReference: publicCaseBody.caseReference,
       title: 'Water leak near school entrance',

@@ -32,6 +32,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (!response.headersSent) {
       response.setHeader(REQUEST_ID_HEADER, requestId);
+      if (safeRequestPath(request).endsWith('/cases/status')) {
+        response.setHeader('Cache-Control', 'no-store');
+        response.setHeader('Pragma', 'no-cache');
+      }
     }
 
     logException({

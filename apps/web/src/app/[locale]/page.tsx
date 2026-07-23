@@ -70,18 +70,6 @@ export default async function IntakePage({ params, searchParams }: PageProps) {
 
         <section className="mx-auto w-full max-w-3xl flex-1 py-8">
           <div>
-            <p className="mb-4 inline-flex bg-[#eaf4fb] px-3 py-1 text-sm font-semibold text-[#003b71]">
-              {dictionary.badge}
-            </p>
-            <h1 className="max-w-xl text-4xl font-semibold tracking-normal text-[#003b71]">
-              {dictionary.title}
-            </h1>
-            <p className="mt-5 max-w-lg text-base leading-7 text-slate-700 sm:text-lg sm:leading-8">
-              {dictionary.intro}
-            </p>
-          </div>
-
-          <div className="mt-8">
             <IntakeForm
               dictionary={dictionary}
               locale={localeParam}
