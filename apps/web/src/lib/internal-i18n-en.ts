@@ -201,6 +201,10 @@ export const internalDictionaryEn = {
     uploadedBy: "Uploaded by",
   },
   caseDetail: {
+    overviewTab: "Overview",
+    aiReviewTab: "AI review",
+    workflowTab: "Workflow",
+    aiReadyPrompt: "AI suggestion ready for review",
     activityLoadError: "Recent activity could not be loaded.",
     readOnlyTitle: "Read-only case access",
     readOnlyText:

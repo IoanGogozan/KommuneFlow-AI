@@ -367,7 +367,12 @@ test("internal case detail supports status update, document upload, and AI revie
       .filter({ hasText: "case_1" })
       .getByRole("heading", { name: "Water leak near school entrance" }),
   ).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Overview" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
 
+  await page.getByRole("tab", { name: "Workflow" }).click();
   await page
     .locator("form")
     .filter({ has: page.getByRole("heading", { name: "Status" }) })
@@ -376,6 +381,7 @@ test("internal case detail supports status update, document upload, and AI revie
   await page.getByRole("button", { name: "Save status change" }).click();
   await expect(page.getByText("In progress").first()).toBeVisible();
 
+  await page.getByRole("tab", { name: "Overview" }).click();
   await page
     .locator('input[name="file"]')
     .setInputFiles({
@@ -386,6 +392,7 @@ test("internal case detail supports status update, document upload, and AI revie
   await page.getByRole("button", { name: "Upload" }).click();
   await expect(page.getByText("internal-note.pdf")).toBeVisible();
 
+  await page.getByRole("tab", { name: "AI review" }).click();
   await page.getByRole("button", { name: "Run AI triage" }).click();
   await expect(page.getByText("AI suggestion ready")).toBeVisible();
   await page

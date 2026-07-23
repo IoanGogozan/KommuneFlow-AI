@@ -199,6 +199,10 @@ export const internalDictionaryNb = {
     uploadedBy: "Lastet opp av",
   },
   caseDetail: {
+    overviewTab: "Oversikt",
+    aiReviewTab: "KI-gjennomgang",
+    workflowTab: "Arbeidsflyt",
+    aiReadyPrompt: "KI-forslag klart for gjennomgang",
     activityLoadError: "Kunne ikke laste nylig aktivitet.",
     readOnlyTitle: "Skrivebeskyttet sakstilgang",
     readOnlyText:
