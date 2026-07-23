@@ -21,7 +21,7 @@
 
 		# Keep the portfolio landing page public while the application,
 		# internal workspace, and API remain behind the demo gate.
-		@public_landing path / /favicon.ico /_next/*
+		@public_landing path / /demo /favicon.ico /screenshots/citizen-intake-preview.png /_next/*
 		handle @public_landing {
 			reverse_proxy web:3000
 		}
