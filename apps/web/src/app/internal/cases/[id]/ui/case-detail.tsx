@@ -171,6 +171,9 @@ export function CaseDetail({ caseId }: { caseId: string }) {
   } = useInternalSession();
   const [caseRecord, setCaseRecord] = useState<CaseDetailResponse | null>(null);
   const [documents, setDocuments] = useState<CaseDocumentResponse[]>([]);
+  const [activeSection, setActiveSection] = useState<
+    "overview" | "ai" | "workflow"
+  >("overview");
   const [aiResult, setAiResult] = useState<AITriageResultResponse | null>(null);
   const [activity, setActivity] = useState<CaseActivityResponse[]>([]);
   const [activityError, setActivityError] = useState<string | null>(null);
@@ -603,65 +606,72 @@ export function CaseDetail({ caseId }: { caseId: string }) {
         {t.cases.back}
       </Link>
 
-      <CaseSummaryCard caseRecord={caseRecord} t={t} />
       {!canModifyThisCase ? <ReadOnlyNotice t={t} /> : null}
-      <AITriageCard
-        aiResult={aiResult}
-        officialCategory={caseRecord.category}
-        officialDepartment={caseRecord.assignedDepartment?.name ?? null}
-        officialUrgency={caseRecord.urgency}
-        departments={departments}
-        departmentListUnavailable={departmentListUnavailable}
-        aiError={aiError}
-        aiIsRunning={aiIsRunning}
-        canReview={canReviewThisAITriage}
-        canRun={canRunThisAITriage}
-        onReviewCategoryChange={setReviewCategory}
-        onReviewCommentChange={setReviewComment}
-        onReviewDepartmentSlugChange={setReviewDepartmentSlug}
-        onReviewUrgencyChange={setReviewUrgency}
-        onRunAITriage={runAITriage}
-        onSubmitCorrection={reviewAITriage}
-        reviewCategory={reviewCategory}
-        reviewComment={reviewComment}
-        reviewDepartmentSlug={reviewDepartmentSlug}
-        reviewIsSaving={reviewIsSaving}
-        reviewSuccess={reviewSuccess}
-        reviewValidationError={reviewValidationError}
-        reviewUrgency={reviewUrgency}
-        t={t}
-      />
-      <CitizenAddressCard caseAddress={caseAddress} t={t} />
-      <section className="mt-5 grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
-        <CaseWorkflowCard
-          canUpdate={canModifyThisCase}
-          currentStatus={caseRecord.status}
-          error={statusUpdateError}
-          onSubmit={updateStatus}
-          setStatus={setStatus}
-          status={status}
-          t={t}
-        />
-        <InternalNotesCard
-          canAddNote={canModifyThisCase}
-          error={error}
-          notes={caseRecord.internalNotes}
-          onSubmit={addNote}
-          t={t}
-        />
-      </section>
-      <DocumentsCard
-        canUpload={canUploadDocumentToThisCase}
-        caseId={caseId}
-        documents={documents}
-        onUploadDocument={uploadDocument}
-        t={t}
-      />
-      <RecentActivityCard
-        activity={activity}
-        error={activityError}
-        t={t}
-      />
+      <div className="mt-5 flex flex-wrap gap-1 border border-[#c8d9e8] bg-white p-1" role="tablist" aria-label={t.nav.caseDetail}>
+        {([
+          ["overview", t.caseDetail.overviewTab],
+          ["ai", t.caseDetail.aiReviewTab],
+          ["workflow", t.caseDetail.workflowTab],
+        ] as const).map(([section, label]) => (
+          <button key={section} type="button" role="tab" aria-selected={activeSection === section} onClick={() => setActiveSection(section)} className={activeSection === section ? "bg-[#003b71] px-4 py-2 text-sm font-semibold text-white" : "px-4 py-2 text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb]"}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeSection === "overview" ? (
+        <div role="tabpanel">
+          {caseRecord.status === "triage_pending" && aiResult?.status === "completed" ? (
+            <button type="button" onClick={() => setActiveSection("ai")} className="mt-5 border border-[#c8d9e8] bg-[#eaf4fb] px-4 py-3 text-sm font-semibold text-[#003b71]">
+              {t.caseDetail.aiReadyPrompt}
+            </button>
+          ) : null}
+          <CaseSummaryCard caseRecord={caseRecord} t={t} />
+          <CitizenAddressCard caseAddress={caseAddress} t={t} />
+          <DocumentsCard canUpload={canUploadDocumentToThisCase} caseId={caseId} documents={documents} onUploadDocument={uploadDocument} t={t} />
+        </div>
+      ) : null}
+
+      {activeSection === "ai" ? (
+        <div role="tabpanel">
+          <AITriageCard
+            aiResult={aiResult}
+            officialCategory={caseRecord.category}
+            officialDepartment={caseRecord.assignedDepartment?.name ?? null}
+            officialUrgency={caseRecord.urgency}
+            departments={departments}
+            departmentListUnavailable={departmentListUnavailable}
+            aiError={aiError}
+            aiIsRunning={aiIsRunning}
+            canReview={canReviewThisAITriage}
+            canRun={canRunThisAITriage}
+            onReviewCategoryChange={setReviewCategory}
+            onReviewCommentChange={setReviewComment}
+            onReviewDepartmentSlugChange={setReviewDepartmentSlug}
+            onReviewUrgencyChange={setReviewUrgency}
+            onRunAITriage={runAITriage}
+            onSubmitCorrection={reviewAITriage}
+            reviewCategory={reviewCategory}
+            reviewComment={reviewComment}
+            reviewDepartmentSlug={reviewDepartmentSlug}
+            reviewIsSaving={reviewIsSaving}
+            reviewSuccess={reviewSuccess}
+            reviewValidationError={reviewValidationError}
+            reviewUrgency={reviewUrgency}
+            t={t}
+          />
+        </div>
+      ) : null}
+
+      {activeSection === "workflow" ? (
+        <div role="tabpanel">
+          <section className="mt-5 grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+            <CaseWorkflowCard canUpdate={canModifyThisCase} currentStatus={caseRecord.status} error={statusUpdateError} onSubmit={updateStatus} setStatus={setStatus} status={status} t={t} />
+            <InternalNotesCard canAddNote={canModifyThisCase} error={error} notes={caseRecord.internalNotes} onSubmit={addNote} t={t} />
+          </section>
+          <RecentActivityCard activity={activity} error={activityError} t={t} />
+        </div>
+      ) : null}
     </InternalShell>
   );
 }
@@ -687,8 +697,9 @@ function CaseSummaryCard({
         </span>
       </div>
 
-      <dl className="mt-6 grid gap-4 sm:grid-cols-3">
+      <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Info label={t.cases.citizen} value={caseRecord.citizenProfile.name} />
+        <Info label={t.common.email} value={caseRecord.citizenProfile.email} />
         <Info
           label={t.cases.department}
           value={
@@ -704,6 +715,14 @@ function CaseSummaryCard({
         <Info
           label={t.cases.urgency}
           value={formatDisplayValue(caseRecord.urgency, "urgencies", t)}
+        />
+        <Info
+          label={t.caseDetail.officialCategory}
+          value={formatDisplayValue(caseRecord.category, "categories", t)}
+        />
+        <Info
+          label={t.caseDetail.currentStatus}
+          value={getStatusLabel(caseRecord.status, t)}
         />
       </dl>
 
