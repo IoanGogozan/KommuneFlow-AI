@@ -7,6 +7,10 @@ import { IntakeForm } from "./intake-form";
 describe("IntakeForm", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
   });
 
   it("starts without a municipality and only accepts valid explicit preselection", () => {
@@ -295,15 +299,26 @@ describe("IntakeForm", () => {
   });
 
   it("can move from success into status lookup with the returned reference visible", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
-      jsonResponse({
-        caseId: "case_1",
-        caseReference: "KF-2026-0001",
-        statusAccessCode: "ABC123",
-        status: "new",
-        createdAt: "2026-05-09T10:00:00.000Z",
-      }),
-    );
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        jsonResponse({
+          caseId: "case_1",
+          caseReference: "KF-2026-0001",
+          statusAccessCode: "ABC123",
+          status: "new",
+          createdAt: "2026-05-09T10:00:00.000Z",
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          caseReference: "KF-2026-0001",
+          title: "Water leak near school",
+          status: "new",
+          createdAt: "2026-05-09T10:00:00.000Z",
+          updatedAt: "2026-05-09T10:00:00.000Z",
+          assignedDepartmentName: null,
+        }),
+      );
     const user = userEvent.setup();
 
     render(
@@ -326,11 +341,62 @@ describe("IntakeForm", () => {
 
     const successPanel = await screen.findByText("Request registered");
     expect(successPanel).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Check status" }));
+    await user.click(
+      screen.getByRole("button", { name: "Check this case now" }),
+    );
 
-    const statusForm = screen.getByRole("button", { name: "Check status" })
-      .closest("form")!;
-    expect(within(statusForm).getByLabelText("Case reference")).toBeInTheDocument();
+    const statusForm = screen.getByRole("button", { name: "Check status" }).closest("form")!;
+    expect(within(statusForm).getByLabelText("Case reference")).toHaveValue(
+      "KF-2026-0001",
+    );
+    expect(within(statusForm).getByLabelText("Access code")).toHaveValue(
+      "ABC123",
+    );
+    expect(await screen.findByText("Water leak near school")).toBeVisible();
+  });
+
+  it("copies success values and handles clipboard rejection without persistence", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        caseId: "case_1",
+        caseReference: "KF-2026-0001",
+        statusAccessCode: "ABC123",
+        status: "new",
+        createdAt: "2026-05-09T10:00:00.000Z",
+      }),
+    );
+    const user = userEvent.setup();
+    const writeText = vi
+      .spyOn(navigator.clipboard, "writeText")
+      .mockResolvedValue(undefined);
+    render(
+      <IntakeForm
+        dictionary={dictionaries.en}
+        locale="en"
+        initialTenantSlug="arendal"
+      />,
+    );
+    await user.type(screen.getByLabelText("Name"), "Ada Citizen");
+    await user.type(screen.getByLabelText("Email"), "ada@example.local");
+    await user.type(screen.getByLabelText("Title"), "Water leak near school");
+    await user.type(
+      screen.getByLabelText("Description"),
+      "There is a water leak by the school entrance and children may slip.",
+    );
+    await user.click(screen.getByRole("checkbox", { name: /Privacy/ }));
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+
+    await user.click(await screen.findByRole("button", { name: "Copy reference" }));
+    expect(writeText).toHaveBeenCalledWith("KF-2026-0001");
+    expect(screen.getByRole("status")).toHaveTextContent("Copied");
+
+    writeText.mockRejectedValueOnce(new Error("denied"));
+    await user.click(screen.getByRole("button", { name: "Copy access code" }));
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Could not copy. Select and copy the value manually.",
+    );
+    expect(window.location.search).not.toContain("ABC123");
+    expect(localStorage.getItem("statusAccessCode")).toBeNull();
   });
 });
 
