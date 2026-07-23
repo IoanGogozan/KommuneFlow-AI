@@ -1,20 +1,20 @@
 # KommuneFlow AI
 
-KommuneFlow AI is a **B2B multi-tenant SaaS portfolio demo** for municipal case management, inspired by Norwegian public services. It shows how citizen requests can move from secure intake to human-reviewed AI triage, case handling, audit, privacy operations, and analytics.
+KommuneFlow AI is a working portfolio application for municipal case management. A citizen submits a request, AI prepares a structured suggestion, and an employee reviews that suggestion before processing the case. Important actions remain auditable throughout.
 
 **Problem:** municipal requests often arrive through fragmented channels and require manual routing, limited operational visibility, and careful handling of sensitive data. KommuneFlow AI demonstrates one coherent, traceable workflow while keeping AI in a decision-support role: official case values change only after human review.
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Open_Application-005293?style=for-the-badge)](https://kommune.norvix.no)
 
-> The portfolio landing page is public. The interactive demo and all application routes are access-controlled and contain synthetic data only. Demo access can be provided for portfolio review.
+> The portfolio landing page is public. Citizen and employee routes require protected demo credentials. All demo data is synthetic. This project is not approved for real municipal use.
 
-![KommuneFlow AI citizen intake](./docs/screenshots/01-public-intake-nb.png)
+![KommuneFlow AI citizen intake](./docs/screenshots/02-citizen-intake-en.png)
 
 **Stack:** TypeScript | Next.js | NestJS | PostgreSQL | Prisma | Zod | Python ELT | Docker Compose | Caddy | OpenAI
 
 **Key capabilities:** bilingual citizen intake and document upload | Kartverket address validation | tenant isolation and RBAC | human-in-the-loop AI triage | case and document workflows | audit, privacy, retention, and operations views | SSB-enriched analytics
 
-**Project status:** functional, access-controlled portfolio demo deployed at `kommune.norvix.no` with synthetic data, production-like infrastructure, and automated test coverage. CI (including PostgreSQL API e2e tests, a full-stack browser smoke test, dependency audit, and build) passed on 2026-07-19. It is **not** a certified or production-approved municipal system and must not be used with real citizen data; current limitations are documented below.
+**Project status:** functional, access-controlled portfolio demonstration with synthetic data, production-like infrastructure, and automated test coverage. See the current [verification log](./docs/VERIFICATION_LOG.md) for exact executed results. It is **not** a certified or production-approved municipal system and must not be used with real citizen data.
 
 ## Product Walkthrough
 

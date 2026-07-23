@@ -1,62 +1,23 @@
-# Screenshots
+# Product Screenshots
 
-Screenshots are portfolio artifacts and should be regenerated from seeded synthetic data before publishing a demo.
+Generated locally on 2026-07-23 with the seeded synthetic dataset at a consistent 1440 × 1000 viewport.
 
-## Recommended Set
+| File | Product surface |
+| --- | --- |
+| `01-landing.png` | Public portfolio landing |
+| `02-citizen-intake-en.png` | English citizen intake |
+| `03-citizen-intake-nb.png` | Norwegian citizen intake |
+| `04-submission-success.png` | Submission success and save actions |
+| `05-status-lookup.png` | Prefilled citizen status lookup |
+| `06-internal-dashboard.png` | Employee work dashboard |
+| `07-case-overview.png` | Case Overview |
+| `08-ai-review.png` | AI review and official/suggested comparison |
+| `09-workflow-activity.png` | Workflow, notes, and activity |
 
-1. Citizen intake in Norwegian.
-2. Public status lookup.
-3. Internal login.
-4. Internal overview dashboard.
-5. Case list with realistic cases.
-6. Case detail with documents and internal notes.
-7. AI triage suggestion and human review context.
-8. Analytics dashboard after aggregation.
-9. Operations dashboard with readiness, integration, and AI provider metrics.
-10. Privacy UI if the configured user has access.
-11. Audit UI if the configured user has access.
-12. Deployment smoke test output after Hetzner deployment.
+The captures contain only local synthetic data. No Basic Auth credentials, passwords, private server details, API keys, or deployed-environment access codes are included.
 
-Suggested filenames:
-
-```txt
-docs/screenshots/01-citizen-intake-nb.png
-docs/screenshots/02-public-status-lookup.png
-docs/screenshots/03-internal-login.png
-docs/screenshots/04-internal-overview.png
-docs/screenshots/05-case-list.png
-docs/screenshots/06-case-detail-documents.png
-docs/screenshots/07-ai-triage-section.png
-docs/screenshots/08-analytics-dashboard.png
-docs/screenshots/09-operations-dashboard.png
-docs/screenshots/10-privacy-dashboard.png
-docs/screenshots/11-audit-dashboard.png
-docs/screenshots/12-hetzner-smoke-test.png
-```
-
-## Current Status
-
-The Norwegian citizen intake screenshot is committed as `docs/screenshots/01-public-intake-nb.png` and displayed near the top of the main README. The remaining recommended screenshots should be regenerated before claiming a complete portfolio screenshot set.
-
-## Capture Command
-
-Regenerate the main local demo screenshots with:
+Regenerate with:
 
 ```bash
-DEMO_PASSWORD='<demo internal password>' \
-pnpm screenshots:demo
+DEMO_PASSWORD='<local seeded password>' pnpm screenshots:demo
 ```
-
-Useful optional variables:
-
-```bash
-WEB_BASE_URL=http://localhost:3000
-SCREENSHOT_DIR=docs/screenshots
-DEMO_EMAIL=department.admin@kristiansand.local
-DEMO_PASSWORD='<demo internal password>'
-DEMO_AUDIT_EMAIL=auditor@kristiansand.local
-DEMO_AUDIT_PASSWORD='<demo internal password>'
-PLAYWRIGHT_BROWSER_CHANNEL=msedge
-```
-
-The script captures the citizen portal, public status lookup, internal login, internal overview, case list, case detail, AI triage section, analytics dashboard, operations dashboard, and privacy/audit pages when available to the configured user. It requires login credentials through environment variables and does not hardcode passwords.
