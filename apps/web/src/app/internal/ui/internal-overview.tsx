@@ -15,15 +15,6 @@ type CaseOverviewItem = {
   status: string;
 };
 
-const overviewStatuses = [
-  { key: "new" },
-  { key: "triage_pending" },
-  { key: "triaged" },
-  { key: "in_progress" },
-  { key: "waiting_for_citizen" },
-  { key: "closed" },
-] as const;
-
 export function InternalOverview() {
   const router = useRouter();
   const { locale, setLocale, t } = useInternalI18n();
@@ -145,18 +136,23 @@ export function InternalOverview() {
         {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
       </section>
 
-      <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {overviewStatuses.map((status) => (
+      <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { key: "all", label: t.overview.accessibleCases, value: cases.length, href: "/internal/cases" },
+          { key: "attention", label: t.overview.needsAttention, value: (counts.new ?? 0) + (counts.triage_pending ?? 0), href: "/internal/cases?status=triage_pending" },
+          { key: "in_progress", label: t.overview.statuses.in_progress, value: counts.in_progress ?? 0, href: "/internal/cases?status=in_progress" },
+          { key: "waiting_for_citizen", label: t.overview.statuses.waiting_for_citizen, value: counts.waiting_for_citizen ?? 0, href: "/internal/cases?status=waiting_for_citizen" },
+        ].map((status) => (
           <Link
             key={status.key}
-            href={`/internal/cases?status=${status.key}`}
+            href={status.href}
             className="border border-[#c8d9e8] border-l-4 border-l-[#003b71] bg-white p-4 hover:bg-[#f5f9fc]"
           >
             <p className="text-sm font-semibold text-[#55718d]">
-              {t.overview.statuses[status.key]}
+              {status.label}
             </p>
             <p className="mt-2 text-4xl font-semibold text-[#003b71]">
-              {counts[status.key] ?? 0}
+              {status.value}
             </p>
           </Link>
         ))}

@@ -14,6 +14,12 @@ export const internalDictionaryNb = {
     privacy: "Personvern",
     publicIntake: "Innbyggerskjema",
     signOut: "Logg ut",
+    menu: "Meny",
+    work: "Arbeid",
+    insights: "Innsikt",
+    governance: "Styring",
+    administration: "Administrasjon",
+    system: "System",
   },
   common: {
     app: "KommuneFlow AI",
@@ -82,6 +88,7 @@ export const internalDictionaryNb = {
     description:
       "Sakstallene er basert på sakene rollen, kommunen og avdelingen din har tilgang til.",
     accessibleCases: "tilgjengelige saker",
+    needsAttention: "Trenger oppfølging",
     statuses: {
       new: "Nye saker",
       triage_pending: "Venter på triage",
