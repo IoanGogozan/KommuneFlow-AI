@@ -315,7 +315,7 @@ AI deployment mode is controlled server-side:
 
 After deploy, log in internally, open Operations, verify the AI Configuration panel, then run AI triage on a seeded or synthetic case.
 
-Deployment status: the protected home-server HTTPS demo was deployed and passed its authenticated public smoke test on 2026-07-19. It uses deterministic `AI_PROVIDER=mock`; real OpenAI verification is isolated in the manually triggered, protected `OpenAI Smoke` GitHub Actions workflow. This is still a portfolio/demo deployment, not a formally approved municipal production environment.
+Deployment status: the protected home-server HTTPS demo was updated to commit `fd172b28` and passed its public/protected-route and authenticated application smoke tests on 2026-07-23. It uses deterministic `AI_PROVIDER=mock`; real OpenAI verification is isolated in the manually triggered, protected `OpenAI Smoke` GitHub Actions workflow. This is still a portfolio/demo deployment, not a formally approved municipal production environment.
 
 ## Testing Status
 

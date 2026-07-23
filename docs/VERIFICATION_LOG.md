@@ -54,4 +54,23 @@ The first full-stack attempt was not a product assertion: Playwright correctly r
 
 ## Deployment status
 
-The modified version has not yet been deployed in this record. Live verification must be appended only after the final branch is deployed to the home server and the unauthenticated/authenticated smoke checks and manual UX walkthrough pass.
+Deployed to the protected home server on 2026-07-23 from merged commit `fd172b28e883e72c7257e9710a140dec91b189b6`.
+
+Release result:
+
+- home-server preflight passed;
+- API and web images built on the server;
+- all 17 migrations were already applied;
+- PostgreSQL, API, web, and gateway reported healthy;
+- local gateway health check passed.
+
+Live smoke result for `https://kommune.norvix.no`:
+
+- `/` returned `200` without Basic Auth;
+- `/nb`, `/en`, and `/internal/login` returned `401` without Basic Auth;
+- `/nb`, `/en`, and `/internal/login` returned `200` with Basic Auth;
+- internal application login returned `201`;
+- authenticated `/auth/me`, `/cases`, and AI status returned `200`;
+- API health and readiness returned `200`.
+
+Credentials were sourced from the server's ignored `.credentials` file and were not printed, logged, or committed.
