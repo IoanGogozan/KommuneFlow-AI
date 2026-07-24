@@ -22,6 +22,10 @@ import type { CurrentUser } from '../auth/current-user';
 import { RequireAnyPermissions } from '../auth/permissions.decorator';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { publicCaseMultipartLimits } from '../../shared/upload/multipart-limits';
+import {
+  assertPublicUploadsAllowed,
+  getPublicDemoSafetyConfig,
+} from '../../config/public-demo-safety';
 import { CasesService } from './cases.service';
 import {
   createInternalNoteSchema,
@@ -32,13 +36,19 @@ import {
 } from './cases.schemas';
 
 const MAX_PUBLIC_DOCUMENT_FILES = 5;
+const publicDemoSafety = getPublicDemoSafetyConfig();
 
 @Controller('public/tenants/:tenantSlug/cases')
 export class PublicCasesController {
   constructor(private readonly casesService: CasesService) {}
 
   @Post()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: {
+      limit: publicDemoSafety.intakeLimit,
+      ttl: publicDemoSafety.intakeTtlMs,
+    },
+  })
   @UseInterceptors(
     FilesInterceptor('documents', MAX_PUBLIC_DOCUMENT_FILES, {
       limits: publicCaseMultipartLimits,
@@ -50,6 +60,7 @@ export class PublicCasesController {
     @UploadedFiles() files: Express.Multer.File[] = [],
   ) {
     try {
+      assertPublicUploadsAllowed(files);
       return await this.casesService.createPublicCase(
         tenantSlug,
         createPublicCaseSchema.parse(parsePublicCaseBody(body)),
@@ -68,7 +79,12 @@ export class PublicCasesController {
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
   @Header('Pragma', 'no-cache')
-  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Throttle({
+    default: {
+      limit: publicDemoSafety.statusLimit,
+      ttl: publicDemoSafety.statusTtlMs,
+    },
+  })
   async findPublicStatus(
     @Param('tenantSlug') tenantSlug: string,
     @Body() body: unknown,

@@ -66,6 +66,17 @@ export function validateProductionEnvironment(
     failures.add('OPENAI_API_KEY is required when AI_PROVIDER=openai');
   }
 
+  if (env.PORTFOLIO_DEMO_ENABLED === 'true') {
+    if (env.PUBLIC_DEMO_ALLOW_UPLOADS !== 'false') {
+      failures.add(
+        'PUBLIC_DEMO_ALLOW_UPLOADS must be false when PORTFOLIO_DEMO_ENABLED=true',
+      );
+    }
+    if ((env.AI_PROVIDER ?? 'mock') !== 'mock') {
+      failures.add('AI_PROVIDER must be mock when PORTFOLIO_DEMO_ENABLED=true');
+    }
+  }
+
   if (failures.size > 0) {
     throw new Error(
       `Invalid production API configuration: ${Array.from(failures).join('; ')}.`,

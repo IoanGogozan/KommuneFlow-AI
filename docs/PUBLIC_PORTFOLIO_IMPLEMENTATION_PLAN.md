@@ -35,7 +35,7 @@ Security invariants for every PR:
 | PR 2 | One-click guest session                       | Draft PR open | [PR #20](https://github.com/IoanGogozan/KommuneFlow-AI/pull/20); stacked on draft PR #19; disabled by default           |
 | PR 3 | Public application perimeter                  | Draft PR open | [PR #21](https://github.com/IoanGogozan/KommuneFlow-AI/pull/21); stacked on draft PR #20; verified locally               |
 | PR 4 | Portfolio journey UX                          | Draft PR open | [PR #22](https://github.com/IoanGogozan/KommuneFlow-AI/pull/22); stacked on draft PR #21; verified locally               |
-| PR 5 | Public demo safety and reset                  | Not started   | Upload controls, rate limits, safe reset                                                                                |
+| PR 5 | Public demo safety and reset                  | In progress   | Branch `agent/public-demo-safety`; stacked on draft PR #22                                                              |
 | PR 6 | Documentation, screenshots, live verification | Not started   | Evidence must match deployed behavior                                                                                   |
 
 ## PR 1 — Portfolio guest authorization model
@@ -145,6 +145,20 @@ PR 4 result (update at completion):
 ## PR 5 — Public demo safety and reset
 
 Disable public-demo uploads at the backend and communicate this in the UI; add configurable limits for intake/status/address/demo-session endpoints; implement an explicit, guarded, idempotent demo reset command with safe database/storage checks; preserve deterministic seeds; clean expired visitor data/files; and document host scheduling without exposing a reset endpoint.
+
+PR 5 result (update at completion):
+
+- Implemented: backend-enforced upload disablement for portfolio mode; matching citizen UI explanation and removal of the file control; environment-configurable throttling for intake, status, address, and demo-session endpoints; guarded CLI-only reset maintenance command; expired non-seed visitor cleanup across database records and physical files; deterministic seed restoration using the existing seed pipeline; Compose/environment/preflight wiring; six-hour host scheduling guidance
+- Reset safety: requires portfolio mode, an explicit confirmation flag, an exact expected database-name match, a deliberately upload-specific storage path, a positive retention period, and mock AI in portfolio production configuration; path traversal is rejected; no public reset endpoint exists
+- Seed and idempotency: `seed_` cases are excluded from visitor deletion, then deterministic cases/documents/AI/audit fixtures are restored through the existing idempotent seeder; focused tests execute the reset flow twice and confirm stable results
+- User-facing scope: when public uploads are disabled, citizens can still submit text-only cases and are directed to seeded employee-demo cases for document examples; shared-demo copy now states that synthetic submissions can be seen by other visitors and are periodically reset
+- Verified: full `test:all` passed with 253 API unit tests, 64 API e2e tests plus one intentionally skipped, 23 web unit tests, 6 browser e2e tests, and 22 ETL tests; lint and workspace typecheck passed within that suite; production build passed; home and production Compose configurations rendered; API and web production images built; packaged reset command exists and refuses execution without safety flags; `git diff --check` passed
+- Safe reset evidence: reset behavior was verified through focused unit tests, including two consecutive simulated runs; the packaged CLI negative-path check refused to run with `PORTFOLIO_DEMO_ENABLED must be true`
+- Database migrations: none
+- Not verified / manual work: no destructive reset was run against the local working database or a deployed database; cron execution and cleanup of real deployed uploads require post-deployment verification
+- Deployment: implemented and verified locally, but not deployed
+- Rollback: disable scheduled reset execution first; set `PUBLIC_DEMO_ALLOW_UPLOADS` and endpoint limits to the prior intended values if needed; revert PR 5 to remove the maintenance command and safety policy without changing PR 1–4 authorization or journeys
+- Draft PR: [#23 — feat: harden and reset public portfolio demo](https://github.com/IoanGogozan/KommuneFlow-AI/pull/23)
 
 ## PR 6 — Documentation, screenshots, and live verification
 

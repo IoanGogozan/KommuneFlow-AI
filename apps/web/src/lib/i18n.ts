@@ -57,6 +57,7 @@ export type IntakeDictionary = {
   documentsSelected: string;
   documentsRemove: string;
   documentsValidationError: string;
+  documentsDisabled: string;
   privacyLabel: string;
   privacyText: string;
   privacyDetailsSummary: string;
@@ -103,7 +104,8 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     switchLanguage: "English",
     employeePortalLabel: "Ansattportal",
     portfolioBannerTitle: "Offentlig porteføljedemo",
-    portfolioBannerText: "Bruk kun syntetisk informasjon.",
+    portfolioBannerText:
+      "Dette er en delt syntetisk demo. Endringer kan tilbakestilles eller påvirkes av andre besøkende. Bruk kun syntetisk informasjon.",
     badge: "Innbyggerportal",
     title: "Send inn en henvendelse",
     intro:
@@ -167,6 +169,8 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     documentsRemove: "Fjern",
     documentsValidationError:
       "Velg opptil fem PDF-, PNG- eller JPG-filer på maksimalt 10 MB hver.",
+    documentsDisabled:
+      "Filopplasting er deaktivert i den offentlige porteføljedemoen. Seedede ansattsaker inneholder dokumenteksempler.",
     privacyLabel: "Personvern",
     privacyText:
       "Jeg forstår at opplysningene mine og opplastede dokumenter brukes til å registrere og behandle henvendelsen.",
@@ -225,7 +229,8 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     switchLanguage: "Norsk",
     employeePortalLabel: "Employee portal",
     portfolioBannerTitle: "Public portfolio demo",
-    portfolioBannerText: "Use synthetic information only.",
+    portfolioBannerText:
+      "This is a shared synthetic demo. Changes may be reset or affected by another visitor. Use synthetic information only.",
     badge: "Citizen portal",
     title: "Submit a request",
     intro:
@@ -288,6 +293,8 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     documentsRemove: "Remove",
     documentsValidationError:
       "Choose up to five PDF, PNG, or JPG files of no more than 10 MB each.",
+    documentsDisabled:
+      "File uploads are disabled in the public portfolio environment. Seeded employee cases include document examples.",
     privacyLabel: "Privacy",
     privacyText:
       "I understand that my information and uploaded documents will be used to register and process this request.",

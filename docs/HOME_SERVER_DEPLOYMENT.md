@@ -198,6 +198,37 @@ ssh server@192.168.50.23 \
 
 Do not reseed on routine updates. Do not rebuild or restart global Caddy unless its route configuration changed.
 
+## Portfolio Demo Reset
+
+The public portfolio deployment disables citizen uploads with
+`PUBLIC_DEMO_ALLOW_UPLOADS=false`. Seeded employee cases still include safe
+document examples. Visitor-created cases older than
+`PORTFOLIO_DEMO_RESET_AFTER_HOURS` can be removed with the guarded reset
+command:
+
+```bash
+docker compose -f compose.home.yml --env-file .env run --rm \
+  -e PORTFOLIO_DEMO_RESET_CONFIRM=true \
+  --entrypoint sh api -lc './node_modules/.bin/tsx prisma/demo-reset.ts'
+```
+
+The command refuses to run unless portfolio mode is enabled, confirmation is
+explicit, the database name exactly matches
+`PORTFOLIO_DEMO_RESET_DATABASE_NAME`, and the upload directory passes its
+storage safety checks. It preserves deterministic `seed_*` cases, removes
+expired visitor case relations and physical files, and idempotently restores
+missing seed cases.
+
+Schedule the host command rather than installing a scheduler in the
+application container. Example root crontab entry for a six-hour interval:
+
+```cron
+17 */6 * * * cd /srv/projects/kommuneflow-ai && docker compose -f compose.home.yml --env-file .env run --rm -e PORTFOLIO_DEMO_RESET_CONFIRM=true --entrypoint sh api -lc './node_modules/.bin/tsx prisma/demo-reset.ts' >> /var/log/kommuneflow-demo-reset.log 2>&1
+```
+
+Run it manually once and inspect the safe summary before enabling the schedule.
+Never point `PORTFOLIO_DEMO_RESET_DATABASE_NAME` at a non-demo database.
+
 ## Troubleshooting
 
 ```bash

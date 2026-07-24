@@ -131,6 +131,32 @@ describe('validateProductionEnvironment', () => {
 
     expect(logger.warn).not.toHaveBeenCalled();
   });
+
+  it('requires disabled uploads and mock AI for a production portfolio demo', () => {
+    expect(() =>
+      validateProductionEnvironment(
+        validProductionEnv({
+          PORTFOLIO_DEMO_ENABLED: 'true',
+          PUBLIC_DEMO_ALLOW_UPLOADS: 'true',
+          AI_PROVIDER: 'openai',
+          OPENAI_API_KEY: 'test-openai-key',
+        }),
+        logger,
+      ),
+    ).toThrow(
+      /PUBLIC_DEMO_ALLOW_UPLOADS must be false.*AI_PROVIDER must be mock/,
+    );
+
+    expect(() =>
+      validateProductionEnvironment(
+        validProductionEnv({
+          PORTFOLIO_DEMO_ENABLED: 'true',
+          PUBLIC_DEMO_ALLOW_UPLOADS: 'false',
+        }),
+        logger,
+      ),
+    ).not.toThrow();
+  });
 });
 
 function validProductionEnv(

@@ -11,6 +11,7 @@ type IntakeFormProps = {
   locale: Locale;
   initialTenantSlug?: string;
   portfolioMode?: boolean;
+  uploadsAllowed?: boolean;
 };
 
 type SubmissionResult = {
@@ -55,6 +56,7 @@ export function IntakeForm({
   locale,
   initialTenantSlug,
   portfolioMode = false,
+  uploadsAllowed = true,
 }: IntakeFormProps) {
   const initialTenant =
     demoTenants.find((tenant) => tenant.slug === initialTenantSlug) ?? null;
@@ -186,9 +188,11 @@ export function IntakeForm({
     const requestBody = new FormData();
     requestBody.set("payload", JSON.stringify(payload));
 
-    for (const file of selectedDocuments) {
-      if (file.size > 0) {
-        requestBody.append("documents", file);
+    if (uploadsAllowed) {
+      for (const file of selectedDocuments) {
+        if (file.size > 0) {
+          requestBody.append("documents", file);
+        }
       }
     }
 
@@ -627,6 +631,7 @@ export function IntakeForm({
           number={3}
           title={dictionary.sectionDocumentsTitle}
         >
+          {uploadsAllowed ? (
           <div className="grid gap-2">
             <span className="text-sm font-medium text-[#003b71]">
               {dictionary.documentsLabel}
@@ -676,6 +681,11 @@ export function IntakeForm({
               {dictionary.documentsHelp}
             </span>
           </div>
+          ) : (
+            <p className="border border-amber-300 bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-950">
+              {dictionary.documentsDisabled}
+            </p>
+          )}
         </FormSection>
 
         <FormSection
