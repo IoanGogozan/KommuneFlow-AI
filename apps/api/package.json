@@ -30,6 +30,7 @@
     "demo:reset": "tsx prisma/demo-reset.ts"
   },
   "dependencies": {
+    "@kommuneflow/shared": "workspace:*",
     "@nestjs/common": "^11.1.28",
     "@nestjs/core": "^11.1.28",
     "@nestjs/jwt": "^11.0.2",
@@ -88,6 +89,10 @@
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "^@kommuneflow/shared/public-security\\.json$": "<rootDir>/../../../packages/shared/public-security.json",
+      "^@kommuneflow/shared$": "<rootDir>/../../../packages/shared/src/index.ts"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"

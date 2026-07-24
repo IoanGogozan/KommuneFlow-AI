@@ -1,5 +1,16 @@
 import { UserRole } from '@prisma/client';
-import { ROLE_PERMISSIONS, roleHasPermission } from './permissions';
+import publicSecurityMatrix from '@kommuneflow/shared/public-security.json';
+import {
+  ROLE_PERMISSIONS,
+  roleHasPermission,
+  type Permission,
+} from './permissions';
+
+type PublicSecurityRoleKey =
+  | 'guest'
+  | 'caseWorker'
+  | 'departmentAdmin'
+  | 'auditor';
 
 describe('roleHasPermission', () => {
   it('allows case workers to update department cases', () => {
@@ -70,5 +81,41 @@ describe('roleHasPermission', () => {
     expect(roleHasPermission(UserRole.super_admin, 'analytics:aggregate')).toBe(
       true,
     );
+  });
+
+  it('matches the shared public security capability matrix against backend permissions', () => {
+    const {
+      capabilities: PUBLIC_SECURITY_CAPABILITY_MATRIX,
+      roleColumns: PUBLIC_SECURITY_ROLE_COLUMNS,
+    } = publicSecurityMatrix as {
+      capabilities: Array<{
+        capability: string;
+        permissions: Record<PublicSecurityRoleKey, readonly string[]>;
+        allowed: Record<PublicSecurityRoleKey, boolean>;
+      }>;
+      roleColumns: Array<{ key: PublicSecurityRoleKey; label: string }>;
+    };
+    const roleMap: Record<PublicSecurityRoleKey, UserRole> = {
+      guest: UserRole.portfolio_guest,
+      caseWorker: UserRole.case_worker,
+      departmentAdmin: UserRole.department_admin,
+      auditor: UserRole.auditor,
+    };
+
+    expect(PUBLIC_SECURITY_ROLE_COLUMNS).toEqual([
+      { key: 'guest', label: 'Guest' },
+      { key: 'caseWorker', label: 'Case worker' },
+      { key: 'departmentAdmin', label: 'Department admin' },
+      { key: 'auditor', label: 'Auditor' },
+    ]);
+
+    for (const row of PUBLIC_SECURITY_CAPABILITY_MATRIX) {
+      for (const column of PUBLIC_SECURITY_ROLE_COLUMNS) {
+        const actual = row.permissions[column.key].some((permission) =>
+          roleHasPermission(roleMap[column.key], permission as Permission),
+        );
+        expect(actual).toBe(row.allowed[column.key]);
+      }
+    }
   });
 });

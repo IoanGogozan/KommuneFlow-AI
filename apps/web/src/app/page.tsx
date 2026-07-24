@@ -3,6 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { EnterPortfolioDemoButton } from "@/components/enter-portfolio-demo-button";
 import styles from "./landing.module.css";
+import {
+  securityIntro,
+  securityProofItems,
+} from "./security/security-content";
 
 export const metadata: Metadata = {
   title: "KommuneFlow AI — Municipal case management portfolio",
@@ -53,6 +57,7 @@ export default function Home() {
         <div className={styles.navLinks}>
           <a href="#workflow">Workflow</a>
           <a href="#engineering">Engineering</a>
+          <a href="#security">Security</a>
           <a href="#evidence">Product evidence</a>
           <a
             href="https://github.com/IoanGogozan/KommuneFlow-AI"
@@ -151,6 +156,34 @@ export default function Home() {
               <p>{item.text}</p>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section
+        className={`${styles.section} ${styles.securitySection}`}
+        id="security"
+      >
+        <header className={styles.sectionHeading}>
+          <p className={styles.eyebrow}>Security and trust</p>
+          <h2>Security is enforced in layers.</h2>
+          <p className={styles.securityIntro}>{securityIntro}</p>
+        </header>
+        <div className={styles.securityGrid}>
+          {securityProofItems.map((item) => (
+            <article key={item.title} className={styles.securityCard}>
+              <h3>{item.title}</h3>
+              <p>{item.description}</p>
+              <p className={styles.securityEvidence}>{item.evidence}</p>
+            </article>
+          ))}
+        </div>
+        <div className={styles.securityActions}>
+          <Link className={styles.primaryCta} href="/security">
+            Explore security architecture
+          </Link>
+          <Link className={styles.secondaryCta} href="/security#verification-links">
+            View verification evidence
+          </Link>
         </div>
       </section>
 
