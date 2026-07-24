@@ -33,7 +33,7 @@ Security invariants for every PR:
 | ---- | --------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | PR 1 | Portfolio guest authorization model           | Draft PR open | [PR #19](https://github.com/IoanGogozan/KommuneFlow-AI/pull/19); implemented and verified locally; Basic Auth unchanged |
 | PR 2 | One-click guest session                       | Draft PR open | [PR #20](https://github.com/IoanGogozan/KommuneFlow-AI/pull/20); stacked on draft PR #19; disabled by default           |
-| PR 3 | Public application perimeter                  | Ready for PR  | Branch `agent/public-portfolio-perimeter`; implemented and verified locally; stacked on draft PR #20                    |
+| PR 3 | Public application perimeter                  | Draft PR open | [PR #21](https://github.com/IoanGogozan/KommuneFlow-AI/pull/21); stacked on draft PR #20; verified locally               |
 | PR 4 | Portfolio journey UX                          | Not started   | Landing, citizen-to-employee continuation, guest UX                                                                     |
 | PR 5 | Public demo safety and reset                  | Not started   | Upload controls, rate limits, safe reset                                                                                |
 | PR 6 | Documentation, screenshots, live verification | Not started   | Evidence must match deployed behavior                                                                                   |
@@ -121,7 +121,7 @@ PR 3 result (update at completion):
 - Not verified / manual work: the deployment smoke script was updated but was not executed against a live deployment; no deployment was performed
 - Deployment: implemented and verified locally, but not deployed
 - Rollback: revert PR 3 to restore the prior Caddy gate and its environment wiring; application authentication remains independently usable throughout
-- Draft PR: pending
+- Draft PR: [#21 — deploy: expose application-authenticated portfolio perimeter](https://github.com/IoanGogozan/KommuneFlow-AI/pull/21)
 
 ## PR 4 — Portfolio journey UX
 
