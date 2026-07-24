@@ -29,14 +29,14 @@ Security invariants for every PR:
 
 ## Delivery tracker
 
-| PR   | Scope                                         | Status        | Evidence / outcome                                                                                                       |
-| ---- | --------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| PR 1 | Portfolio guest authorization model           | Draft PR open | [PR #19](https://github.com/IoanGogozan/KommuneFlow-AI/pull/19); implemented and verified locally; Basic Auth unchanged  |
-| PR 2 | One-click guest session                       | Draft PR open | [PR #20](https://github.com/IoanGogozan/KommuneFlow-AI/pull/20); stacked on draft PR #19; disabled by default            |
-| PR 3 | Public application perimeter                  | Draft PR open | [PR #21](https://github.com/IoanGogozan/KommuneFlow-AI/pull/21); stacked on draft PR #20; verified locally               |
-| PR 4 | Portfolio journey UX                          | Draft PR open | [PR #22](https://github.com/IoanGogozan/KommuneFlow-AI/pull/22); stacked on draft PR #21; verified locally               |
-| PR 5 | Public demo safety and reset                  | Draft PR open | [PR #23](https://github.com/IoanGogozan/KommuneFlow-AI/pull/23); stacked on draft PR #22; verified locally               |
-| PR 6 | Documentation, screenshots, live verification | Draft PR open | [PR #24](https://github.com/IoanGogozan/KommuneFlow-AI/pull/24); stacked on draft PR #23; verified locally, not deployed |
+| PR   | Scope                                         | Status   | Evidence / outcome                                                                                           |
+| ---- | --------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------ |
+| PR 1 | Portfolio guest authorization model           | Merged   | [PR #19](https://github.com/IoanGogozan/KommuneFlow-AI/pull/19)                                              |
+| PR 2 | One-click guest session                       | Merged   | [PR #20](https://github.com/IoanGogozan/KommuneFlow-AI/pull/20)                                              |
+| PR 3 | Public application perimeter                  | Merged   | [PR #21](https://github.com/IoanGogozan/KommuneFlow-AI/pull/21)                                              |
+| PR 4 | Portfolio journey UX                          | Merged   | [PR #22](https://github.com/IoanGogozan/KommuneFlow-AI/pull/22)                                              |
+| PR 5 | Public demo safety and reset                  | Merged   | [PR #23](https://github.com/IoanGogozan/KommuneFlow-AI/pull/23)                                              |
+| PR 6 | Documentation, screenshots, live verification | Deployed | [PR #24](https://github.com/IoanGogozan/KommuneFlow-AI/pull/24); home-server commit `286c769`; live verified |
 
 ## PR 1 — Portfolio guest authorization model
 
@@ -203,6 +203,20 @@ PR 6 result (update at completion):
 - Deployment: implemented and verified locally, but not deployed
 - Rollback: revert PR 6 to restore prior documentation/captures; no application schema, authorization, or runtime behavior changes need rollback
 - Draft PR: [#24 — docs: publish public guest demo evidence](https://github.com/IoanGogozan/KommuneFlow-AI/pull/24)
+
+Live deployment update (2026-07-24):
+
+- Merged: PRs #19–#24 were retargeted and merged sequentially into `main`; all required CI, CodeQL, and secret-scan checks passed
+- Deployed commit: `286c769bdfc2314f6ecc724444523e0588f4bef0` on the home server only; the Hetzner deployment was not changed
+- Release safety: PostgreSQL backup and checksum completed before release; prior `.env` was preserved with mode `600`; preflight passed every check
+- Runtime: API and web images rebuilt; additive guest-role migration applied; all 18 migrations are current; PostgreSQL, API, web, and gateway are healthy; only the gateway joins the shared proxy network
+- Live public perimeter: `/`, `/demo`, `/nb`, `/en`, `/internal/login`, and `/internal` returned `200`; health/readiness returned `200`; representative public validation returned `400`; unauthenticated auth/cases/analytics/admin returned `401`
+- Live guest matrix: demo session `201`; `/auth/me` reported `portfolio_guest`; cases and analytics returned `200`; aggregation, audit, privacy, operations, users, departments, and routing rules returned `403`; public multipart upload returned `503`; logout returned `201`
+- Live browser journey: synthetic citizen submission, status lookup, same-tenant guest continuation, reference-filtered queue, case Overview, mock-AI human review, workflow status update, internal note/activity, read-only Analytics, and logout to normal staff login all passed
+- Live staff path: normal staff login returned `201`; authenticated profile, cases, and AI status returned `200`
+- Reset: guarded reset ran twice; both runs restored exactly 22 deterministic seed cases with no duplicates; six-hour cron installed idempotently
+- Runtime policy: `AI_PROVIDER=mock`, `PORTFOLIO_DEMO_ENABLED=true`, `PUBLIC_DEMO_ALLOW_UPLOADS=false`, and exactly three portfolio guest users verified
+- Remaining operational limitation: rollback was documented and prerequisites were checked, but an actual rollback was not triggered because the release was healthy
 
 ## Required report after each PR
 
