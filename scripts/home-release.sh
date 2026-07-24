@@ -31,6 +31,9 @@ compose=(docker compose -f compose.home.yml --env-file .env)
   --entrypoint sh api \
   -lc "./node_modules/.bin/prisma migrate deploy"
 
+# Recreate the gateway so bind-mounted Caddyfile changes are loaded on every
+# release. Docker Compose does not detect changes to mounted file contents.
+"${compose[@]}" up -d --force-recreate --wait --wait-timeout 120 gateway
 "${compose[@]}" up -d --remove-orphans --wait --wait-timeout 180
 "${compose[@]}" ps
 
