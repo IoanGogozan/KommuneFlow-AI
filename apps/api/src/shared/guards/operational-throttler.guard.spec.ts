@@ -22,6 +22,11 @@ describe('OperationalThrottlerGuard', () => {
   it.each([
     ['/api/v1/public/tenants/arendal/cases', 'public.rate_limited', 'public'],
     ['/api/v1/auth/login', 'security.rate_limited', 'auth'],
+    [
+      '/api/v1/auth/demo-session',
+      'auth.demo_session_rate_limited',
+      'demo_session',
+    ],
     ['/api/v1/cases', 'security.rate_limited', 'internal'],
   ])(
     'records throttling metadata for %s',

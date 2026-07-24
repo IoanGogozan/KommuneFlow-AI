@@ -6,3 +6,17 @@ export const loginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const demoSessionSchema = z
+  .object({
+    tenantSlug: z
+      .string()
+      .trim()
+      .min(1)
+      .max(100)
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+      .optional(),
+  })
+  .strict();
+
+export type DemoSessionInput = z.infer<typeof demoSessionSchema>;

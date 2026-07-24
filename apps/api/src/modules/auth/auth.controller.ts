@@ -13,12 +13,13 @@ import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { ZodError } from 'zod';
 import { AuthService } from './auth.service';
-import { loginSchema } from './auth.schemas';
+import { demoSessionSchema, loginSchema } from './auth.schemas';
 import { AUTH_COOKIE_NAME, AUTH_TOKEN_TTL_SECONDS } from './auth.constants';
 import { RequestWithId } from '../../shared/middleware/request-id.middleware';
 import { AuthGuard } from './auth.guard';
 import { CurrentUserParam } from './current-user.decorator';
 import type { CurrentUser } from './current-user';
+import { clearAuthCookie, setAuthCookie } from './auth-cookie';
 
 @Controller('auth')
 export class AuthController {
@@ -36,13 +37,7 @@ export class AuthController {
         requestId: request.requestId,
       });
 
-      response.cookie(AUTH_COOKIE_NAME, result.accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: AUTH_TOKEN_TTL_SECONDS * 1000,
-        path: '/api/v1',
-      });
+      setAuthCookie(response, result.accessToken, AUTH_TOKEN_TTL_SECONDS);
 
       return {
         user: result.user,
@@ -50,6 +45,36 @@ export class AuthController {
     } catch (error) {
       if (error instanceof ZodError) {
         throw new BadRequestException('Invalid login payload.');
+      }
+
+      throw error;
+    }
+  }
+
+  @Post('demo-session')
+  @Throttle({ default: { limit: 10, ttl: 600_000 } })
+  async createDemoSession(
+    @Body() body: unknown,
+    @Req() request: Request & RequestWithId,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    try {
+      const result = await this.authService.createDemoSession(
+        demoSessionSchema.parse(body),
+        {
+          requestId: request.requestId,
+        },
+      );
+
+      setAuthCookie(response, result.accessToken, result.ttlSeconds);
+
+      return {
+        user: result.user,
+        expiresAt: result.expiresAt,
+      };
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new BadRequestException('Invalid demo session payload.');
       }
 
       throw error;
@@ -65,12 +90,7 @@ export class AuthController {
       requestId: request.requestId,
     });
 
-    response.clearCookie(AUTH_COOKIE_NAME, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/api/v1',
-    });
+    clearAuthCookie(response);
 
     return { ok: true };
   }

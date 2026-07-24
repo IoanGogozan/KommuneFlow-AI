@@ -29,6 +29,7 @@ manualSmoke('manual protected OpenAI smoke', () => {
     const agent = request.agent(app.getHttpServer());
     await agent
       .post('/api/v1/auth/login')
+      .set('Origin', 'http://localhost:3000')
       .send({
         email: 'department.admin@kristiansand.local',
         password:

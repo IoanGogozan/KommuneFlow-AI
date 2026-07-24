@@ -116,9 +116,9 @@ login_internal_user() {
   printf '{"email":"%s","password":"%s"}' "$email_json" "$password_json" >"$LOGIN_BODY"
 
   if [ -n "$SMOKE_BASIC_AUTH_USER" ]; then
-    status="$(curl -sS -u "$SMOKE_BASIC_AUTH_USER:$SMOKE_BASIC_AUTH_PASSWORD" -c "$COOKIE_JAR" -H "Content-Type: application/json" -d "@$LOGIN_BODY" -o /dev/null -w "%{http_code}" "$BASE_URL/api/v1/auth/login" || true)"
+    status="$(curl -sS -u "$SMOKE_BASIC_AUTH_USER:$SMOKE_BASIC_AUTH_PASSWORD" -c "$COOKIE_JAR" -H "Origin: $BASE_URL" -H "Content-Type: application/json" -d "@$LOGIN_BODY" -o /dev/null -w "%{http_code}" "$BASE_URL/api/v1/auth/login" || true)"
   else
-    status="$(curl -sS -c "$COOKIE_JAR" -H "Content-Type: application/json" -d "@$LOGIN_BODY" -o /dev/null -w "%{http_code}" "$BASE_URL/api/v1/auth/login" || true)"
+    status="$(curl -sS -c "$COOKIE_JAR" -H "Origin: $BASE_URL" -H "Content-Type: application/json" -d "@$LOGIN_BODY" -o /dev/null -w "%{http_code}" "$BASE_URL/api/v1/auth/login" || true)"
   fi
   status="${status:-000}"
 

@@ -1,12 +1,20 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcryptjs';
 import { UserStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { OperationalEventService } from '../operations/operational-event.service';
 import { LoginInput } from './auth.schemas';
+import { DemoSessionInput } from './auth.schemas';
 import { CurrentUser, parseCurrentUserPayload } from './current-user';
 import { ROLE_PERMISSIONS } from './permissions';
+import { PortfolioDemoConfig } from './portfolio-demo.config';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +22,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly operationalEventService: OperationalEventService,
+    private readonly portfolioDemoConfig: PortfolioDemoConfig = new PortfolioDemoConfig(),
   ) {}
 
   async login(input: LoginInput, context?: { requestId?: string }) {
@@ -110,6 +119,101 @@ export class AuthService {
     }
   }
 
+  async createDemoSession(
+    input: DemoSessionInput,
+    context?: { requestId?: string },
+  ) {
+    const tenantSlug =
+      input.tenantSlug ?? this.portfolioDemoConfig.defaultTenantSlug;
+
+    if (!this.portfolioDemoConfig.enabled) {
+      await this.recordDemoSessionDenied('disabled', tenantSlug, context);
+      throw new NotFoundException('Not found.');
+    }
+
+    if (!this.portfolioDemoConfig.allowedTenantSlugs.has(tenantSlug)) {
+      await this.recordDemoSessionDenied(
+        'tenant_not_allowed',
+        tenantSlug,
+        context,
+      );
+      throw new BadRequestException('Demo tenant is unavailable.');
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        role: 'portfolio_guest',
+        status: UserStatus.active,
+        tenant: {
+          slug: tenantSlug,
+        },
+      },
+      select: {
+        id: true,
+        tenantId: true,
+        departmentId: true,
+        email: true,
+        name: true,
+        role: true,
+        tenant: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!user || user.tenant.slug !== tenantSlug) {
+      await this.recordDemoSessionDenied('guest_missing', tenantSlug, context);
+      throw new ServiceUnavailableException(
+        'Portfolio demo is temporarily unavailable.',
+      );
+    }
+
+    const currentUser: CurrentUser = {
+      id: user.id,
+      tenantId: user.tenantId,
+      departmentId: user.departmentId,
+      email: user.email,
+      role: user.role,
+    };
+    const accessToken = await this.jwtService.signAsync(currentUser, {
+      expiresIn: this.portfolioDemoConfig.sessionTtlSeconds,
+    });
+    const expiresAt = new Date(
+      Date.now() + this.portfolioDemoConfig.sessionTtlSeconds * 1000,
+    );
+
+    await this.operationalEventService.record({
+      eventType: 'auth.demo_session_started',
+      severity: 'info',
+      source: 'auth',
+      tenantId: user.tenantId,
+      userId: user.id,
+      requestId: context?.requestId,
+      safeMessage: 'Portfolio demo session started.',
+      metadata: {
+        tenantSlug: user.tenant.slug,
+        role: user.role,
+        ttlSeconds: this.portfolioDemoConfig.sessionTtlSeconds,
+      },
+    });
+
+    return {
+      accessToken,
+      expiresAt,
+      ttlSeconds: this.portfolioDemoConfig.sessionTtlSeconds,
+      user: {
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        tenant: user.tenant,
+      },
+    };
+  }
+
   async getCurrentUserProfile(currentUser: CurrentUser) {
     const user = await this.prisma.user.findFirst({
       where: {
@@ -194,6 +298,24 @@ export class AuthService {
         emailDomain: user.email.includes('@')
           ? user.email.split('@').at(-1)
           : null,
+      },
+    });
+  }
+
+  private async recordDemoSessionDenied(
+    reason: string,
+    tenantSlug: string,
+    context?: { requestId?: string },
+  ) {
+    await this.operationalEventService.record({
+      eventType: 'auth.demo_session_denied',
+      severity: 'warning',
+      source: 'auth',
+      requestId: context?.requestId,
+      safeMessage: 'Portfolio demo session denied.',
+      metadata: {
+        reason,
+        tenantSlug,
       },
     });
   }

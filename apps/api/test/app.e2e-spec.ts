@@ -7,6 +7,7 @@ import { AppModule } from './../src/app.module';
 import { configureApp } from '../src/configure-app';
 import { appLogger } from '../src/shared/logging/app-logger';
 import { PrismaService } from '../src/database/prisma.service';
+import { JwtService } from '@nestjs/jwt';
 
 type ErrorResponseBody = {
   error: {
@@ -48,6 +49,18 @@ type LoginResponseBody = {
     email: string;
     role: string;
   };
+};
+
+type DemoSessionResponseBody = {
+  user: {
+    role: string;
+    tenant: {
+      id: string;
+      slug: string;
+      name: string;
+    };
+  };
+  expiresAt: string;
 };
 
 type AiTriageResponseBody = {
@@ -187,6 +200,107 @@ describe('AppController (e2e)', () => {
       .set('Origin', process.env.APP_BASE_URL ?? 'http://localhost:3000')
       .set('Cookie', ['kommuneflow_access_token=fake-token'])
       .expect(201);
+  });
+
+  it('creates, resolves, and logs out a restricted portfolio guest session', async () => {
+    const tenant = await prisma.tenant.create({
+      data: {
+        name: 'E2E Demo Kommune',
+        slug: 'e2e-demo',
+        primaryLanguage: 'nb',
+        users: {
+          create: {
+            email: `portfolio.guest.e2e.${Date.now()}@example.local`,
+            passwordHash: 'synthetic-unusable-password-hash',
+            name: 'E2E Portfolio Guest',
+            role: 'portfolio_guest',
+            status: 'active',
+          },
+        },
+      },
+    });
+    tenantsToDelete.push(tenant.id);
+    const allowedOrigin = process.env.APP_BASE_URL ?? 'http://localhost:3000';
+    const agent = request.agent(app.getHttpServer());
+
+    const sessionResponse = await agent
+      .post('/api/v1/auth/demo-session')
+      .set('Origin', allowedOrigin)
+      .send({ tenantSlug: 'e2e-demo' })
+      .expect(201);
+
+    const sessionBody =
+      sessionResponse.body as unknown as DemoSessionResponseBody;
+    expect(sessionBody).toMatchObject({
+      user: {
+        role: 'portfolio_guest',
+        tenant: {
+          id: tenant.id,
+          slug: 'e2e-demo',
+          name: 'E2E Demo Kommune',
+        },
+      },
+    });
+    expect(typeof sessionBody.expiresAt).toBe('string');
+    expect(JSON.stringify(sessionBody)).not.toContain('token');
+    expect(JSON.stringify(sessionBody)).not.toContain('password');
+    expect(sessionResponse.headers['set-cookie']?.[0]).toContain('HttpOnly');
+    expect(sessionResponse.headers['set-cookie']?.[0]).toContain(
+      'Max-Age=1800',
+    );
+
+    await agent
+      .get('/api/v1/auth/me')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          role: 'portfolio_guest',
+          tenant: { id: tenant.id, slug: 'e2e-demo' },
+        });
+      });
+
+    await agent
+      .post('/api/v1/auth/logout')
+      .set('Origin', allowedOrigin)
+      .expect(201);
+    await agent.get('/api/v1/auth/me').expect(401);
+  });
+
+  it('rate limits repeated portfolio guest session creation', async () => {
+    const allowedOrigin = process.env.APP_BASE_URL ?? 'http://localhost:3000';
+    const responses = [];
+    for (let attempt = 0; attempt < 11; attempt += 1) {
+      responses.push(
+        await request(app.getHttpServer())
+          .post('/api/v1/auth/demo-session')
+          .set('Origin', allowedOrigin)
+          .send({ tenantSlug: 'not-allowed' }),
+      );
+    }
+
+    expect(responses.slice(0, 10).every(({ status }) => status === 400)).toBe(
+      true,
+    );
+    expect(responses[10].status).toBe(429);
+  });
+
+  it('rejects an expired portfolio guest token', async () => {
+    const jwtService = app.get(JwtService);
+    const expiredToken = await jwtService.signAsync(
+      {
+        id: 'expired_guest',
+        tenantId: 'tenant_1',
+        departmentId: null,
+        email: 'portfolio.guest@example.local',
+        role: 'portfolio_guest',
+      },
+      { expiresIn: -1 },
+    );
+
+    await request(app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Cookie', [`kommuneflow_access_token=${expiredToken}`])
+      .expect(401);
   });
 
   it('returns a safe error for invalid JSON bodies', async () => {
@@ -542,6 +656,7 @@ describe('AppController (e2e)', () => {
     const agent = request.agent(app.getHttpServer());
     const loginResponse = await agent
       .post('/api/v1/auth/login')
+      .set('Origin', allowedOrigin)
       .send({ email: userEmail, password })
       .expect(201);
     const loginBody = loginResponse.body as unknown as LoginResponseBody;
