@@ -148,6 +148,7 @@ if [[ -n "$SMOKE_BASIC_AUTH_USER" && -n "$SMOKE_BASIC_AUTH_PASSWORD" ]]; then
   SMOKE_BASIC_AUTH_USER=""
   SMOKE_BASIC_AUTH_PASSWORD=""
   check "public portfolio landing without Basic Auth" "$BASE_URL/" "200"
+  check "public demo instructions without Basic Auth" "$BASE_URL/demo" "200"
   check "Norwegian citizen portal without Basic Auth" "$BASE_URL/nb" "401"
   check "English citizen portal without Basic Auth" "$BASE_URL/en" "401"
   check "internal login without Basic Auth" "$BASE_URL/internal/login" "401"
