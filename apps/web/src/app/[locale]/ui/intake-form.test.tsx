@@ -4,13 +4,75 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dictionaries } from "@/lib/i18n";
 import { IntakeForm } from "./intake-form";
 
+const pushMock = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: pushMock }),
+}));
+
 describe("IntakeForm", () => {
   beforeEach(() => {
+    pushMock.mockReset();
     vi.stubGlobal("fetch", vi.fn());
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
     });
+  });
+
+  it("marks portfolio mode and continues with the same tenant and case reference", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        jsonResponse({
+          caseId: "case_1",
+          caseReference: "KF-2026-0001",
+          statusAccessCode: "ABC123",
+          status: "new",
+          createdAt: "2026-05-09T10:00:00.000Z",
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ user: { role: "portfolio_guest" } }));
+    const user = userEvent.setup();
+
+    render(
+      <IntakeForm
+        dictionary={dictionaries.en}
+        locale="en"
+        initialTenantSlug="arendal"
+        portfolioMode
+      />,
+    );
+
+    expect(screen.getByText("Public portfolio demo")).toBeVisible();
+    expect(screen.getByText("Use synthetic information only.")).toBeVisible();
+    await user.type(screen.getByLabelText("Name"), "Ada Citizen");
+    await user.type(screen.getByLabelText("Email"), "ada@example.local");
+    await user.type(screen.getByLabelText("Title"), "Synthetic request");
+    await user.type(
+      screen.getByLabelText("Description"),
+      "A synthetic request used to test the portfolio continuation.",
+    );
+    await user.click(screen.getByRole("checkbox", { name: /Privacy/ }));
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Continue in employee demo",
+      }),
+    );
+
+    expect(fetch).toHaveBeenLastCalledWith(
+      "http://localhost:3101/api/v1/auth/demo-session",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({ tenantSlug: "arendal" }),
+      }),
+    );
+    expect(pushMock).toHaveBeenCalledWith(
+      "/internal/cases?search=KF-2026-0001",
+    );
+    expect(pushMock.mock.calls[0][0]).not.toContain("ABC123");
+    expect(screen.getByText("ABC123")).toBeVisible();
   });
 
   it("keeps the public heading and introduction aligned with the active tab", async () => {

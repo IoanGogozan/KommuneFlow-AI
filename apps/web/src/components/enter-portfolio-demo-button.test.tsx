@@ -46,6 +46,29 @@ describe("EnterPortfolioDemoButton", () => {
     );
   });
 
+  it("supports a case-reference destination without access data in the URL", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("{}", { status: 201 }),
+    );
+    render(
+      <EnterPortfolioDemoButton
+        redirectTo="/internal/cases?search=KF-2026-0001"
+        tenantSlug="arendal"
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Explore employee demo" }),
+    );
+
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(
+        "/internal/cases?search=KF-2026-0001",
+      ),
+    );
+    expect(push.mock.calls[0][0]).not.toContain("ABC123");
+  });
+
   it("shows a retryable error when the demo is unavailable", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(null, { status: 503 }),

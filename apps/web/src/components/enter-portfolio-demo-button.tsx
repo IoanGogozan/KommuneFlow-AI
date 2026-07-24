@@ -5,8 +5,18 @@ import { useState } from "react";
 import { getApiBaseUrl } from "@/lib/api";
 
 export function EnterPortfolioDemoButton({
+  className,
+  idleLabel = "Explore employee demo",
+  loadingLabel = "Entering demo…",
+  redirectTo = "/internal",
+  retryLabel = "Try again",
   tenantSlug,
 }: {
+  className?: string;
+  idleLabel?: string;
+  loadingLabel?: string;
+  redirectTo?: string;
+  retryLabel?: string;
   tenantSlug?: string;
 }) {
   const router = useRouter();
@@ -29,7 +39,7 @@ export function EnterPortfolioDemoButton({
         throw new Error("Demo session unavailable.");
       }
 
-      router.push("/internal");
+      router.push(redirectTo);
     } catch {
       setStatus("error");
     }
@@ -37,12 +47,17 @@ export function EnterPortfolioDemoButton({
 
   return (
     <div>
-      <button type="button" disabled={status === "loading"} onClick={enterDemo}>
+      <button
+        type="button"
+        className={className}
+        disabled={status === "loading"}
+        onClick={enterDemo}
+      >
         {status === "loading"
-          ? "Entering demo…"
+          ? loadingLabel
           : status === "error"
-            ? "Try again"
-            : "Explore employee demo"}
+            ? retryLabel
+            : idleLabel}
       </button>
       {status === "error" ? (
         <p role="alert">Demo temporarily unavailable</p>

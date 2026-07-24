@@ -1,26 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { EnterPortfolioDemoButton } from "@/components/enter-portfolio-demo-button";
 import styles from "../landing.module.css";
 
 export const metadata: Metadata = {
-  title: "Demo access — KommuneFlow AI",
-  description: "Choose a protected KommuneFlow AI demonstration flow.",
+  title: "Portfolio demo — KommuneFlow AI",
+  description: "Choose a public KommuneFlow AI portfolio journey.",
 };
 
 const flows = [
   {
-    title: "Citizen flow",
-    description:
-      "Submit a synthetic municipal request, receive a case reference and access code, and check the case status.",
-    action: "Open citizen demo",
-    href: "/en",
-  },
-  {
-    title: "Employee flow",
-    description:
-      "Sign in as a municipal employee, review cases, inspect AI suggestions, and update the workflow.",
-    action: "Open employee workspace",
-    href: "/internal/login",
+    title: "Citizen experience",
+    description: "Submit and track a synthetic municipal request.",
+    action: "Try citizen flow",
+    href: "/en?municipality=kristiansand&portfolio=1",
   },
 ] as const;
 
@@ -28,15 +21,11 @@ export default function DemoPage() {
   return (
     <main className={`${styles.shell} ${styles.demoShell}`}>
       <section className={styles.demoPage} aria-labelledby="demo-title">
-        <p className={styles.eyebrow}>Protected interactive demo</p>
-        <h1 id="demo-title">Test the KommuneFlow demo</h1>
+        <p className={styles.eyebrow}>Public portfolio demo</p>
+        <h1 id="demo-title">Choose a product journey</h1>
         <p className={styles.demoIntro}>
-          The interactive application is protected to prevent automated abuse.
-          Demo credentials are required before entering the citizen or employee
-          flows.
-        </p>
-        <p className={styles.credentialNote}>
-          Use the credentials provided with the portfolio link.
+          No account is required. All information and workflows in this
+          demonstration are synthetic.
         </p>
 
         <div className={styles.flowGrid}>
@@ -48,19 +37,35 @@ export default function DemoPage() {
                 className={styles.primaryCta}
                 href={flow.href}
                 prefetch={false}
-                target="_blank"
-                rel="noopener noreferrer"
               >
                 {flow.action}
               </Link>
             </article>
           ))}
+          <article className={styles.flowCard}>
+            <h2>Employee experience</h2>
+            <p>
+              Review cases, inspect AI suggestions and update a synthetic
+              workflow.
+            </p>
+            <EnterPortfolioDemoButton
+              className={styles.primaryCta}
+              idleLabel="Enter employee demo"
+            />
+          </article>
+          <article className={styles.flowCard}>
+            <h2>Technical review</h2>
+            <p>Inspect the source, architecture, tests and security controls.</p>
+            <a
+              className={styles.primaryCta}
+              href="https://github.com/IoanGogozan/KommuneFlow-AI"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View source and architecture
+            </a>
+          </article>
         </div>
-
-        <p className={styles.protectedLinkNote}>
-          The protected application opens in a new tab. If you cancel
-          authentication, close that tab and return here.
-        </p>
         <Link className={styles.backLink} href="/">
           Back to portfolio overview
         </Link>

@@ -138,6 +138,30 @@ export function InternalShell({
             : "mx-auto max-w-6xl px-5 py-6"
         }
       >
+        {currentUser?.role === "portfolio_guest" ? (
+          <aside className="mb-5 border border-sky-300 bg-sky-50 p-4 text-sky-950">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold">{t.portfolioSession.title}</p>
+                <p className="mt-1 text-sm">{t.portfolioSession.description}</p>
+                <p className="mt-2 text-sm">
+                  <span className="font-semibold">{t.common.role}:</span>{" "}
+                  {formatRole(currentUser.role, t)}{" "}
+                  <span aria-hidden="true">·</span>{" "}
+                  <span className="font-semibold">{t.common.scope}:</span>{" "}
+                  {currentUser.tenant.name}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                className="border border-sky-700 bg-white px-3 py-2 text-sm font-semibold text-sky-950 hover:bg-sky-100"
+              >
+                {t.portfolioSession.exit}
+              </button>
+            </div>
+          </aside>
+        ) : null}
         <header className="border-b border-[#003b71] pb-4">
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
             <div className="min-w-0">

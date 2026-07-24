@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { EnterPortfolioDemoButton } from "@/components/enter-portfolio-demo-button";
 import styles from "./landing.module.css";
 
 export const metadata: Metadata = {
@@ -76,24 +77,28 @@ export default function Home() {
             suggestions that require employee approval.
           </p>
           <div className={styles.heroActions}>
-            <Link className={styles.primaryCta} href="/demo">
-              Explore the demo
+            <Link
+              className={styles.primaryCta}
+              href="/en?municipality=kristiansand&portfolio=1"
+            >
+              Try citizen flow
             </Link>
+            <EnterPortfolioDemoButton className={styles.primaryCta} />
             <a
               className={styles.secondaryCta}
               href="https://github.com/IoanGogozan/KommuneFlow-AI"
               target="_blank"
               rel="noopener noreferrer"
             >
-              View source on GitHub
+              View source and architecture
             </a>
           </div>
           <p className={styles.accessNote}>
             <a href="#workflow">Read how it works</a>
           </p>
           <p className={styles.statusLine}>
-            Protected interactive demo <span aria-hidden="true">·</span> Synthetic data only{" "}
-            <span aria-hidden="true">·</span> Source available on GitHub
+            No account required <span aria-hidden="true">·</span> Synthetic data only{" "}
+            <span aria-hidden="true">·</span> Guest sessions reset automatically
           </p>
         </div>
         <div className={styles.heroPrinciple}>

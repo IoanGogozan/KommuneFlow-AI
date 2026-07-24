@@ -114,14 +114,23 @@ export const internalDictionaryEn = {
     },
   },
   login: {
-    title: "Internal login",
+    title: "Staff access",
     intro:
       "Use a seeded municipal employee account to access the case dashboard.",
+    demoTitle: "Explore portfolio demo",
+    demoIntro:
+      "Enter a restricted, synthetic employee workspace without an account.",
+    staffTitle: "Sign in with staff credentials",
     email: "Email",
     password: "Password",
     signIn: "Sign in",
     signingIn: "Signing in...",
     invalid: "Invalid email or password.",
+  },
+  portfolioSession: {
+    title: "Public portfolio session",
+    description: "Synthetic shared data · Changes may reset automatically",
+    exit: "Exit demo",
   },
   cases: {
     title: "Case dashboard",

@@ -41,6 +41,22 @@ describe("InternalLoginForm", () => {
     expect(pushMock).toHaveBeenCalledWith("/internal/cases");
   });
 
+  it("makes guest entry primary while preserving accessible staff fields", () => {
+    render(<InternalLoginForm />);
+
+    expect(
+      screen.getByRole("heading", { name: "Explore portfolio demo" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Explore portfolio demo" }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Email")).toHaveAttribute("type", "email");
+    expect(screen.getByLabelText("Password")).toHaveAttribute(
+      "type",
+      "password",
+    );
+  });
+
   it("shows a generic login error and does not redirect on failed credentials", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 401 }));
     const user = userEvent.setup();
