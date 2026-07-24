@@ -1,8 +1,12 @@
 import { UserRole } from '@prisma/client';
+import { hash } from 'bcryptjs';
 import { AnalyticsService } from '../src/modules/analytics/analytics.service';
 import { PrismaService } from '../src/database/prisma.service';
 import { runDemoReset } from '../prisma/demo-reset';
+import { createDemoSeedContext } from '../prisma/seed/analytics-baseline';
+import { tenants } from '../prisma/seed/data/tenants';
 import { daysAgo, startOfUtcDay } from '../prisma/seed/time';
+import { seedTenantsDepartmentsAndUsers } from '../prisma/seed/seed-users';
 import { CurrentUser } from '../src/modules/auth/current-user';
 
 describe('analytics deterministic baseline', () => {
@@ -31,7 +35,7 @@ describe('analytics deterministic baseline', () => {
     const env = createDemoResetEnv();
     const nowA = new Date('2026-07-24T12:00:00.000Z');
     const nowB = new Date('2026-07-25T12:00:00.000Z');
-    const tenantId = await seedAndCleanDemoTenant(prisma, env, nowA);
+    const tenantId = await bootstrapDemoResetState(prisma, env, nowA);
 
     const baselineA = await resetAndSummarize(
       prisma,
@@ -114,16 +118,41 @@ async function resetAndSummarize(
   };
 }
 
-async function seedAndCleanDemoTenant(
+async function bootstrapDemoResetState(
   prisma: PrismaService,
   env: NodeJS.ProcessEnv,
   now: Date,
 ) {
-  await runDemoReset(prisma, {
-    env,
-    now,
-    removeFile: () => Promise.resolve(undefined),
+  const context = createDemoSeedContext(now);
+  const demoPassword = process.env.SEED_DEMO_PASSWORD ?? 'DemoPassword123!';
+  const recruiterPassword =
+    process.env.SEED_RECRUITER_PASSWORD ?? demoPassword;
+  const portfolioGuestPassword = `${demoPassword}-guest`;
+  const passwordHashes = {
+    demoPasswordHash: await hash(demoPassword, 4),
+    recruiterPasswordHash: await hash(recruiterPassword, 4),
+    portfolioGuestPasswordHash: await hash(portfolioGuestPassword, 4),
+  };
+
+  await seedTenantsDepartmentsAndUsers(prisma, context, passwordHashes);
+
+  const tenantIds = await prisma.tenant.findMany({
+    where: {
+      slug: {
+        in: tenants.map((tenant) => tenant.slug),
+      },
+    },
+    select: { id: true },
   });
+
+  if (tenantIds.length > 0) {
+    await prisma.case.deleteMany({
+      where: {
+        tenantId: { in: tenantIds.map((tenant) => tenant.id) },
+        NOT: { id: { startsWith: 'seed_' } },
+      },
+    });
+  }
 
   const tenant = await prisma.tenant.findUniqueOrThrow({
     where: { slug: 'kristiansand' },
