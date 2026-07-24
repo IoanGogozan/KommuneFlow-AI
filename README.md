@@ -308,7 +308,7 @@ AI deployment mode is controlled server-side:
 
 After deploy, log in internally, open Operations, verify the AI Configuration panel, then run AI triage on a seeded or synthetic case.
 
-Deployment evidence is recorded by exact commit in the [verification log](./docs/VERIFICATION_LOG.md). The latest PR 6 documentation and screenshots are locally verified until that reviewed commit is merged and deployed; older home-server results must not be treated as verification of the current branch. The public portfolio configuration requires deterministic `AI_PROVIDER=mock`.
+The public portfolio is deployed on the home server from commit `286c769` and was verified on 2026-07-24 across the public perimeter, restricted guest authorization matrix, citizen-to-employee browser journey, normal staff login, mock AI, disabled public uploads, and guarded reset workflow. Exact evidence and remaining limitations are recorded in the [verification log](./docs/VERIFICATION_LOG.md).
 
 ## Testing Status
 

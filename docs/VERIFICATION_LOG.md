@@ -6,14 +6,14 @@ No secrets, cookies, API keys, deployed access codes, or real citizen data are r
 
 | Item                | Value                                                                      |
 | ------------------- | -------------------------------------------------------------------------- |
-| Source              | PR 6 working tree on `agent/public-guest-demo`, stacked on PR #23          |
+| Source              | Merged `main` commit `286c769bdfc2314f6ecc724444523e0588f4bef0`            |
 | Environment         | Local Windows / PowerShell / Docker Desktop                                |
 | Node                | `v26.2.0`                                                                  |
 | pnpm                | `10.28.2`                                                                  |
 | Python              | `3.14.4`                                                                   |
 | AI provider         | deterministic mock                                                         |
 | Data                | dedicated local `kommuneflow_screenshot` database with synthetic seed only |
-| Deployment evidence | **not verified** for the PR 6 commit                                       |
+| Deployment evidence | Home server, **implemented and verified** on 2026-07-24                    |
 
 ### Automated release gate
 
@@ -54,25 +54,50 @@ Screenshot generation exposed and corrected three tooling issues during PR 6: re
 - Twelve consistent 1440 × 1000 synthetic screenshots with code elements masked and no populated staff credentials.
 - Home and production Compose models, Caddy syntax, production builds, dependency audit, and two isolated reset runs.
 
-### Implemented but not deployed
+### Home-server release evidence
 
-- PR 1–6 public guest behavior, safety policy, documentation, walkthrough, capture workflow, and screenshots are implemented in the stacked draft branches.
-- The current PR 6 commit has not been merged or deployed to `https://kommune.norvix.no`.
+| Check                       | Exact result                                                                                                                                            |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PR integration              | PASS — PRs #19–#24 retargeted and merged sequentially; required CI, CodeQL, and Gitleaks checks passed                                                  |
+| Pre-release database backup | PASS — PostgreSQL custom-format backup created; SHA-256 checksum verified                                                                               |
+| Configuration backup        | PASS — prior `.env` preserved with mode `600`                                                                                                           |
+| Home preflight              | PASS — repository, Docker, Compose, Git, required variables, mock AI, HTTPS URLs, `main`, Compose, no host ports, Caddy, proxy network, and disk checks |
+| Deployed commit             | PASS — server repository reports `286c769bdfc2314f6ecc724444523e0588f4bef0`                                                                             |
+| Image build                 | PASS — API and web production images rebuilt on the home server                                                                                         |
+| Migration                   | PASS — additive `20260724133000_add_portfolio_guest_role` applied; all 18 migrations current                                                            |
+| Runtime health              | PASS — PostgreSQL, API, web, and gateway healthy                                                                                                        |
+| Network isolation           | PASS — only `kommuneflow-ai-gateway-1` joins shared `proxy`; API, web, and PostgreSQL remain private                                                    |
+| Runtime policy              | PASS — `AI_PROVIDER=mock`, portfolio enabled, public uploads disabled                                                                                   |
+| Seed                        | PASS — idempotent synthetic seed completed; exactly three portfolio guest users                                                                         |
+| Public web                  | PASS — `/`, `/demo`, `/nb`, `/en`, `/internal/login`, and `/internal` returned `200` without infrastructure credentials                                 |
+| Public API                  | PASS — health/readiness `200`; representative intake/status/address validation reached the API with `400`                                               |
+| Unauthenticated API         | PASS — auth/me, cases, analytics, and administration returned `401`                                                                                     |
+| Guest session               | PASS — session creation `201`; auth/me `200` with role `portfolio_guest`; cases and Analytics `200`                                                     |
+| Guest denials               | PASS — aggregation, audit, privacy, operations, users, departments, and routing rules returned `403`                                                    |
+| Upload policy               | PASS — public multipart upload returned `503`                                                                                                           |
+| Staff path                  | PASS — login `201`; authenticated profile, cases, and AI status `200`                                                                                   |
+| Reset                       | PASS twice — zero unexpected deletions and exactly 22 deterministic seed cases restored on each run                                                     |
+| Schedule                    | PASS — guarded reset cron installed at minute 17 every six hours                                                                                        |
+| Fatal log scan              | PASS — no fatal/panic/unhandled-rejection entries observed in the deployment window                                                                     |
 
-### Not verified
+### Live browser journey
 
-- Exact-commit live checks for `/`, `/demo`, `/en`, `/nb`, `/internal/login`, the unauthenticated API matrix, guest permission matrix, complete browser journey, normal staff login, and rollback.
-- Host cron execution and real deployed visitor/file cleanup.
-- A live absence of the browser Basic Auth prompt for the exact PR 6 commit.
+Playwright verified the deployed public site without a browser Basic Auth prompt:
 
-These checks must be performed only after review, merge, and deployment of the exact commit. Record the deployed SHA and results here; do not promote older home-server evidence to PR 6 evidence.
+1. Landing showed account-free citizen and employee actions.
+2. A synthetic Kristiansand request was submitted with uploads visibly disabled.
+3. Status lookup loaded using the generated reference/access code without putting the access code in the URL.
+4. Same-tenant continuation created a guest session and opened a reference-filtered queue.
+5. The submitted case opened in Overview.
+6. Deterministic mock-AI triage remained separate from official values and was accepted through explicit human review.
+7. Workflow status changed to `in_progress`; an internal synthetic note and new activity entries appeared.
+8. Analytics loaded without an Aggregate control.
+9. Logout returned to the normal staff-login page.
 
-### Post-merge live checklist
+The synthetic live-verification case is intentionally subject to the six-hour demo reset.
 
-1. Record and compare the deployed Git SHA with the reviewed merge commit.
-2. Run `scripts/smoke-test.sh` without staff credentials and record every status.
-3. Verify one synthetic citizen submission, status lookup, same-tenant continuation, guest case, mock-AI review, Workflow/activity update, and read-only Analytics.
-4. Verify guest aggregation, audit, privacy, operations, users, departments, and routing administration are denied.
-5. Verify normal staff login separately without exposing credentials.
-6. Run the guarded reset twice on the configured demo target and confirm visitor cleanup plus stable seed counts.
-7. Exercise rollback: disable guest sessions, confirm normal staff login, and verify the reviewed temporary Caddy gate procedure without removing the guest-role migration.
+### Remaining manual limitation
+
+- The rollback procedure and prerequisites were reviewed, but an actual rollback was not triggered because the release was healthy.
+- The scheduled cron entry is installed and the identical command passed twice manually; its first timer-triggered execution remains future operational evidence.
+- Hetzner was not modified. This verification applies only to the home-server deployment at `https://kommune.norvix.no`.

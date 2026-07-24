@@ -2,7 +2,7 @@
 
 This runbook deploys KommuneFlow AI as a public-perimeter, application-protected synthetic portfolio demo on the existing home-server Docker and Caddy infrastructure. It is not a production municipal deployment and must not contain real citizen data.
 
-Deployment status: the physical home-server topology was previously verified, but that result predates the complete PR 6 branch. Consult `docs/VERIFICATION_LOG.md` for commit-specific evidence; do not infer that the current reviewed commit is deployed.
+Deployment status: commit `286c769bdfc2314f6ecc724444523e0588f4bef0` was deployed and live-verified on the physical home server on 2026-07-24. All services, the public/unauthenticated perimeter, restricted guest matrix, citizen-to-employee browser journey, normal staff login, two reset runs, and the six-hour reset schedule were verified. Consult `docs/VERIFICATION_LOG.md` for exact evidence.
 
 ## Architecture
 
