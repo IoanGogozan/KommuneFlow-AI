@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 function user(
-  role: string,
+  role: InternalCurrentUser["role"],
   permissions: InternalCurrentUser["permissions"],
 ): InternalCurrentUser {
   return {
@@ -45,10 +45,14 @@ describe("InternalShell navigation", () => {
   it("shows a case worker only the permitted work navigation", () => {
     render(shell(user("case_worker", ["case:read:own"])));
 
-    expect(screen.getAllByRole("link", { name: "Cases" }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("link", { name: "Cases" }).length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByText("Administration ▾")).not.toBeInTheDocument();
     expect(screen.queryByText("Governance ▾")).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Analytics" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Analytics" }),
+    ).not.toBeInTheDocument();
   });
 
   it("groups governance and administration without changing visibility", () => {
@@ -69,7 +73,9 @@ describe("InternalShell navigation", () => {
 
     expect(screen.getByText("Governance ▾")).toBeVisible();
     expect(screen.getByText("Administration ▾")).toBeVisible();
-    expect(screen.getAllByRole("link", { name: "Operations" }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("link", { name: "Operations" }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("exposes an accessible mobile disclosure", async () => {
@@ -80,6 +86,30 @@ describe("InternalShell navigation", () => {
     expect(menu).toHaveAttribute("aria-expanded", "false");
     await userEventApi.click(menu);
     expect(menu).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("navigation", { name: "Internal mobile" })).toBeVisible();
+    expect(
+      screen.getByRole("navigation", { name: "Internal mobile" }),
+    ).toBeVisible();
+  });
+
+  it("labels the restricted portfolio guest and shows only permitted navigation", () => {
+    render(
+      shell(
+        user("portfolio_guest", [
+          "case:read:all_tenant",
+          "case:update:all_tenant",
+          "document:read:department",
+          "ai:triage:run",
+          "ai:triage:review",
+          "analytics:read",
+        ]),
+      ),
+    );
+
+    expect(screen.getByText("Portfolio guest")).toBeVisible();
+    expect(
+      screen.getAllByRole("link", { name: "Analytics" }).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText("Administration â–¾")).not.toBeInTheDocument();
+    expect(screen.queryByText("Governance â–¾")).not.toBeInTheDocument();
   });
 });

@@ -38,6 +38,7 @@ export const internalDictionaryNb = {
       department_admin: "Avdelingsadministrator",
       case_worker: "Saksbehandler",
       auditor: "Revisor",
+      portfolio_guest: "Porteføljegjest",
     },
     scope: "Tilgangsområde",
     search: "Søk",
@@ -217,11 +218,9 @@ export const internalDictionaryNb = {
     statusExplanations: {
       new: "Saken er mottatt og venter på første behandling.",
       triage_pending: "Saken er klar for KI-triage eller manuell triage.",
-      triaged:
-        "En saksbehandler har bekreftet kategori, hastegrad og ruting.",
+      triaged: "En saksbehandler har bekreftet kategori, hastegrad og ruting.",
       in_progress: "Tildelt avdeling behandler saken.",
-      waiting_for_citizen:
-        "Saken venter på mer informasjon fra innbygger.",
+      waiting_for_citizen: "Saken venter på mer informasjon fra innbygger.",
       closed: "Saken er ferdigbehandlet.",
       rejected: "Saken er avvist og har en avsluttende status.",
     },
@@ -259,8 +258,7 @@ export const internalDictionaryNb = {
     reviewComment: "Vurderingskommentar",
     reviewCommentPlaceholder:
       "Forklar hvorfor KI-forslaget ble godtatt eller korrigert.",
-    aiReviewReadOnly:
-      "KI-vurdering er deaktivert for skrivebeskyttede roller.",
+    aiReviewReadOnly: "KI-vurdering er deaktivert for skrivebeskyttede roller.",
     aiFailureTitle: "KI-triage kunne ikke fullføres",
     retryAiTriage: "Prøv KI-triage på nytt",
     reviewCorrectionRequired:
@@ -400,13 +398,11 @@ export const internalDictionaryNb = {
     flowTitle: "Flyt og flaskehalser",
     flowText:
       "Viser hvor raskt saker triageres og om mange saker stopper fordi innbyggeren må svare.",
-    flowHealthy:
-      "Sakene flyter uten tydelig blokkering i valgt periode.",
+    flowHealthy: "Sakene flyter uten tydelig blokkering i valgt periode.",
     flowBlocked:
       "En merkbar andel saker venter på innbygger. Sjekk om forespørsler om mer informasjon kan bli tydeligere.",
     reliabilityTitle: "KI-stabilitet",
-    reliabilityHealthy:
-      "KI-triage feiler sjelden i valgt periode.",
+    reliabilityHealthy: "KI-triage feiler sjelden i valgt periode.",
     reliabilityNeedsReview:
       "KI-feilraten er høy nok til at integrasjon, prompt eller datagrunnlag bør sjekkes.",
     volumeTitle: "Volum og kapasitet",

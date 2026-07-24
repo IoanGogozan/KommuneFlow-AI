@@ -6,6 +6,7 @@ export type Permission =
   | 'case:read:department'
   | 'case:read:all_tenant'
   | 'case:update:department'
+  | 'case:update:all_tenant'
   | 'case:close'
   | 'document:upload'
   | 'document:read:own'
@@ -18,6 +19,7 @@ export type Permission =
   | 'privacy:export'
   | 'privacy:anonymize'
   | 'analytics:read'
+  | 'analytics:aggregate'
   | 'operations:read'
   | 'tenant:manage'
   | 'user:manage'
@@ -44,6 +46,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'ai:triage:run',
     'ai:triage:review',
     'analytics:read',
+    'analytics:aggregate',
     'operations:read',
     'user:manage',
     'routing_rules:manage',
@@ -62,6 +65,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'case:read:department',
     'case:read:all_tenant',
     'case:update:department',
+    'case:update:all_tenant',
     'case:close',
     'document:upload',
     'document:read:own',
@@ -74,10 +78,19 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'privacy:export',
     'privacy:anonymize',
     'analytics:read',
+    'analytics:aggregate',
     'operations:read',
     'tenant:manage',
     'user:manage',
     'routing_rules:manage',
+  ],
+  portfolio_guest: [
+    'case:read:all_tenant',
+    'case:update:all_tenant',
+    'document:read:department',
+    'ai:triage:run',
+    'ai:triage:review',
+    'analytics:read',
   ],
 };
 

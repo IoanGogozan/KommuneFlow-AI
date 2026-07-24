@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CaseStatus, Prisma, UserRole } from '@prisma/client';
+import { CaseStatus, Prisma } from '@prisma/client';
 import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, extname } from 'node:path';
@@ -625,14 +625,7 @@ export class CasesService {
     user: CurrentUser,
     assignedDepartmentId: string | null,
   ) {
-    if (user.role === UserRole.auditor) {
-      throw new ForbiddenException('Auditors cannot modify cases.');
-    }
-
-    if (
-      roleHasPermission(user.role, 'case:read:all_tenant') &&
-      user.role === UserRole.super_admin
-    ) {
+    if (roleHasPermission(user.role, 'case:update:all_tenant')) {
       return;
     }
 

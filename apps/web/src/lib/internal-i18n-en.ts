@@ -38,6 +38,7 @@ export const internalDictionaryEn = {
       department_admin: "Department admin",
       case_worker: "Case worker",
       auditor: "Auditor",
+      portfolio_guest: "Portfolio guest",
     },
     scope: "Scope",
     search: "Search",
@@ -138,8 +139,7 @@ export const internalDictionaryEn = {
     statusDescription:
       "These are the cases you are allowed to access based on your role, tenant and department.",
     search: "Search",
-    searchPlaceholder:
-      "Search title, citizen, category, status or department",
+    searchPlaceholder: "Search title, citizen, category, status or department",
     emptyHint:
       "Try another status filter, clear the search, or check whether your role, tenant and department scope includes matching cases.",
     case: "Case",
@@ -210,8 +210,7 @@ export const internalDictionaryEn = {
     readOnlyText:
       "Your current role can view this case but cannot update status, add notes, run or review AI triage, or upload documents.",
     recommendedWorkflow: "Recommended workflow",
-    statusUpdatesReadOnly:
-      "Status updates are disabled for read-only roles.",
+    statusUpdatesReadOnly: "Status updates are disabled for read-only roles.",
     internalNotesReadOnly:
       "Internal note updates are disabled for read-only roles.",
     currentStatus: "Current status",
@@ -219,8 +218,7 @@ export const internalDictionaryEn = {
     statusExplanations: {
       new: "The case has been received and is waiting for initial handling.",
       triage_pending: "The case is ready for AI or manual triage.",
-      triaged:
-        "A human reviewer has confirmed category, urgency and routing.",
+      triaged: "A human reviewer has confirmed category, urgency and routing.",
       in_progress: "The assigned department is actively processing the case.",
       waiting_for_citizen:
         "The case is waiting for more information from the citizen.",
@@ -266,8 +264,7 @@ export const internalDictionaryEn = {
     retryAiTriage: "Retry AI triage",
     reviewCorrectionRequired:
       "Change at least one reviewed value or add a review comment before saving a correction.",
-    documentUploadReadOnly:
-      "Document upload is disabled for read-only roles.",
+    documentUploadReadOnly: "Document upload is disabled for read-only roles.",
     recentActivityTitle: "Recent activity",
     recentActivityDescription: "Audit events connected to this case.",
     recentActivityEmpty:
@@ -406,8 +403,7 @@ export const internalDictionaryEn = {
     flowBlocked:
       "A noticeable share of cases is waiting for the citizen. Check whether requests for more information can be clearer.",
     reliabilityTitle: "AI stability",
-    reliabilityHealthy:
-      "AI triage rarely fails in the selected period.",
+    reliabilityHealthy: "AI triage rarely fails in the selected period.",
     reliabilityNeedsReview:
       "The AI failure rate is high enough to review integration, prompt, or input data.",
     volumeTitle: "Volume and capacity",

@@ -8,7 +8,10 @@ import { Reflector } from '@nestjs/core';
 import { OperationalEventService } from '../operations/operational-event.service';
 import { safeRequestPath } from '../../shared/middleware/request-path';
 import { AuthenticatedRequest } from './auth.guard';
-import { REQUIRED_PERMISSIONS_KEY } from './permissions.decorator';
+import {
+  REQUIRED_ANY_PERMISSIONS_KEY,
+  REQUIRED_PERMISSIONS_KEY,
+} from './permissions.decorator';
 import { Permission, roleHasPermission } from './permissions';
 
 @Injectable()
@@ -24,8 +27,16 @@ export class PermissionsGuard implements CanActivate {
         context.getHandler(),
         context.getClass(),
       ]) ?? [];
+    const requiredAnyPermissions =
+      this.reflector.getAllAndOverride<Permission[][]>(
+        REQUIRED_ANY_PERMISSIONS_KEY,
+        [context.getHandler(), context.getClass()],
+      ) ?? [];
 
-    if (requiredPermissions.length === 0) {
+    if (
+      requiredPermissions.length === 0 &&
+      requiredAnyPermissions.length === 0
+    ) {
       return true;
     }
 
@@ -33,16 +44,27 @@ export class PermissionsGuard implements CanActivate {
     const user = request.user;
 
     if (!user) {
-      void this.recordPermissionDenied(request, requiredPermissions);
+      void this.recordPermissionDenied(
+        request,
+        requiredPermissions,
+        requiredAnyPermissions,
+      );
       throw new ForbiddenException('Permission denied.');
     }
 
-    const allowed = requiredPermissions.every((permission) =>
+    const hasAllRequired = requiredPermissions.every((permission) =>
       roleHasPermission(user.role, permission),
     );
+    const hasEveryAnyGroup = requiredAnyPermissions.every((group) =>
+      group.some((permission) => roleHasPermission(user.role, permission)),
+    );
 
-    if (!allowed) {
-      void this.recordPermissionDenied(request, requiredPermissions);
+    if (!hasAllRequired || !hasEveryAnyGroup) {
+      void this.recordPermissionDenied(
+        request,
+        requiredPermissions,
+        requiredAnyPermissions,
+      );
       throw new ForbiddenException('Permission denied.');
     }
 
@@ -52,6 +74,7 @@ export class PermissionsGuard implements CanActivate {
   private async recordPermissionDenied(
     request: AuthenticatedRequest,
     requiredPermissions: Permission[],
+    requiredAnyPermissions: Permission[][],
   ) {
     await this.operationalEventService.record({
       eventType: 'security.permission_denied',
@@ -65,6 +88,7 @@ export class PermissionsGuard implements CanActivate {
         method: request.method,
         path: safeRequestPath(request),
         requiredPermissions,
+        requiredAnyPermissions,
         role: request.user?.role ?? null,
       },
     });

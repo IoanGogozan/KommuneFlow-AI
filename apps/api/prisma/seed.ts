@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { hash } from 'bcryptjs';
+import { randomBytes } from 'node:crypto';
 import { config } from 'dotenv';
 import { cases } from './seed/data/cases';
 import { hoursAgo, startOfUtcDay } from './seed/time';
@@ -40,10 +41,15 @@ async function main() {
     getSeedPassword('SEED_RECRUITER_PASSWORD', 'SEED_DEMO_PASSWORD'),
     12,
   );
+  const portfolioGuestPasswordHash = await hash(
+    randomBytes(32).toString('hex'),
+    12,
+  );
 
   await seedTenantsDepartmentsAndUsers(prisma, context, {
     demoPasswordHash,
     recruiterPasswordHash,
+    portfolioGuestPasswordHash,
   });
   await seedSsbStatistics(prisma, context);
   await seedCases(prisma, cases, context);

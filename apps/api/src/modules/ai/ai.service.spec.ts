@@ -434,6 +434,54 @@ describe('AIService', () => {
     );
   });
 
+  it('lets a portfolio guest run and review mock AI within its tenant', async () => {
+    const caseFindFirst = jest.fn().mockResolvedValue(caseRecord());
+    const service = createService({
+      case: {
+        findFirst: caseFindFirst,
+        update: jest.fn().mockResolvedValue({ id: 'case_1' }),
+      },
+      department: {
+        findMany: jest.fn().mockResolvedValue([department()]),
+      },
+      aITriageResult: {
+        create: jest.fn().mockResolvedValue({
+          id: 'ai_result_1',
+          status: 'completed',
+        }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'ai_result_1',
+          suggestedCategory: CaseCategory.building_case,
+          suggestedDepartmentId: 'department_1',
+          suggestedDepartment: { slug: 'technical_department' },
+          suggestedUrgency: CaseUrgency.normal,
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'ai_result_1' }),
+      },
+      aIReview: {
+        create: jest.fn().mockResolvedValue({ id: 'review_1' }),
+      },
+    });
+
+    await expect(
+      service.runCaseTriage('case_1', portfolioGuest()),
+    ).resolves.toMatchObject({ id: 'ai_result_1', status: 'completed' });
+    await expect(
+      service.reviewCaseTriage('case_1', 'ai_result_1', portfolioGuest(), {
+        approvedCategory: CaseCategory.building_case,
+        approvedDepartmentSlug: 'technical_department',
+        approvedUrgency: CaseUrgency.normal,
+        reviewComment: '',
+        wasAiSuggestionAccepted: true,
+      }),
+    ).resolves.toMatchObject({ id: 'review_1' });
+    expect(caseFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'case_1', tenantId: 'tenant_1' },
+      }),
+    );
+  });
+
   it('allows human review to route unassigned intake cases', async () => {
     const service = createService({
       case: {
@@ -575,6 +623,16 @@ function auditor(): CurrentUser {
     departmentId: null,
     email: 'auditor@arendal.local',
     role: UserRole.auditor,
+  };
+}
+
+function portfolioGuest(): CurrentUser {
+  return {
+    id: 'guest_1',
+    tenantId: 'tenant_1',
+    departmentId: null,
+    email: 'portfolio.guest@arendal.local',
+    role: UserRole.portfolio_guest,
   };
 }
 

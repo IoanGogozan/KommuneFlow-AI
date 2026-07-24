@@ -9,6 +9,7 @@ export async function seedTenantsDepartmentsAndUsers(
   passwordHashes: {
     demoPasswordHash: string;
     recruiterPasswordHash: string;
+    portfolioGuestPasswordHash: string;
   },
 ) {
   for (const tenantSpec of tenants) {
@@ -109,6 +110,16 @@ export async function seedTenantsDepartmentsAndUsers(
       departmentId: null,
       passwordHash: passwordHashes.demoPasswordHash,
     });
+
+    await createUser(prisma, {
+      email: `portfolio.guest@${tenantSpec.slug}.local`,
+      name: `${tenantSpec.name} Portfolio Guest`,
+      role: 'portfolio_guest',
+      tenantId: tenant.id,
+      departmentId: null,
+      passwordHash: passwordHashes.portfolioGuestPasswordHash,
+      updatePasswordHash: false,
+    });
   }
 }
 
@@ -121,6 +132,7 @@ async function createUser(
     tenantId: string;
     departmentId: string | null;
     passwordHash: string;
+    updatePasswordHash?: boolean;
   },
 ) {
   return prisma.user.upsert({
@@ -131,7 +143,9 @@ async function createUser(
       tenantId: input.tenantId,
       departmentId: input.departmentId,
       status: 'active',
-      passwordHash: input.passwordHash,
+      ...(input.updatePasswordHash === false
+        ? {}
+        : { passwordHash: input.passwordHash }),
     },
     create: {
       email: input.email,

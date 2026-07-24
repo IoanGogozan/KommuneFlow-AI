@@ -42,6 +42,7 @@ export class AnalyticsController {
   }
 
   @Post('aggregate')
+  @RequirePermissions('analytics:aggregate')
   async aggregate(
     @CurrentUserParam() user: CurrentUser,
     @Body() body: unknown,

@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, UserRole } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { appLogger } from '../../shared/logging/app-logger';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -432,14 +432,7 @@ export class AIService {
     user: CurrentUser,
     assignedDepartmentId: string | null,
   ) {
-    if (user.role === UserRole.auditor) {
-      throw new ForbiddenException('Auditors cannot review AI triage.');
-    }
-
-    if (
-      roleHasPermission(user.role, 'case:read:all_tenant') &&
-      user.role === UserRole.super_admin
-    ) {
+    if (roleHasPermission(user.role, 'case:update:all_tenant')) {
       return;
     }
 
