@@ -158,7 +158,7 @@ PR 5 result (update at completion):
 - Not verified / manual work: no destructive reset was run against the local working database or a deployed database; cron execution and cleanup of real deployed uploads require post-deployment verification
 - Deployment: implemented and verified locally, but not deployed
 - Rollback: disable scheduled reset execution first; set `PUBLIC_DEMO_ALLOW_UPLOADS` and endpoint limits to the prior intended values if needed; revert PR 5 to remove the maintenance command and safety policy without changing PR 1–4 authorization or journeys
-- Draft PR: pending
+- Draft PR: [#23 — feat: harden and reset public portfolio demo](https://github.com/IoanGogozan/KommuneFlow-AI/pull/23)
 
 ## PR 6 — Documentation, screenshots, and live verification
 
