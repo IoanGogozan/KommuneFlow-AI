@@ -1,6 +1,10 @@
 import { UserRole } from '@prisma/client';
 import publicSecurityMatrix from '@kommuneflow/shared/public-security.json';
-import { ROLE_PERMISSIONS, roleHasPermission, type Permission } from './permissions';
+import {
+  ROLE_PERMISSIONS,
+  roleHasPermission,
+  type Permission,
+} from './permissions';
 
 type PublicSecurityRoleKey =
   | 'guest'
@@ -86,10 +90,10 @@ describe('roleHasPermission', () => {
     } = publicSecurityMatrix as {
       capabilities: Array<{
         capability: string;
-        permissions: Record<string, readonly string[]>;
-        allowed: Record<string, boolean>;
+        permissions: Record<PublicSecurityRoleKey, readonly string[]>;
+        allowed: Record<PublicSecurityRoleKey, boolean>;
       }>;
-      roleColumns: Array<{ key: string; label: string }>;
+      roleColumns: Array<{ key: PublicSecurityRoleKey; label: string }>;
     };
     const roleMap: Record<PublicSecurityRoleKey, UserRole> = {
       guest: UserRole.portfolio_guest,
