@@ -1258,6 +1258,76 @@ describe('CasesService', () => {
       }),
     );
   });
+
+  it('lets a portfolio guest update and add notes to cases in its tenant', async () => {
+    const caseFindFirst = jest
+      .fn()
+      .mockResolvedValueOnce({
+        id: 'case_1',
+        tenantId: 'tenant_1',
+        status: CaseStatus.new,
+        caseReference: 'KF-2026-GUEST001',
+        assignedDepartmentId: 'department_2',
+        citizenProfile: { email: 'citizen@example.local' },
+      })
+      .mockResolvedValueOnce({
+        id: 'case_1',
+        assignedDepartmentId: 'department_2',
+      });
+    const service = createService({
+      case: {
+        findFirst: caseFindFirst,
+        update: jest.fn().mockResolvedValue({
+          id: 'case_1',
+          status: CaseStatus.triage_pending,
+        }),
+      },
+      internalNote: {
+        create: jest.fn().mockResolvedValue({
+          id: 'note_1',
+          body: 'Guest review note.',
+          createdAt: new Date(),
+          author: {
+            id: 'guest_1',
+            name: 'Portfolio Guest',
+            role: UserRole.portfolio_guest,
+          },
+        }),
+      },
+    });
+
+    await expect(
+      service.updateStatus('case_1', portfolioGuest(), {
+        status: CaseStatus.triage_pending,
+      }),
+    ).resolves.toMatchObject({ status: CaseStatus.triage_pending });
+    await expect(
+      service.addInternalNote('case_1', portfolioGuest(), {
+        body: 'Guest review note.',
+      }),
+    ).resolves.toMatchObject({ id: 'note_1' });
+    expect(caseFindFirst).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: { id: 'case_1', tenantId: 'tenant_1' },
+      }),
+    );
+  });
+
+  it('does not let a portfolio guest update a case in another tenant', async () => {
+    const service = createService({
+      case: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        findUnique: jest.fn().mockResolvedValue({ tenantId: 'tenant_2' }),
+      },
+    });
+
+    await expect(
+      service.updateStatus('other_tenant_case', portfolioGuest(), {
+        status: CaseStatus.triage_pending,
+      }),
+    ).rejects.toThrow('Case not found.');
+  });
 });
 
 function createService(
@@ -1311,6 +1381,16 @@ function auditor(): CurrentUser {
     departmentId: null,
     email: 'auditor@arendal.local',
     role: UserRole.auditor,
+  };
+}
+
+function portfolioGuest(): CurrentUser {
+  return {
+    id: 'guest_1',
+    tenantId: 'tenant_1',
+    departmentId: null,
+    email: 'portfolio.guest@arendal.local',
+    role: UserRole.portfolio_guest,
   };
 }
 

@@ -16,6 +16,7 @@ enum UserRole {
   department_admin
   auditor
   super_admin
+  portfolio_guest
 }
 
 enum UserStatus {

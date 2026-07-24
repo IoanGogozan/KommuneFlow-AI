@@ -19,7 +19,7 @@ import { ZodError } from 'zod';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUserParam } from '../auth/current-user.decorator';
 import type { CurrentUser } from '../auth/current-user';
-import { RequirePermissions } from '../auth/permissions.decorator';
+import { RequireAnyPermissions } from '../auth/permissions.decorator';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { publicCaseMultipartLimits } from '../../shared/upload/multipart-limits';
 import { CasesService } from './cases.service';
@@ -139,7 +139,7 @@ export class CasesController {
   }
 
   @Patch(':id/status')
-  @RequirePermissions('case:update:department')
+  @RequireAnyPermissions('case:update:department', 'case:update:all_tenant')
   async updateStatus(
     @Param('id') id: string,
     @CurrentUserParam() user: CurrentUser,
@@ -161,7 +161,7 @@ export class CasesController {
   }
 
   @Post(':id/internal-notes')
-  @RequirePermissions('case:update:department')
+  @RequireAnyPermissions('case:update:department', 'case:update:all_tenant')
   async addInternalNote(
     @Param('id') id: string,
     @CurrentUserParam() user: CurrentUser,

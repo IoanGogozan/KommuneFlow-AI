@@ -1,5 +1,5 @@
 import { UserRole } from '@prisma/client';
-import { roleHasPermission } from './permissions';
+import { ROLE_PERMISSIONS, roleHasPermission } from './permissions';
 
 describe('roleHasPermission', () => {
   it('allows case workers to update department cases', () => {
@@ -43,6 +43,32 @@ describe('roleHasPermission', () => {
     ).toBe(false);
     expect(roleHasPermission(UserRole.auditor, 'ai:diagnostics:read')).toBe(
       false,
+    );
+  });
+
+  it('grants portfolio guests only the restricted workflow permissions', () => {
+    expect(ROLE_PERMISSIONS[UserRole.portfolio_guest]).toEqual([
+      'case:read:all_tenant',
+      'case:update:all_tenant',
+      'document:read:department',
+      'ai:triage:run',
+      'ai:triage:review',
+      'analytics:read',
+    ]);
+  });
+
+  it('keeps analytics aggregation separate from read access', () => {
+    expect(roleHasPermission(UserRole.portfolio_guest, 'analytics:read')).toBe(
+      true,
+    );
+    expect(
+      roleHasPermission(UserRole.portfolio_guest, 'analytics:aggregate'),
+    ).toBe(false);
+    expect(
+      roleHasPermission(UserRole.department_admin, 'analytics:aggregate'),
+    ).toBe(true);
+    expect(roleHasPermission(UserRole.super_admin, 'analytics:aggregate')).toBe(
+      true,
     );
   });
 });

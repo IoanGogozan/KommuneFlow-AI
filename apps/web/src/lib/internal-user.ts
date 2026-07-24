@@ -6,6 +6,7 @@ export type InternalPermission =
   | "case:read:department"
   | "case:read:all_tenant"
   | "case:update:department"
+  | "case:update:all_tenant"
   | "case:close"
   | "document:upload"
   | "document:read:own"
@@ -18,6 +19,7 @@ export type InternalPermission =
   | "privacy:export"
   | "privacy:anonymize"
   | "analytics:read"
+  | "analytics:aggregate"
   | "operations:read"
   | "tenant:manage"
   | "user:manage"
@@ -35,11 +37,18 @@ export type InternalDepartment = {
   slug: string;
 };
 
+export type InternalRole =
+  | "case_worker"
+  | "department_admin"
+  | "auditor"
+  | "super_admin"
+  | "portfolio_guest";
+
 export type InternalCurrentUser = {
   id: string;
   email: string;
   name: string;
-  role: string;
+  role: InternalRole;
   tenantId: string;
   tenant: InternalTenant;
   departmentId: string | null;

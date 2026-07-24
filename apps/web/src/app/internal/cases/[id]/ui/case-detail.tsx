@@ -285,9 +285,12 @@ export function CaseDetail({ caseId }: { caseId: string }) {
   }
 
   async function loadActivity() {
-    const response = await fetch(`${getApiBaseUrl()}/cases/${caseId}/activity`, {
-      credentials: "include",
-    });
+    const response = await fetch(
+      `${getApiBaseUrl()}/cases/${caseId}/activity`,
+      {
+        credentials: "include",
+      },
+    );
 
     if (response.status === 401) {
       await clearSession();
@@ -332,7 +335,9 @@ export function CaseDetail({ caseId }: { caseId: string }) {
     loadCase().catch(() => setError(t.cases.loadCaseError));
     loadDocuments().catch(() => setError(t.cases.loadDocumentsError));
     loadAITriage().catch(() => setError(t.cases.loadAiError));
-    loadActivity().catch(() => setActivityError(t.caseDetail.activityLoadError));
+    loadActivity().catch(() =>
+      setActivityError(t.caseDetail.activityLoadError),
+    );
     loadDepartments().catch(() => setDepartmentListUnavailable(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canReadCase, caseId, currentUser, sessionLoading]);
@@ -610,13 +615,28 @@ export function CaseDetail({ caseId }: { caseId: string }) {
       </Link>
 
       {!canModifyThisCase ? <ReadOnlyNotice t={t} /> : null}
-      <div className="mt-5 flex flex-wrap gap-1 border border-[#c8d9e8] bg-white p-1" aria-label={t.nav.caseDetail}>
-        {([
-          ["overview", t.caseDetail.overviewTab],
-          ["ai", t.caseDetail.aiReviewTab],
-          ["workflow", t.caseDetail.workflowTab],
-        ] as const).map(([section, label]) => (
-          <button key={section} type="button" aria-pressed={activeSection === section} onClick={() => setActiveSection(section)} className={activeSection === section ? "bg-[#003b71] px-4 py-2 text-sm font-semibold text-white" : "px-4 py-2 text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb]"}>
+      <div
+        className="mt-5 flex flex-wrap gap-1 border border-[#c8d9e8] bg-white p-1"
+        aria-label={t.nav.caseDetail}
+      >
+        {(
+          [
+            ["overview", t.caseDetail.overviewTab],
+            ["ai", t.caseDetail.aiReviewTab],
+            ["workflow", t.caseDetail.workflowTab],
+          ] as const
+        ).map(([section, label]) => (
+          <button
+            key={section}
+            type="button"
+            aria-pressed={activeSection === section}
+            onClick={() => setActiveSection(section)}
+            className={
+              activeSection === section
+                ? "bg-[#003b71] px-4 py-2 text-sm font-semibold text-white"
+                : "px-4 py-2 text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb]"
+            }
+          >
             {label}
           </button>
         ))}
@@ -624,14 +644,25 @@ export function CaseDetail({ caseId }: { caseId: string }) {
 
       {activeSection === "overview" ? (
         <CaseOverview>
-          {caseRecord.status === "triage_pending" && aiResult?.status === "completed" ? (
-            <button type="button" onClick={() => setActiveSection("ai")} className="mt-5 border border-[#c8d9e8] bg-[#eaf4fb] px-4 py-3 text-sm font-semibold text-[#003b71]">
+          {caseRecord.status === "triage_pending" &&
+          aiResult?.status === "completed" ? (
+            <button
+              type="button"
+              onClick={() => setActiveSection("ai")}
+              className="mt-5 border border-[#c8d9e8] bg-[#eaf4fb] px-4 py-3 text-sm font-semibold text-[#003b71]"
+            >
               {t.caseDetail.aiReadyPrompt}
             </button>
           ) : null}
           <CaseSummaryCard caseRecord={caseRecord} t={t} />
           <CitizenAddressCard caseAddress={caseAddress} t={t} />
-          <DocumentsCard canUpload={canUploadDocumentToThisCase} caseId={caseId} documents={documents} onUploadDocument={uploadDocument} t={t} />
+          <DocumentsCard
+            canUpload={canUploadDocumentToThisCase}
+            caseId={caseId}
+            documents={documents}
+            onUploadDocument={uploadDocument}
+            t={t}
+          />
         </CaseOverview>
       ) : null}
 
@@ -669,8 +700,22 @@ export function CaseDetail({ caseId }: { caseId: string }) {
       {activeSection === "workflow" ? (
         <CaseWorkflow>
           <section className="mt-5 grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
-            <CaseWorkflowCard canUpdate={canModifyThisCase} currentStatus={caseRecord.status} error={statusUpdateError} onSubmit={updateStatus} setStatus={setStatus} status={status} t={t} />
-            <InternalNotesCard canAddNote={canModifyThisCase} error={error} notes={caseRecord.internalNotes} onSubmit={addNote} t={t} />
+            <CaseWorkflowCard
+              canUpdate={canModifyThisCase}
+              currentStatus={caseRecord.status}
+              error={statusUpdateError}
+              onSubmit={updateStatus}
+              setStatus={setStatus}
+              status={status}
+              t={t}
+            />
+            <InternalNotesCard
+              canAddNote={canModifyThisCase}
+              error={error}
+              notes={caseRecord.internalNotes}
+              onSubmit={addNote}
+              t={t}
+            />
           </section>
           <RecentActivityCard activity={activity} error={activityError} t={t} />
         </CaseWorkflow>
@@ -807,10 +852,7 @@ function canModifyAssignedCase(
   currentUser: InternalCurrentUser,
   caseRecord: CaseDetailResponse,
 ) {
-  if (
-    currentUser.role === "super_admin" &&
-    currentUser.permissions.includes("case:read:all_tenant")
-  ) {
+  if (currentUser.permissions.includes("case:update:all_tenant")) {
     return true;
   }
 
@@ -844,7 +886,11 @@ function CaseWorkflowCard({
   status: string;
   t: InternalDictionary;
 }) {
-  const transitionWarning = getStatusTransitionWarning(currentStatus, status, t);
+  const transitionWarning = getStatusTransitionWarning(
+    currentStatus,
+    status,
+    t,
+  );
   const recommendedWorkflow = workflowStatuses
     .map((item) => getStatusLabel(item, t))
     .join(" -> ");
@@ -854,9 +900,7 @@ function CaseWorkflowCard({
       onSubmit={onSubmit}
       className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
     >
-      <h2 className="text-lg font-semibold text-slate-950">
-        {t.cases.status}
-      </h2>
+      <h2 className="text-lg font-semibold text-slate-950">{t.cases.status}</h2>
       <WorkflowTimeline currentStatus={currentStatus} t={t} />
       {canUpdate ? (
         <>
@@ -963,8 +1007,7 @@ function WorkflowTimeline({
       ) : null}
       {!isRejected && getStatusExplanation(currentStatus, t) ? (
         <p className="mt-3 rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-600">
-          {t.caseDetail.currentStatus}:{" "}
-          {getStatusExplanation(currentStatus, t)}
+          {t.caseDetail.currentStatus}: {getStatusExplanation(currentStatus, t)}
         </p>
       ) : null}
     </div>
@@ -1089,7 +1132,8 @@ function AITriageCard({
         (aiResult.suggestedDepartment?.slug ?? null) ||
       reviewUrgency !== suggestedUrgency);
   const confidenceLabel =
-    aiResult?.confidenceScore === null || aiResult?.confidenceScore === undefined
+    aiResult?.confidenceScore === null ||
+    aiResult?.confidenceScore === undefined
       ? t.common.unknown
       : `${Math.round(aiResult.confidenceScore * 100)}%`;
 
@@ -1097,12 +1141,8 @@ function AITriageCard({
     <section className="mt-5 rounded-lg border border-sky-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-950">
-            {t.ai.title}
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            {t.ai.notice}
-          </p>
+          <h2 className="text-lg font-semibold text-slate-950">{t.ai.title}</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{t.ai.notice}</p>
         </div>
         {canRun ? (
           <button
@@ -1187,11 +1227,7 @@ function AITriageCard({
                   }
                   before={
                     officialDepartment
-                      ? formatDisplayValue(
-                          officialDepartment,
-                          "departments",
-                          t,
-                        )
+                      ? formatDisplayValue(officialDepartment, "departments", t)
                       : t.common.unassigned
                   }
                   label={t.ai.department}
@@ -1253,7 +1289,7 @@ function AITriageCard({
                   }
                   className="rounded-md border border-slate-300 bg-white px-3 py-2"
                 >
-                      {caseCategories.map((item) => (
+                  {caseCategories.map((item) => (
                     <option key={item} value={item}>
                       {formatDisplayValue(item, "categories", t)}
                     </option>
@@ -1539,7 +1575,10 @@ function RecentActivityCard({
                     {formatInternalDateTime(event.createdAt)}
                   </time>
                 </div>
-                <ActivityMetadataSummary summary={event.metadataSummary} t={t} />
+                <ActivityMetadataSummary
+                  summary={event.metadataSummary}
+                  t={t}
+                />
               </article>
             </li>
           ))}
@@ -1578,13 +1617,7 @@ function ActivityMetadataSummary({
   );
 }
 
-function TextPanel({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null;
-}) {
+function TextPanel({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="rounded-md bg-slate-50 p-4">
       <h3 className="text-sm font-medium text-slate-500">{label}</h3>
@@ -1651,7 +1684,9 @@ function formatFileSize(sizeBytes: number) {
 }
 
 function formatActivityAction(action: string, t: InternalDictionary) {
-  return (t.caseDetail.actionLabels as Record<string, string>)[action] ?? action;
+  return (
+    (t.caseDetail.actionLabels as Record<string, string>)[action] ?? action
+  );
 }
 
 function formatActivityActor(
@@ -1845,7 +1880,10 @@ function formatStatusLabel(status: string) {
 }
 
 function getStatusLabel(status: string, t: InternalDictionary) {
-  return (t.cases.filters as Record<string, string>)[status] ?? formatStatusLabel(status);
+  return (
+    (t.cases.filters as Record<string, string>)[status] ??
+    formatStatusLabel(status)
+  );
 }
 
 function getStatusExplanation(status: string, t: InternalDictionary) {

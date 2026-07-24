@@ -105,4 +105,31 @@ describe('AnalyticsController', () => {
       },
     );
   });
+
+  it('lets portfolio guests read analytics but denies aggregation', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      id: 'guest_1',
+      tenantId: 'tenant_1',
+      departmentId: null,
+      email: 'portfolio.guest@arendal.local',
+      role: 'portfolio_guest',
+    });
+    analyticsService.getSummary.mockResolvedValue({
+      tenantId: 'tenant_1',
+      totals: { totalCases: 0 },
+      daily: [],
+    });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/analytics/summary?from=2026-05-01&to=2026-05-02')
+      .set('Cookie', [`${AUTH_COOKIE_NAME}=valid-token`])
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/analytics/aggregate')
+      .set('Cookie', [`${AUTH_COOKIE_NAME}=valid-token`])
+      .send({ from: '2026-05-01', to: '2026-05-02' })
+      .expect(403);
+    expect(analyticsService.aggregateTenantRange).not.toHaveBeenCalled();
+  });
 });

@@ -78,6 +78,7 @@ export function AnalyticsDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [isAggregating, setIsAggregating] = useState(false);
   const canReadAnalytics = hasPermission("analytics:read");
+  const canAggregateAnalytics = hasPermission("analytics:aggregate");
 
   async function loadSummary() {
     if (!currentUser || !canReadAnalytics) {
@@ -191,14 +192,16 @@ export function AnalyticsDashboard() {
       <section className="mt-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[1fr_1fr_auto]">
         <DateField label={t.analytics.from} value={from} onChange={setFrom} />
         <DateField label={t.analytics.to} value={to} onChange={setTo} />
-        <button
-          type="button"
-          onClick={aggregate}
-          disabled={isAggregating}
-          className="self-end rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
-        >
-          {isAggregating ? t.analytics.aggregating : t.analytics.aggregate}
-        </button>
+        {canAggregateAnalytics ? (
+          <button
+            type="button"
+            onClick={aggregate}
+            disabled={isAggregating}
+            className="self-end rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {isAggregating ? t.analytics.aggregating : t.analytics.aggregate}
+          </button>
+        ) : null}
       </section>
 
       {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
@@ -521,9 +524,7 @@ function MetricGroup({
             key={metric.label}
             className="rounded-md border border-slate-100 bg-slate-50 p-4"
           >
-            <p className="text-sm font-medium text-slate-500">
-              {metric.label}
-            </p>
+            <p className="text-sm font-medium text-slate-500">{metric.label}</p>
             <p className="mt-1 text-3xl font-semibold text-slate-950">
               {metric.value}
             </p>
@@ -637,9 +638,7 @@ function buildInsights(
         t.common.missing,
       )} min`,
       text:
-        waitingShare > 0.15
-          ? t.analytics.flowBlocked
-          : t.analytics.flowHealthy,
+        waitingShare > 0.15 ? t.analytics.flowBlocked : t.analytics.flowHealthy,
       tone: waitingShare > 0.15 ? "warn" : "good",
     },
     {

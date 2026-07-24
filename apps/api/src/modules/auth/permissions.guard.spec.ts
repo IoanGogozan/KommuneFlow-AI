@@ -23,11 +23,45 @@ describe('PermissionsGuard', () => {
 
     expect(guard.canActivate(createContext(UserRole.case_worker))).toBe(true);
   });
+
+  it('allows a role that satisfies one permission in an any-of group', () => {
+    const guard = new PermissionsGuard(
+      createReflector(
+        [],
+        [['case:update:department', 'case:update:all_tenant']],
+      ),
+      operationalEvents(),
+    );
+
+    expect(guard.canActivate(createContext(UserRole.portfolio_guest))).toBe(
+      true,
+    );
+  });
+
+  it('denies a role that satisfies no permission in an any-of group', () => {
+    const guard = new PermissionsGuard(
+      createReflector(
+        [],
+        [['case:update:department', 'case:update:all_tenant']],
+      ),
+      operationalEvents(),
+    );
+
+    expect(() => guard.canActivate(createContext(UserRole.auditor))).toThrow(
+      ForbiddenException,
+    );
+  });
 });
 
-function createReflector(requiredPermissions: string[]): Reflector {
+function createReflector(
+  requiredPermissions: string[],
+  requiredAnyPermissions: string[][] = [],
+): Reflector {
   return {
-    getAllAndOverride: jest.fn().mockReturnValue(requiredPermissions),
+    getAllAndOverride: jest
+      .fn()
+      .mockReturnValueOnce(requiredPermissions)
+      .mockReturnValueOnce(requiredAnyPermissions),
   } as unknown as Reflector;
 }
 
