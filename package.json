@@ -19,7 +19,8 @@
     "test:etl": "cd apps/etl && python -m pytest",
     "typecheck": "pnpm --recursive --if-present typecheck",
     "audit:deps": "pnpm audit --audit-level high",
-    "screenshots:demo": "node scripts/capture-demo-screenshots.mjs"
+    "screenshots:demo": "node scripts/capture-demo-screenshots.mjs",
+    "test:screenshots": "node --test scripts/screenshot-data-safety.test.mjs"
   },
   "devDependencies": {
     "playwright": "1.60.0",

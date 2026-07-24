@@ -10,6 +10,10 @@ KommuneFlow AI is a working portfolio application for municipal case management.
 
 ![KommuneFlow AI citizen intake](./docs/screenshots/02-citizen-intake-en.png)
 
+Case evidence is split between the
+[case list](./docs/screenshots/07-case-list.png) and the
+[opened case Overview](./docs/screenshots/07-case-overview.png).
+
 **Stack:** TypeScript | Next.js | NestJS | PostgreSQL | Prisma | Zod | Python ELT | Docker Compose | Caddy | OpenAI
 
 **Key capabilities:** bilingual citizen intake and document upload | Kartverket address validation | tenant isolation and RBAC | human-in-the-loop AI triage | case and document workflows | audit, privacy, retention, and operations views | SSB-enriched analytics

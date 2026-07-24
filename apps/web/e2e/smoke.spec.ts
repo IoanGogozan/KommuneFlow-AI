@@ -396,18 +396,19 @@ test("internal case detail supports status update, document upload, and AI revie
   });
 
   await page.goto("/internal/cases/case_1");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
   await expect(
     page
       .locator("section")
       .filter({ hasText: "case_1" })
       .getByRole("heading", { name: "Water leak near school entrance" }),
   ).toBeVisible();
-  await expect(page.getByRole("tab", { name: "Overview" })).toHaveAttribute(
-    "aria-selected",
+  await expect(page.getByRole("button", { name: "Overview" })).toHaveAttribute(
+    "aria-pressed",
     "true",
   );
 
-  await page.getByRole("tab", { name: "Workflow" }).click();
+  await page.getByRole("button", { name: "Workflow" }).click();
   await page
     .locator("form")
     .filter({ has: page.getByRole("heading", { name: "Status" }) })
@@ -416,7 +417,7 @@ test("internal case detail supports status update, document upload, and AI revie
   await page.getByRole("button", { name: "Save status change" }).click();
   await expect(page.getByText("In progress").first()).toBeVisible();
 
-  await page.getByRole("tab", { name: "Overview" }).click();
+  await page.getByRole("button", { name: "Overview" }).click();
   await page
     .locator('input[name="file"]')
     .setInputFiles({
@@ -427,7 +428,7 @@ test("internal case detail supports status update, document upload, and AI revie
   await page.getByRole("button", { name: "Upload" }).click();
   await expect(page.getByText("internal-note.pdf")).toBeVisible();
 
-  await page.getByRole("tab", { name: "AI review" }).click();
+  await page.getByRole("button", { name: "AI review" }).click();
   await page.getByRole("button", { name: "Run AI triage" }).click();
   await expect(page.getByText("AI suggestion ready")).toBeVisible();
   await page
