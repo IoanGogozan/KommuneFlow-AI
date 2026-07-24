@@ -125,8 +125,7 @@ async function bootstrapDemoResetState(
 ) {
   const context = createDemoSeedContext(now);
   const demoPassword = process.env.SEED_DEMO_PASSWORD ?? 'DemoPassword123!';
-  const recruiterPassword =
-    process.env.SEED_RECRUITER_PASSWORD ?? demoPassword;
+  const recruiterPassword = process.env.SEED_RECRUITER_PASSWORD ?? demoPassword;
   const portfolioGuestPassword = `${demoPassword}-guest`;
   const passwordHashes = {
     demoPasswordHash: await hash(demoPassword, 4),
