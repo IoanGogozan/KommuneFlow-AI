@@ -51,11 +51,14 @@ export default function DemoPage() {
             <EnterPortfolioDemoButton
               className={styles.primaryCta}
               idleLabel="Enter employee demo"
+              locale="en"
             />
           </article>
           <article className={styles.flowCard}>
             <h2>Technical review</h2>
-            <p>Inspect the source, architecture, tests and security controls.</p>
+            <p>
+              Inspect the source, architecture, tests and security controls.
+            </p>
             <a
               className={styles.primaryCta}
               href="https://github.com/IoanGogozan/KommuneFlow-AI"

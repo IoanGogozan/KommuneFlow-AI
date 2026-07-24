@@ -21,6 +21,7 @@ import { CaseWorkflow } from "./case-detail/case-workflow";
 
 type CaseDetailResponse = {
   id: string;
+  caseReference: string;
   title: string;
   description: string;
   category: string;
@@ -735,7 +736,7 @@ function CaseSummaryCard({
     <section className="mt-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm text-slate-500">{caseRecord.id}</p>
+          <p className="text-sm text-slate-500">{caseRecord.caseReference}</p>
           <h2 className="mt-2 text-3xl font-semibold text-slate-950">
             {caseRecord.title}
           </h2>
@@ -853,6 +854,16 @@ function canModifyAssignedCase(
   caseRecord: CaseDetailResponse,
 ) {
   if (currentUser.permissions.includes("case:update:all_tenant")) {
+    if (currentUser.role === "portfolio_guest") {
+      return (
+        !caseRecord.id.startsWith("seed_") ||
+        [
+          "seed_kristiansand_case_building",
+          "seed_arendal_case_building_permit",
+          "seed_grimstad_case_road_damage",
+        ].includes(caseRecord.id)
+      );
+    }
     return true;
   }
 

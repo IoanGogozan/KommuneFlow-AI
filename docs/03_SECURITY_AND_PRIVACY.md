@@ -42,7 +42,7 @@ The application must follow these principles:
 
 The public web shell and citizen routes do not use infrastructure Basic Auth. Internal APIs remain protected by the existing application JWT cookie, permission guards, and tenant predicates. A portfolio guest session is created only when explicitly enabled, for an allowlisted tenant, after Origin/Referer validation and throttling. The cookie is `HttpOnly`, `SameSite=Lax`, secure in production, and shorter-lived than a normal staff session.
 
-The `portfolio_guest` permission set is limited to tenant-wide case read/update, AI triage run/review, seeded document read, and analytics read. It excludes uploads/deletes, aggregation, audit, privacy, operations, tenant/user/department/routing administration, and AI diagnostics. Hidden navigation is only presentation; API permission checks remain authoritative.
+The `portfolio_guest` permission set allows tenant-wide synthetic case reading, but mutations and AI run/review operations are additionally constrained by the API to visitor-created cases and one designated mutable demo case per tenant. Seeded document read and analytics read remain available. The role excludes uploads/deletes, aggregation, audit, privacy, operations, tenant/user/department/routing administration, and AI diagnostics. Hidden or read-only controls are only presentation; API checks remain authoritative.
 
 ## File Upload Security
 

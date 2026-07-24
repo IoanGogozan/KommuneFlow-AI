@@ -144,13 +144,6 @@ export function InternalShell({
               <div>
                 <p className="font-semibold">{t.portfolioSession.title}</p>
                 <p className="mt-1 text-sm">{t.portfolioSession.description}</p>
-                <p className="mt-2 text-sm">
-                  <span className="font-semibold">{t.common.role}:</span>{" "}
-                  {formatRole(currentUser.role, t)}{" "}
-                  <span aria-hidden="true">·</span>{" "}
-                  <span className="font-semibold">{t.common.scope}:</span>{" "}
-                  {currentUser.tenant.name}
-                </p>
               </div>
               <button
                 type="button"
@@ -183,13 +176,15 @@ export function InternalShell({
                 {t.nav.publicIntake}
               </Link>
               <InternalLanguageToggle locale={locale} setLocale={setLocale} />
-              <button
-                type="button"
-                onClick={() => void signOut()}
-                className="border border-[#c8d9e8] bg-white px-3 py-2 text-sm font-semibold text-[#003b71] hover:border-[#003b71] hover:bg-[#eaf4fb]"
-              >
-                {t.nav.signOut}
-              </button>
+              {currentUser?.role !== "portfolio_guest" ? (
+                <button
+                  type="button"
+                  onClick={() => void signOut()}
+                  className="border border-[#c8d9e8] bg-white px-3 py-2 text-sm font-semibold text-[#003b71] hover:border-[#003b71] hover:bg-[#eaf4fb]"
+                >
+                  {t.nav.signOut}
+                </button>
+              ) : null}
             </div>
           </div>
           <button
@@ -208,14 +203,38 @@ export function InternalShell({
             className="mt-2 border border-[#c8d9e8] bg-white p-3 md:hidden"
             aria-label="Internal mobile"
           >
-            <GroupedNavigation groupedItems={groupedItems} pathname={pathname} t={t} mobile />
+            <GroupedNavigation
+              groupedItems={groupedItems}
+              pathname={pathname}
+              t={t}
+              mobile
+            />
           </nav>
-          <nav className="mt-4 hidden items-center gap-1 border border-[#c8d9e8] bg-white p-1 md:flex" aria-label="Internal">
-            {groupedItems.work.map((item) => <NavLink key={item.href} item={item} pathname={pathname} t={t} />)}
-            {groupedItems.insights.map((item) => <NavLink key={item.href} item={item} pathname={pathname} t={t} />)}
-            <NavDropdown label={t.nav.governance} items={groupedItems.governance} pathname={pathname} t={t} />
-            <NavDropdown label={t.nav.administration} items={groupedItems.administration} pathname={pathname} t={t} />
-            {groupedItems.system.map((item) => <NavLink key={item.href} item={item} pathname={pathname} t={t} />)}
+          <nav
+            className="mt-4 hidden items-center gap-1 border border-[#c8d9e8] bg-white p-1 md:flex"
+            aria-label="Internal"
+          >
+            {groupedItems.work.map((item) => (
+              <NavLink key={item.href} item={item} pathname={pathname} t={t} />
+            ))}
+            {groupedItems.insights.map((item) => (
+              <NavLink key={item.href} item={item} pathname={pathname} t={t} />
+            ))}
+            <NavDropdown
+              label={t.nav.governance}
+              items={groupedItems.governance}
+              pathname={pathname}
+              t={t}
+            />
+            <NavDropdown
+              label={t.nav.administration}
+              items={groupedItems.administration}
+              pathname={pathname}
+              t={t}
+            />
+            {groupedItems.system.map((item) => (
+              <NavLink key={item.href} item={item} pathname={pathname} t={t} />
+            ))}
           </nav>
         </header>
 
@@ -229,37 +248,89 @@ export function InternalShell({
   );
 }
 
-function NavLink({ item, pathname, t }: { item: NavItem; pathname: string; t: InternalDictionary }) {
+function NavLink({
+  item,
+  pathname,
+  t,
+}: {
+  item: NavItem;
+  pathname: string;
+  t: InternalDictionary;
+}) {
   const isActive = isNavItemActive(pathname, item.href);
   return (
-    <Link href={item.href} aria-current={isActive ? "page" : undefined} className={isActive ? "block bg-[#003b71] px-3 py-2 text-sm font-semibold text-white" : "block px-3 py-2 text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb]"}>
+    <Link
+      href={item.href}
+      aria-current={isActive ? "page" : undefined}
+      className={
+        isActive
+          ? "block bg-[#003b71] px-3 py-2 text-sm font-semibold text-white"
+          : "block px-3 py-2 text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb]"
+      }
+    >
       {t.nav[item.key]}
     </Link>
   );
 }
 
-function NavDropdown({ label, items, pathname, t }: { label: string; items: NavItem[]; pathname: string; t: InternalDictionary }) {
+function NavDropdown({
+  label,
+  items,
+  pathname,
+  t,
+}: {
+  label: string;
+  items: NavItem[];
+  pathname: string;
+  t: InternalDictionary;
+}) {
   if (items.length === 0) return null;
   return (
     <details className="relative">
-      <summary className="cursor-pointer list-none px-3 py-2 text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb]">{label} ▾</summary>
+      <summary className="cursor-pointer list-none px-3 py-2 text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb]">
+        {label} ▾
+      </summary>
       <div className="absolute left-0 z-20 mt-1 min-w-48 border border-[#c8d9e8] bg-white p-1 shadow-lg">
-        {items.map((item) => <NavLink key={item.href} item={item} pathname={pathname} t={t} />)}
+        {items.map((item) => (
+          <NavLink key={item.href} item={item} pathname={pathname} t={t} />
+        ))}
       </div>
     </details>
   );
 }
 
-function GroupedNavigation({ groupedItems, pathname, t, mobile }: { groupedItems: Record<string, NavItem[]>; pathname: string; t: InternalDictionary; mobile?: boolean }) {
-  const groups = ["work", "insights", "governance", "administration", "system"] as const;
+function GroupedNavigation({
+  groupedItems,
+  pathname,
+  t,
+  mobile,
+}: {
+  groupedItems: Record<string, NavItem[]>;
+  pathname: string;
+  t: InternalDictionary;
+  mobile?: boolean;
+}) {
+  const groups = [
+    "work",
+    "insights",
+    "governance",
+    "administration",
+    "system",
+  ] as const;
   return (
     <div className={mobile ? "grid gap-4" : ""}>
-      {groups.map((group) => groupedItems[group].length > 0 ? (
-        <section key={group}>
-          <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#55718d]">{t.nav[group]}</h2>
-          {groupedItems[group].map((item) => <NavLink key={item.href} item={item} pathname={pathname} t={t} />)}
-        </section>
-      ) : null)}
+      {groups.map((group) =>
+        groupedItems[group].length > 0 ? (
+          <section key={group}>
+            <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#55718d]">
+              {t.nav[group]}
+            </h2>
+            {groupedItems[group].map((item) => (
+              <NavLink key={item.href} item={item} pathname={pathname} t={t} />
+            ))}
+          </section>
+        ) : null,
+      )}
     </div>
   );
 }
@@ -298,7 +369,10 @@ function UserContext({
 }
 
 function formatRole(role: string, t: InternalDictionary) {
-  return (t.common.roles as Record<string, string>)[role] ?? role.replaceAll("_", " ");
+  return (
+    (t.common.roles as Record<string, string>)[role] ??
+    role.replaceAll("_", " ")
+  );
 }
 
 function canViewNavItem(

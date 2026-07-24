@@ -206,8 +206,10 @@ Do not reseed on routine updates. Do not rebuild or restart global Caddy unless 
 The public portfolio deployment disables citizen uploads with
 `PUBLIC_DEMO_ALLOW_UPLOADS=false`. Seeded employee cases still include safe
 document examples. Visitor-created cases older than
-`PORTFOLIO_DEMO_RESET_AFTER_HOURS` can be removed with the guarded reset
-command:
+`PORTFOLIO_DEMO_RESET_AFTER_HOURS` can be removed with the guarded reset.
+The same reset clears mutable seed-case notes, AI results and reviews,
+observability, email, and activity records before restoring the deterministic
+seed baseline. Run it with:
 
 ```bash
 docker compose -f compose.home.yml --env-file .env run --rm \

@@ -64,6 +64,7 @@ export function InternalLoginForm() {
           <EnterPortfolioDemoButton
             className="mt-4 w-full rounded-md bg-[#003b71] px-4 py-3 text-sm font-semibold text-white hover:bg-[#00294f] disabled:bg-slate-400"
             idleLabel={t.login.demoTitle}
+            locale={locale}
           />
         </section>
         <h2 className="mt-8 text-xl font-semibold text-slate-950">

@@ -53,8 +53,36 @@ export async function runDemoReset(
   const documentIds = visitorCases.flatMap((item) =>
     item.documents.map((document) => document.id),
   );
+  const seedCaseIds = cases.map((item) => item.id);
+  const seedTriageResults = await prisma.aITriageResult.findMany({
+    where: { caseId: { in: seedCaseIds } },
+    select: { id: true },
+  });
+  const seedActivityEntityIds = [
+    ...seedCaseIds,
+    ...seedTriageResults.map((item) => item.id),
+  ];
 
   const deleted = await prisma.$transaction(async (transaction) => {
+    await transaction.aIObservabilityEvent.deleteMany({
+      where: { caseId: { in: seedCaseIds } },
+    });
+    await transaction.auditEvent.deleteMany({
+      where: { entityId: { in: seedActivityEntityIds } },
+    });
+    await transaction.emailLog.deleteMany({
+      where: { caseId: { in: seedCaseIds } },
+    });
+    await transaction.internalNote.deleteMany({
+      where: { caseId: { in: seedCaseIds } },
+    });
+    await transaction.aIReview.deleteMany({
+      where: { caseId: { in: seedCaseIds } },
+    });
+    await transaction.aITriageResult.deleteMany({
+      where: { caseId: { in: seedCaseIds } },
+    });
+
     if (caseIds.length === 0) {
       return { cases: 0, citizens: 0 };
     }

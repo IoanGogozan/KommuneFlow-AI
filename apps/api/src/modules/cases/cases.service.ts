@@ -12,6 +12,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { AIService } from '../ai/ai.service';
 import { CurrentUser } from '../auth/current-user';
 import { roleHasPermission } from '../auth/permissions';
+import { assertPortfolioGuestCanModifyCase } from '../auth/portfolio-case-access';
 import { AuditService } from '../audit/audit.service';
 import {
   resolveDocumentStoragePath,
@@ -402,7 +403,11 @@ export class CasesService {
       throw new NotFoundException('Case not found.');
     }
 
-    this.assertCanUpdateCase(user, caseRecord.assignedDepartmentId);
+    this.assertCanUpdateCase(
+      user,
+      caseRecord.assignedDepartmentId,
+      caseRecord.id,
+    );
     assertAllowedStatusTransition(caseRecord.status, input.status);
 
     const updatedCase = await this.prisma.case.update({
@@ -459,7 +464,11 @@ export class CasesService {
       throw new NotFoundException('Case not found.');
     }
 
-    this.assertCanUpdateCase(user, caseRecord.assignedDepartmentId);
+    this.assertCanUpdateCase(
+      user,
+      caseRecord.assignedDepartmentId,
+      caseRecord.id,
+    );
 
     const note = await this.prisma.internalNote.create({
       data: {
@@ -625,8 +634,10 @@ export class CasesService {
   private assertCanUpdateCase(
     user: CurrentUser,
     assignedDepartmentId: string | null,
+    caseId: string,
   ) {
     if (roleHasPermission(user.role, 'case:update:all_tenant')) {
+      assertPortfolioGuestCanModifyCase(user, caseId);
       return;
     }
 

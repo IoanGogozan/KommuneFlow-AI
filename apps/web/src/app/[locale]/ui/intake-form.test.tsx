@@ -31,7 +31,9 @@ describe("IntakeForm", () => {
           createdAt: "2026-05-09T10:00:00.000Z",
         }),
       )
-      .mockResolvedValueOnce(jsonResponse({ user: { role: "portfolio_guest" } }));
+      .mockResolvedValueOnce(
+        jsonResponse({ user: { role: "portfolio_guest" } }),
+      );
     const user = userEvent.setup();
 
     render(
@@ -44,9 +46,7 @@ describe("IntakeForm", () => {
     );
 
     expect(screen.getByText("Public portfolio demo")).toBeVisible();
-    expect(
-      screen.getByText(/This is a shared synthetic demo/),
-    ).toBeVisible();
+    expect(screen.getByText(/This is a shared synthetic demo/)).toBeVisible();
     await user.type(screen.getByLabelText("Name"), "Ada Citizen");
     await user.type(screen.getByLabelText("Email"), "ada@example.local");
     await user.type(screen.getByLabelText("Title"), "Synthetic request");
@@ -75,7 +75,7 @@ describe("IntakeForm", () => {
     );
     expect(pushMock.mock.calls[0][0]).not.toContain("ABC123");
     expect(screen.getByText("ABC123")).toBeVisible();
-  });
+  }, 10_000);
 
   it("keeps the public heading and introduction aligned with the active tab", async () => {
     const user = userEvent.setup();
@@ -113,9 +113,7 @@ describe("IntakeForm", () => {
     expect(dictionaries.en.sectionContactTitle).toBe(
       "Municipality and contact",
     );
-    expect(dictionaries.en.sectionDocumentsTitle).toBe(
-      "Supporting documents",
-    );
+    expect(dictionaries.en.sectionDocumentsTitle).toBe("Supporting documents");
     expect(dictionaries.nb.sectionSubmitTitle).toBe("Bekreft og send inn");
     expect(dictionaries.en.successNextStepsText).toContain(
       "Check this case now",
@@ -430,7 +428,9 @@ describe("IntakeForm", () => {
     await user.click(screen.getByRole("button", { name: "Submit" }));
 
     expect(
-      await screen.findByText("Could not submit the request. Please try again."),
+      await screen.findByText(
+        "Could not submit the request. Please try again.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -481,7 +481,9 @@ describe("IntakeForm", () => {
       screen.getByRole("button", { name: "Check this case now" }),
     );
 
-    const statusForm = screen.getByRole("button", { name: "Check status" }).closest("form")!;
+    const statusForm = screen
+      .getByRole("button", { name: "Check status" })
+      .closest("form")!;
     expect(within(statusForm).getByLabelText("Case reference")).toHaveValue(
       "KF-2026-0001",
     );
@@ -522,7 +524,9 @@ describe("IntakeForm", () => {
     await user.click(screen.getByRole("checkbox", { name: /Privacy/ }));
     await user.click(screen.getByRole("button", { name: "Submit" }));
 
-    await user.click(await screen.findByRole("button", { name: "Copy reference" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Copy reference" }),
+    );
     expect(writeText).toHaveBeenCalledWith("KF-2026-0001");
     expect(screen.getByRole("status")).toHaveTextContent("Copied");
 

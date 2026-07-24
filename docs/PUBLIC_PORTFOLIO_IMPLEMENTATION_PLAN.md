@@ -2,6 +2,27 @@
 
 This living document tracks the six-PR rollout for public portfolio access. It must be updated after every PR so the repository records what was planned, what was completed, what was verified, and what remains.
 
+## Post-rollout polish
+
+### PR 7 — Guest journey consistency and deterministic reset
+
+Status: implemented and locally verified in PR 7.
+
+- Preserve the selected `en` or `nb` locale when entering the employee demo.
+- Keep tenant-wide synthetic case reading, but restrict guest mutations to visitor-created cases and one explicitly designated demo case per tenant.
+- Enforce the mutation scope in the API and mirror it with read-only controls in the employee UI.
+- Remove guest-created seed-case notes, AI results/reviews, observability, email, and activity records before deterministic reseeding.
+- Align public copy and consent text with disabled public uploads.
+- Simplify repeated guest-session controls and show the public case reference instead of the database ID.
+- Keep `/demo` as an optional guided journey chooser.
+
+Verification:
+
+- API tests: 44 suites, 256 tests passed.
+- Web tests: 4 files, 23 tests passed.
+- API and web type checks passed.
+- Production build and repository lint passed.
+
 ## Mission and invariants
 
 Evolve the existing application into a portfolio demo that explains and demonstrates the citizen-to-employee case workflow without rebuilding it. Preserve the Next.js web app, NestJS API, Prisma/PostgreSQL model, JWT `HttpOnly` cookie sessions, server-side RBAC, tenant isolation, public intake/status flows, mock AI, documents, analytics, audit/privacy features, tests, CI, Docker Compose, Caddy topology, and normal staff login.
