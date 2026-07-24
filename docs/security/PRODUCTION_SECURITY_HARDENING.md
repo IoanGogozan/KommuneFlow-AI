@@ -14,12 +14,15 @@ KommuneFlow AI demonstrates security and privacy engineering patterns. It is not
 - Tenant-scoped access checks for tenant-owned case, document, privacy, analytics, AI, and operational data.
 - Auditor read-only behavior.
 - Bcrypt password hashing.
-- Login, public intake, and public status lookup rate limiting.
+- Configurable login, public intake, public status lookup, public address-search, and demo-session rate limiting.
 - Helmet security headers with explicit CSP defaults, `frame-ancestors 'none'`, denied framing, strict CORS allowlist, and Origin/Referer validation for cookie-authenticated mutations.
 - Safe error responses with request IDs and no stack traces in API responses.
 - JSON/form body limits in the API.
 - Multipart upload limits in Multer and request body limits in Caddy.
-- Application-level JWT authentication, RBAC, tenant scoping, and a feature-flagged least-privilege guest session for public portfolio deployments.
+- Public web access without infrastructure Basic Auth; internal data remains behind application JWT authentication, RBAC, and tenant scoping.
+- A disabled-by-default, tenant-allowlisted portfolio guest session with a shorter TTL, shared cookie helper, Origin/Referer validation, and no token in JSON.
+- A least-privilege `portfolio_guest` permission set: tenant case read/update, AI run/review, seeded document read, and analytics read; no upload/delete, aggregation, audit, privacy, operations, or administration.
+- API-enforced public upload disablement in portfolio mode while retaining the full upload security pipeline for explicitly enabled local tests.
 - Upload validation for size, extension, MIME type, magic bytes, unsafe filenames, checksums, and private storage paths.
 - Private document storage and audited document downloads.
 - Soft-delete for documents and retention cleanup that removes expired physical files before deleting document metadata.
@@ -32,6 +35,7 @@ KommuneFlow AI demonstrates security and privacy engineering patterns. It is not
 - Basic AI input minimization/redaction for obvious email, phone, and Norwegian national-identity-like patterns.
 - GitHub Actions checks for CodeQL static analysis and Gitleaks secret scanning.
 - Production-like Docker Compose, Caddy HTTPS reverse proxy, smoke test, backup scripts, and restore documentation.
+- A CLI-only demo reset with explicit mode/confirmation/database/storage/retention guards, deterministic seed restoration, and documented host scheduling.
 
 ## Known Production Gaps
 
@@ -71,9 +75,11 @@ KommuneFlow AI demonstrates security and privacy engineering patterns. It is not
 ## Public Demo Rules
 
 - Use synthetic data only.
-- Do not expose seeded demo credentials publicly. Use the least-privilege guest session or distribute a temporary reviewer account through a controlled channel.
+- No account is required for the citizen or public guest journey. Do not expose seeded staff credentials publicly.
 - Do not show demo passwords in the login form.
-- Prefer `AI_PROVIDER=mock` for public portfolio demos.
+- Require `AI_PROVIDER=mock` and `PUBLIC_DEMO_ALLOW_UPLOADS=false` for public portfolio production configuration.
+- Treat the demo as shared: another visitor can affect synthetic state and scheduled reset may remove visitor-created cases.
+- Keep the reset command private to operators; it must never become an HTTP endpoint.
 - Do not send real personal data to external AI providers.
 - Keep `.env`, `.env.production`, API keys, cookies, and backup artifacts out of screenshots and logs.
 

@@ -1,8 +1,8 @@
 # Home-Server Portfolio Deployment
 
-This runbook deploys KommuneFlow AI as a protected, synthetic-data portfolio demo on the existing home-server Docker and Caddy infrastructure. It is not a production municipal deployment and must not contain real citizen data.
+This runbook deploys KommuneFlow AI as a public-perimeter, application-protected synthetic portfolio demo on the existing home-server Docker and Caddy infrastructure. It is not a production municipal deployment and must not contain real citizen data.
 
-Deployment status: verified on the physical home server on 2026-07-19. All four services were healthy, network isolation and zero host-port publication were confirmed, Let's Encrypt issued the origin certificate, and the authenticated public smoke test passed at `https://kommune.norvix.no`.
+Deployment status: the physical home-server topology was previously verified, but that result predates the complete PR 6 branch. Consult `docs/VERIFICATION_LOG.md` for commit-specific evidence; do not infer that the current reviewed commit is deployed.
 
 ## Architecture
 
@@ -26,6 +26,7 @@ The global Caddy terminates TLS. The project-local Caddy trusts forwarded header
 - Use synthetic seeded data only.
 - Keep `AI_PROVIDER=mock` and `OPENAI_API_KEY` empty.
 - Keep the guest-session feature flag and tenant allowlist explicit; application JWT/RBAC remains the security boundary.
+- Keep public uploads disabled, endpoint limits explicit, and mock AI mandatory in portfolio mode.
 - Store the real `.env` only on the server with mode `600`.
 - Use `prisma migrate deploy`; never use development migrations or database reset on the server.
 - Seed separately and only with explicit confirmation.
@@ -161,12 +162,14 @@ Also verify manually:
 2. protected APIs return `401` without an application cookie;
 3. API health and readiness succeed;
 4. internal login and seeded cases work;
-5. citizen intake, status lookup, and document upload work;
+5. text-only citizen intake and status lookup work, while public multipart uploads are rejected;
 6. mock AI triage creates a suggestion without changing official fields before review;
 7. human review updates official fields;
-8. Operations reports provider `mock`;
-9. no OpenAI key is configured;
-10. API logs preserve the public HTTPS scheme and distinguish real client IPs.
+8. guest Analytics is readable but aggregation and administrative APIs are denied;
+9. normal staff login remains usable;
+10. Operations reports provider `mock` through a controlled staff account;
+11. no OpenAI key is configured;
+12. API logs preserve the public HTTPS scheme and distinguish real client IPs.
 
 ## Normal Updates
 

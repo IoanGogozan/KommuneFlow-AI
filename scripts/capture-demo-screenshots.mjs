@@ -1,5 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { chromium } from "playwright";
 import { assertScreenshotDatabaseSafety } from "./screenshot-data-safety.mjs";
 
@@ -7,29 +8,12 @@ const baseUrl = trimTrailingSlash(
   process.env.WEB_BASE_URL ?? "http://localhost:3000",
 );
 const screenshotDir = process.env.SCREENSHOT_DIR ?? "docs/screenshots";
-const demoEmail =
-  process.env.DEMO_EMAIL ??
-  process.env.SCREENSHOT_EMAIL ??
-  "department.admin@kristiansand.local";
-const demoPassword =
-  process.env.DEMO_PASSWORD ?? process.env.SCREENSHOT_PASSWORD;
-const auditEmail =
-  process.env.DEMO_AUDIT_EMAIL ?? process.env.SCREENSHOT_AUDIT_EMAIL;
-const auditPassword =
-  process.env.DEMO_AUDIT_PASSWORD ?? process.env.SCREENSHOT_AUDIT_PASSWORD;
+const previewPath =
+  process.env.SCREENSHOT_PREVIEW_PATH ??
+  "apps/web/public/screenshots/citizen-intake-preview.png";
+const seedPassword =
+  process.env.SCREENSHOT_SEED_PASSWORD ?? randomBytes(24).toString("base64url");
 const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL;
-
-if (!demoPassword) {
-  throw new Error(
-    "DEMO_PASSWORD or SCREENSHOT_PASSWORD is required. The screenshot script does not hardcode login passwords.",
-  );
-}
-
-if ((auditEmail && !auditPassword) || (!auditEmail && auditPassword)) {
-  throw new Error(
-    "Set both DEMO_AUDIT_EMAIL and DEMO_AUDIT_PASSWORD to capture audit/private admin-only pages.",
-  );
-}
 
 const forbiddenNb = [
   "Sprak",
@@ -43,6 +27,10 @@ const forbiddenNb = [
 ];
 
 await mkdir(screenshotDir, { recursive: true });
+await mkdir("apps/web/public/screenshots", { recursive: true });
+
+assertScreenshotDatabaseSafety(process.env);
+resetScreenshotDatabase();
 
 const browser = await chromium.launch({
   ...(browserChannel ? { channel: browserChannel } : {}),
@@ -55,61 +43,62 @@ try {
     viewport: { width: 1440, height: 1000 },
   });
 
-  await capture(page, "/", "01-landing.png");
-  await capture(page, "/en", "02-citizen-intake-en.png");
-  await capture(page, "/nb", "03-citizen-intake-nb.png");
+  await page.goto(`${baseUrl}/en?municipality=kristiansand&portfolio=1`, {
+    waitUntil: "networkidle",
+  });
+  await hideDevelopmentChrome(page);
+  await screenshotToPath(page, previewPath);
+  await screenshot(page, "02-citizen-intake-preview.png");
+
+  await capture(page, "/", "01-public-landing.png");
+  await capture(
+    page,
+    "/en?municipality=kristiansand&portfolio=1",
+    "03-citizen-form.png",
+  );
   await assertText(page, "Kristiansand Kommune");
   await assertText(page, "Arendal Kommune");
   await assertText(page, "Grimstad Kommune");
   await assertNoText(page, forbiddenNb);
 
-  await captureSubmissionAndStatus(page);
+  const caseReference = await captureSubmissionAndStatus(page);
 
-  await capture(page, "/internal/login", "06-internal-login.png");
-  await login(page, demoEmail, demoPassword);
+  await page.goto(`${baseUrl}/demo`, { waitUntil: "networkidle" });
+  await hideDevelopmentChrome(page);
+  await page.getByRole("button", { name: "Enter employee demo" }).click();
+  await page.waitForURL(/\/internal/, { timeout: 15000 });
+  await page.waitForLoadState("networkidle");
+  const createdCaseQueuePath = `/internal/cases?search=${encodeURIComponent(caseReference)}`;
 
-  await capture(page, "/internal", "06-internal-dashboard.png");
+  await capture(page, "/internal", "06-guest-dashboard.png");
   await assertText(page, "KommuneFlow AI");
+  await assertAnyText(page, [
+    "Public portfolio session",
+    "Offentlig porteføljeøkt",
+  ]);
 
-  await capture(page, "/internal/cases", "07-case-list.png");
+  await capture(page, createdCaseQueuePath, "07-guest-case-queue.png");
   await assertAnyText(page, [
     "These are the cases you are allowed to access",
     "Dette er sakene du har tilgang til",
   ]);
 
-  const caseId = await openFirstCase(page);
-  await screenshot(page, "07-case-overview.png");
+  await openFirstCase(page);
+  await screenshot(page, "08-case-overview.png");
   await page.getByRole("button", { name: /AI review|KI-gjennomgang/i }).click();
-  await screenshot(page, "08-ai-review.png");
+  await screenshot(page, "09-ai-review.png");
   await page.getByRole("button", { name: /Workflow|Arbeidsflyt/i }).click();
-  await screenshot(page, "09-workflow-activity.png");
+  await screenshot(page, "10-workflow-activity.png");
 
-  await captureOptional(page, "/internal/privacy", "10-privacy-dashboard.png", [
-    "Privacy",
-    "Personvern",
-  ]);
-  await captureOptional(page, "/internal/audit", "11-audit-dashboard.png", [
-    "Audit",
-    "Revisjon",
-  ]);
-
-  if (auditEmail && auditPassword) {
-    await logout(page);
-    await login(page, auditEmail, auditPassword);
-    await captureOptional(
-      page,
-      "/internal/audit",
-      "12-audit-dashboard-auditor.png",
-      ["Audit", "Revisjon"],
-    );
-  }
+  await captureAnalytics(page);
+  await logout(page);
+  await screenshot(page, "12-normal-staff-login.png");
 
   console.log(
     JSON.stringify(
       {
         status: "ok",
         baseUrl,
-        demoEmail,
         screenshotDir,
         screenshots,
       },
@@ -127,11 +116,15 @@ async function captureSubmissionAndStatus(page) {
   await page.getByRole("combobox").first().selectOption("kristiansand");
   await page.getByLabel("Name").fill("Demo Citizen");
   await page.getByLabel("Email").fill("demo.citizen@example.local");
-  await page.getByRole("checkbox", { name: /does not concern a specific address/i }).check();
+  await page
+    .getByRole("checkbox", { name: /does not concern a specific address/i })
+    .check();
   await page.getByLabel("Title").fill("Streetlight not working");
-  await page.getByLabel("Description").fill(
-    "The streetlight beside the synthetic demo address has stopped working.",
-  );
+  await page
+    .getByLabel("Description")
+    .fill(
+      "The streetlight beside the synthetic demo address has stopped working.",
+    );
   await page.getByRole("checkbox", { name: /Privacy/i }).check();
   await page.getByRole("button", { name: "Submit", exact: true }).click();
   await page.getByText("Request registered").waitFor();
@@ -139,6 +132,7 @@ async function captureSubmissionAndStatus(page) {
   await page.getByRole("button", { name: "Check this case now" }).click();
   await page.getByText("Case status").waitFor();
   await screenshot(page, "05-status-lookup.png");
+  return page.getByLabel("Case reference").inputValue();
 }
 
 async function captureAnalytics(page) {
@@ -147,12 +141,12 @@ async function captureAnalytics(page) {
   });
   await hideDevelopmentChrome(page);
   await setRecentAnalyticsRange(page);
-  await clickIfVisible(page, /Aggregate|Aggreger/i);
   await page.waitForLoadState("networkidle");
   await page.waitForFunction(() => !document.body.innerText.includes("..."));
   await assertHasNumbers(page);
+  await assertNoText(page, ["Aggregate", "Aggreger"]);
   await assertNoText(page, ["Sprak", "Effektmaling", "sentralbyra"]);
-  await screenshot(page, "08-analytics-dashboard.png");
+  await screenshot(page, "11-analytics-read-only.png");
 }
 
 async function capture(page, path, filename, options = {}) {
@@ -187,21 +181,16 @@ async function captureOptional(page, path, filename, expectedTexts) {
 }
 
 async function screenshot(page, filename) {
-  await page.screenshot({
-    path: `${screenshotDir}/${filename}`,
-    fullPage: true,
-  });
+  await screenshotToPath(page, `${screenshotDir}/${filename}`);
   screenshots.push(filename);
 }
 
-async function login(page, email, password) {
-  await page.goto(`${baseUrl}/internal/login`, { waitUntil: "networkidle" });
-  await hideDevelopmentChrome(page);
-  await page.locator('input[name="email"]').fill(email);
-  await page.locator('input[name="password"]').fill(password);
-  await page.getByRole("button", { name: /Sign in|Logg inn/i }).click();
-  await page.waitForURL(/\/internal(\/cases)?$/, { timeout: 15000 });
-  await page.waitForLoadState("networkidle");
+async function screenshotToPath(page, path) {
+  await page.screenshot({
+    path,
+    fullPage: false,
+    mask: [page.locator("code")],
+  });
 }
 
 async function logout(page) {
@@ -221,19 +210,12 @@ async function openFirstCase(page) {
 
   await caseLink.click();
   await page.waitForLoadState("networkidle");
-  await page
-    .getByRole("button", { name: /Overview|Oversikt/i })
-    .waitFor();
-  await page
-    .getByRole("button", { name: /Overview|Oversikt/i })
-    .click();
+  await page.getByRole("button", { name: /Overview|Oversikt/i }).waitFor();
+  await page.getByRole("button", { name: /Overview|Oversikt/i }).click();
   await page.getByRole("heading", { level: 1 }).waitFor();
   await page.locator('section[aria-label="Case overview"]').waitFor();
   return href.split("/").at(-1);
 }
-
-assertScreenshotDatabaseSafety(process.env);
-resetScreenshotDatabase();
 
 async function clickIfVisible(page, name) {
   const button = page.getByRole("button", { name }).first();
@@ -255,7 +237,7 @@ async function scrollToText(page, text) {
 async function hideDevelopmentChrome(page) {
   await page.addStyleTag({
     content:
-      '[aria-label="Open Next.js Dev Tools"] { display: none !important; }',
+      'nextjs-portal, [aria-label="Open Next.js Dev Tools"] { display: none !important; }',
   });
 }
 
@@ -311,19 +293,41 @@ function trimTrailingSlash(value) {
 }
 
 function resetScreenshotDatabase() {
-  const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
   const commandEnvironment = {
     ...process.env,
-    SEED_DEMO_PASSWORD: demoPassword,
+    SEED_DEMO_PASSWORD: seedPassword,
   };
 
-  execFileSync(
-    pnpm,
-    ["--filter", "@kommuneflow/api", "exec", "prisma", "migrate", "reset", "--force"],
-    { env: commandEnvironment, stdio: "inherit" },
+  runPnpm(
+    [
+      "--filter",
+      "@kommuneflow/api",
+      "exec",
+      "prisma",
+      "migrate",
+      "reset",
+      "--force",
+    ],
+    commandEnvironment,
   );
-  execFileSync(pnpm, ["--filter", "@kommuneflow/api", "prisma:seed"], {
-    env: commandEnvironment,
+  runPnpm(["--filter", "@kommuneflow/api", "prisma:seed"], commandEnvironment);
+}
+
+function runPnpm(args, environment) {
+  if (process.platform === "win32") {
+    execFileSync(
+      process.env.ComSpec ?? "cmd.exe",
+      ["/d", "/s", "/c", `pnpm ${args.join(" ")}`],
+      {
+        env: environment,
+        stdio: "inherit",
+      },
+    );
+    return;
+  }
+
+  execFileSync("pnpm", args, {
+    env: environment,
     stdio: "inherit",
   });
 }
