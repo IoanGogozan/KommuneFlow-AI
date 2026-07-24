@@ -126,7 +126,7 @@ export function InternalShell({
 
   async function signOut() {
     await clearSession();
-    router.push("/internal/login");
+    router.push("/");
   }
 
   return (

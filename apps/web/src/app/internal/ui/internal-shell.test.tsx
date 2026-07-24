@@ -1,13 +1,19 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { internalDictionaryEn } from "@/lib/internal-i18n-en";
 import type { InternalCurrentUser } from "@/lib/internal-user";
 import { InternalShell } from "./internal-shell";
 
+const pushMock = vi.hoisted(() => vi.fn());
+
 vi.mock("next/navigation", () => ({
   usePathname: () => "/internal/cases",
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: pushMock }),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  clearSession: vi.fn().mockResolvedValue(undefined),
 }));
 
 function user(
@@ -120,5 +126,22 @@ describe("InternalShell navigation", () => {
     expect(
       screen.queryByRole("link", { name: "Operations" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("returns portfolio guests to the landing page when they exit the demo", async () => {
+    const userEventApi = userEvent.setup();
+
+    render(
+      shell(
+        user("portfolio_guest", [
+          "case:read:all_tenant",
+          "analytics:read",
+        ]),
+      ),
+    );
+
+    await userEventApi.click(screen.getByRole("button", { name: "Exit demo" }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/"));
   });
 });
