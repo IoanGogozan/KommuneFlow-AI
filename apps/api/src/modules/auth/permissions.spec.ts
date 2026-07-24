@@ -71,4 +71,48 @@ describe('roleHasPermission', () => {
       true,
     );
   });
+
+  it('matches the public security matrix roles used on the portfolio site', () => {
+    expect(ROLE_PERMISSIONS[UserRole.portfolio_guest]).toEqual([
+      'case:read:all_tenant',
+      'case:update:all_tenant',
+      'document:read:department',
+      'ai:triage:run',
+      'ai:triage:review',
+      'analytics:read',
+    ]);
+    expect(ROLE_PERMISSIONS[UserRole.case_worker]).toEqual([
+      'case:read:department',
+      'case:update:department',
+      'case:close',
+      'document:upload',
+      'document:read:department',
+      'ai:triage:run',
+      'ai:triage:review',
+    ]);
+    expect(ROLE_PERMISSIONS[UserRole.department_admin]).toEqual([
+      'case:read:department',
+      'case:read:all_tenant',
+      'case:update:department',
+      'case:close',
+      'document:upload',
+      'document:read:department',
+      'document:read:sensitive',
+      'ai:triage:run',
+      'ai:triage:review',
+      'analytics:read',
+      'analytics:aggregate',
+      'operations:read',
+      'user:manage',
+      'routing_rules:manage',
+    ]);
+    expect(ROLE_PERMISSIONS[UserRole.auditor]).toEqual([
+      'case:read:all_tenant',
+      'document:read:department',
+      'document:read:sensitive',
+      'audit:read',
+      'analytics:read',
+      'operations:read',
+    ]);
+  });
 });
