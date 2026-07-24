@@ -10,6 +10,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUser } from '../auth/current-user';
 import { roleHasPermission } from '../auth/permissions';
+import { assertPortfolioGuestCanModifyCase } from '../auth/portfolio-case-access';
 import { OperationalEventService } from '../operations/operational-event.service';
 import { AI_PROVIDER } from './ai-provider';
 import type { AIProvider } from './ai-provider';
@@ -78,6 +79,11 @@ export class AIService {
 
   async runCaseTriage(caseId: string, user: CurrentUser) {
     const caseRecord = await this.findAccessibleCase(caseId, user);
+    this.assertCanUpdateCase(
+      user,
+      caseRecord.assignedDepartmentId,
+      caseRecord.id,
+    );
     return this.runCaseTriageForCase(caseRecord, user);
   }
 
@@ -277,7 +283,11 @@ export class AIService {
     input: ReviewAITriageInput,
   ) {
     const caseRecord = await this.findAccessibleCase(caseId, user);
-    this.assertCanUpdateCase(user, caseRecord.assignedDepartmentId);
+    this.assertCanUpdateCase(
+      user,
+      caseRecord.assignedDepartmentId,
+      caseRecord.id,
+    );
 
     const result = await this.prisma.aITriageResult.findFirst({
       where: {
@@ -431,8 +441,10 @@ export class AIService {
   private assertCanUpdateCase(
     user: CurrentUser,
     assignedDepartmentId: string | null,
+    caseId: string,
   ) {
     if (roleHasPermission(user.role, 'case:update:all_tenant')) {
+      assertPortfolioGuestCanModifyCase(user, caseId);
       return;
     }
 

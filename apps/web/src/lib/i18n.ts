@@ -173,7 +173,7 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
       "Filopplasting er deaktivert i den offentlige porteføljedemoen. Seedede ansattsaker inneholder dokumenteksempler.",
     privacyLabel: "Personvern",
     privacyText:
-      "Jeg forstår at opplysningene mine og opplastede dokumenter brukes til å registrere og behandle henvendelsen.",
+      "Jeg forstår at opplysningene mine brukes til å registrere og behandle henvendelsen.",
     privacyDetailsSummary: "Mer om personvern og lagring",
     privacyDetailsText:
       "Viktige handlinger og dokumenttilgang loggføres. Kommunen kan tilby dataeksport og personvernoperasjoner, og opplysninger håndteres etter dokumenterte regler for oppbevaring og sletting.",
@@ -297,7 +297,7 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
       "File uploads are disabled in the public portfolio environment. Seeded employee cases include document examples.",
     privacyLabel: "Privacy",
     privacyText:
-      "I understand that my information and uploaded documents will be used to register and process this request.",
+      "I understand that my information will be used to register and process this request.",
     privacyDetailsSummary: "More about privacy and retention",
     privacyDetailsText:
       "Important actions and document access are audited. The municipality can provide data export and privacy operations, and information is handled under documented retention and deletion rules.",

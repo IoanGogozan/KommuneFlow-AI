@@ -3,11 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { getApiBaseUrl } from "@/lib/api";
+import type { Locale } from "@/lib/i18n";
 
 export function EnterPortfolioDemoButton({
   className,
   idleLabel = "Explore employee demo",
   loadingLabel = "Entering demo…",
+  locale,
   redirectTo = "/internal",
   retryLabel = "Try again",
   tenantSlug,
@@ -15,6 +17,7 @@ export function EnterPortfolioDemoButton({
   className?: string;
   idleLabel?: string;
   loadingLabel?: string;
+  locale?: Locale;
   redirectTo?: string;
   retryLabel?: string;
   tenantSlug?: string;
@@ -39,6 +42,9 @@ export function EnterPortfolioDemoButton({
         throw new Error("Demo session unavailable.");
       }
 
+      if (locale) {
+        window.localStorage.setItem("kommuneflow.internal.locale", locale);
+      }
       router.push(redirectTo);
     } catch {
       setStatus("error");

@@ -60,11 +60,17 @@ describe('portfolio demo reset', () => {
       },
       auditEvent: { deleteMany: jest.fn().mockResolvedValue({ count: 2 }) },
       emailLog: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      internalNote: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      aIReview: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      aITriageResult: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) },
       case: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) },
       citizenProfile: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) },
     };
     const prisma = {
       case: { findMany },
+      aITriageResult: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'seed_triage_result_1' }]),
+      },
       $transaction: jest.fn(
         (callback: (client: typeof transaction) => Promise<unknown>) =>
           callback(transaction),
@@ -98,6 +104,8 @@ describe('portfolio demo reset', () => {
     expect(transaction.case.deleteMany).toHaveBeenCalledWith({
       where: { id: { in: ['visitor_case_1'] } },
     });
+    expect(transaction.internalNote.deleteMany).toHaveBeenCalledTimes(2);
+    expect(transaction.aITriageResult.deleteMany).toHaveBeenCalledTimes(2);
     expect(removeFile).toHaveBeenCalledWith(
       expect.stringMatching(
         /storage[\\/]demo-uploads[\\/]tenant[\\/]case[\\/]document\.pdf$/,

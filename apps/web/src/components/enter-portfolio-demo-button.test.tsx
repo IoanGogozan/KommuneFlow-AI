@@ -12,6 +12,7 @@ describe("EnterPortfolioDemoButton", () => {
   beforeEach(() => {
     push.mockReset();
     vi.restoreAllMocks();
+    window.localStorage.clear();
   });
 
   it("creates a cookie session and redirects to the internal workspace", async () => {
@@ -26,7 +27,7 @@ describe("EnterPortfolioDemoButton", () => {
         { status: 201 },
       ),
     );
-    render(<EnterPortfolioDemoButton tenantSlug="kristiansand" />);
+    render(<EnterPortfolioDemoButton locale="en" tenantSlug="kristiansand" />);
 
     fireEvent.click(
       screen.getByRole("button", { name: "Explore employee demo" }),
@@ -36,6 +37,9 @@ describe("EnterPortfolioDemoButton", () => {
       screen.getByRole("button", { name: "Entering demo…" }),
     ).toBeDisabled();
     await waitFor(() => expect(push).toHaveBeenCalledWith("/internal"));
+    expect(window.localStorage.getItem("kommuneflow.internal.locale")).toBe(
+      "en",
+    );
     expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:3101/api/v1/auth/demo-session",
       expect.objectContaining({
@@ -62,9 +66,7 @@ describe("EnterPortfolioDemoButton", () => {
     );
 
     await waitFor(() =>
-      expect(push).toHaveBeenCalledWith(
-        "/internal/cases?search=KF-2026-0001",
-      ),
+      expect(push).toHaveBeenCalledWith("/internal/cases?search=KF-2026-0001"),
     );
     expect(push.mock.calls[0][0]).not.toContain("ABC123");
   });

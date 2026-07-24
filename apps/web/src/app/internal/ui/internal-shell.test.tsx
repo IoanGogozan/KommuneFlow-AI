@@ -110,6 +110,9 @@ describe("InternalShell navigation", () => {
     expect(screen.getByText(/Synthetic shared data/)).toBeVisible();
     expect(screen.getByRole("button", { name: "Exit demo" })).toBeVisible();
     expect(
+      screen.queryByRole("button", { name: "Log out" }),
+    ).not.toBeInTheDocument();
+    expect(
       screen.getAllByRole("link", { name: "Analytics" }).length,
     ).toBeGreaterThan(0);
     expect(screen.queryByText("Administration â–¾")).not.toBeInTheDocument();

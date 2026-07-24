@@ -85,8 +85,9 @@ export function IntakeForm({
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [hasNoAddress, setHasNoAddress] = useState(false);
   const [result, setResult] = useState<SubmissionResult | null>(null);
-  const [lastSubmission, setLastSubmission] =
-    useState<SubmissionResult | null>(null);
+  const [lastSubmission, setLastSubmission] = useState<SubmissionResult | null>(
+    null,
+  );
   const [statusCaseReference, setStatusCaseReference] = useState("");
   const [statusAccessCode, setStatusAccessCode] = useState("");
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
@@ -367,24 +368,51 @@ export function IntakeForm({
               className="bg-[#003b71] px-4 py-3 text-sm font-semibold text-white disabled:bg-slate-400"
               idleLabel={dictionary.continueEmployeeDemo}
               loadingLabel={dictionary.enteringEmployeeDemo}
+              locale={locale}
               redirectTo={employeeDemoUrl}
               retryLabel={dictionary.retryEmployeeDemo}
               tenantSlug={selectedTenant.slug}
             />
           ) : null}
-          <button type="button" onClick={() => copyValue(result.caseReference)} className="border-2 border-[#003b71] bg-white px-4 py-3 text-sm font-semibold text-[#003b71]">
+          <button
+            type="button"
+            onClick={() => copyValue(result.caseReference)}
+            className="border-2 border-[#003b71] bg-white px-4 py-3 text-sm font-semibold text-[#003b71]"
+          >
             {dictionary.copyReference}
           </button>
-          <button type="button" onClick={() => copyValue(result.statusAccessCode)} className="border-2 border-[#003b71] bg-white px-4 py-3 text-sm font-semibold text-[#003b71]">
+          <button
+            type="button"
+            onClick={() => copyValue(result.statusAccessCode)}
+            className="border-2 border-[#003b71] bg-white px-4 py-3 text-sm font-semibold text-[#003b71]"
+          >
             {dictionary.copyAccessCode}
           </button>
-          <button type="button" onClick={checkSubmittedCase} className="bg-[#003b71] px-4 py-3 text-sm font-semibold text-white">
+          <button
+            type="button"
+            onClick={checkSubmittedCase}
+            className="bg-[#003b71] px-4 py-3 text-sm font-semibold text-white"
+          >
             {dictionary.checkThisCase}
           </button>
-          <button type="button" onClick={() => { setResult(null); setLastSubmission(null); setStatusCaseReference(""); setStatusAccessCode(""); setStatusResult(null); }} className="border-2 border-[#003b71] bg-white px-4 py-3 text-sm font-semibold text-[#003b71]">
+          <button
+            type="button"
+            onClick={() => {
+              setResult(null);
+              setLastSubmission(null);
+              setStatusCaseReference("");
+              setStatusAccessCode("");
+              setStatusResult(null);
+            }}
+            className="border-2 border-[#003b71] bg-white px-4 py-3 text-sm font-semibold text-[#003b71]"
+          >
             {dictionary.submitAnotherRequest}
           </button>
-          <button type="button" onClick={() => window.print()} className="border-2 border-slate-500 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="border-2 border-slate-500 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+          >
             {dictionary.printDetails}
           </button>
         </div>
@@ -461,274 +489,283 @@ export function IntakeForm({
           onSubmit={handleSubmit}
           className="border border-[#003b71] bg-white p-4 sm:p-5"
         >
-        <FormSection
-          help={dictionary.sectionContactHelp}
-          number={1}
-          title={dictionary.sectionContactTitle}
-        >
-          <label className="text-sm font-medium text-[#003b71]">
-            {dictionary.tenantLabel}
-          </label>
-          <select
-            value={selectedTenant?.slug ?? ""}
-            onChange={(event) => selectTenant(event.target.value)}
-            required
-            className="mt-2 w-full border-2 border-[#c8d9e8] bg-white px-3 py-2 text-base font-semibold text-slate-950 outline-none focus:border-[#003b71]"
+          <FormSection
+            help={dictionary.sectionContactHelp}
+            number={1}
+            title={dictionary.sectionContactTitle}
           >
-            <option value="">{dictionary.tenantPlaceholder}</option>
-            {demoTenants.map((tenant) => (
-              <option key={tenant.slug} value={tenant.slug}>
-                {tenant.name}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-sm text-slate-600">{dictionary.tenantHelp}</p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={dictionary.nameLabel} name="name" required />
-            <Field
-              label={dictionary.emailLabel}
-              name="email"
-              type="email"
+            <label className="text-sm font-medium text-[#003b71]">
+              {dictionary.tenantLabel}
+            </label>
+            <select
+              value={selectedTenant?.slug ?? ""}
+              onChange={(event) => selectTenant(event.target.value)}
               required
-            />
-            <Field label={dictionary.phoneLabel} name="phone" />
-          </div>
-        </FormSection>
-
-        <FormSection
-          help={dictionary.sectionRequestHelp}
-          number={2}
-          title={dictionary.sectionRequestTitle}
-        >
-          <label className="grid gap-2">
-            <span className="text-sm font-medium text-[#003b71]">
-              {dictionary.addressLabel}
-            </span>
-            <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-              <input
-                aria-label={dictionary.addressLabel}
-                name="address"
-                value={address}
-                onChange={(event) => {
-                  setAddress(event.target.value);
-                  setIsAddressConfirmed(false);
-                  setHasNoAddress(false);
-                  setAddressSuggestions([]);
-                  setAddressSearchMessage(null);
-                }}
-                className="border-2 border-[#c8d9e8] px-3 py-2 text-slate-950 outline-none focus:border-[#003b71]"
+              className="mt-2 w-full border-2 border-[#c8d9e8] bg-white px-3 py-2 text-base font-semibold text-slate-950 outline-none focus:border-[#003b71]"
+            >
+              <option value="">{dictionary.tenantPlaceholder}</option>
+              {demoTenants.map((tenant) => (
+                <option key={tenant.slug} value={tenant.slug}>
+                  {tenant.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-sm text-slate-600">
+              {dictionary.tenantHelp}
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label={dictionary.nameLabel} name="name" required />
+              <Field
+                label={dictionary.emailLabel}
+                name="email"
+                type="email"
+                required
               />
-              <button
-                type="button"
-                onClick={searchAddress}
-                disabled={isSearchingAddress}
-                className="border-2 border-[#003b71] bg-white px-4 py-2 text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb] disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400"
-              >
-                {isSearchingAddress
-                  ? dictionary.addressSearching
-                  : dictionary.addressSearch}
-              </button>
+              <Field label={dictionary.phoneLabel} name="phone" />
             </div>
-          </label>
+          </FormSection>
 
-          {isAddressConfirmed ? (
-            <section className="border-2 border-[#00876c] bg-[#eefaf6] p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-[#005f4c]">
-                    {dictionary.addressConfirmed}
-                  </p>
-                  <p className="mt-1 text-sm text-[#005f4c]">{address}</p>
-                  <p className="mt-2 text-sm leading-6 text-[#005f4c]">
-                    {dictionary.addressConfirmedHelp}
-                  </p>
-                </div>
+          <FormSection
+            help={dictionary.sectionRequestHelp}
+            number={2}
+            title={dictionary.sectionRequestTitle}
+          >
+            <label className="grid gap-2">
+              <span className="text-sm font-medium text-[#003b71]">
+                {dictionary.addressLabel}
+              </span>
+              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                <input
+                  aria-label={dictionary.addressLabel}
+                  name="address"
+                  value={address}
+                  onChange={(event) => {
+                    setAddress(event.target.value);
+                    setIsAddressConfirmed(false);
+                    setHasNoAddress(false);
+                    setAddressSuggestions([]);
+                    setAddressSearchMessage(null);
+                  }}
+                  className="border-2 border-[#c8d9e8] px-3 py-2 text-slate-950 outline-none focus:border-[#003b71]"
+                />
                 <button
                   type="button"
-                  onClick={() => setIsAddressConfirmed(false)}
-                  className="border-2 border-[#00876c] bg-white px-3 py-2 text-sm font-semibold text-[#005f4c] hover:bg-[#dff5ed]"
+                  onClick={searchAddress}
+                  disabled={isSearchingAddress}
+                  className="border-2 border-[#003b71] bg-white px-4 py-2 text-sm font-semibold text-[#003b71] hover:bg-[#eaf4fb] disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400"
                 >
-                  {dictionary.addressChange}
+                  {isSearchingAddress
+                    ? dictionary.addressSearching
+                    : dictionary.addressSearch}
                 </button>
               </div>
-            </section>
-          ) : null}
+            </label>
 
-          {!isAddressConfirmed && addressSuggestions.length > 0 ? (
-            <fieldset className="grid gap-2 border-2 border-[#00876c] bg-[#eefaf6] p-4">
-              <legend className="px-1 text-sm font-medium text-[#005f4c]">
-                {dictionary.addressSuggestionLabel}
-              </legend>
-              {addressSuggestions.map((suggestion) => (
-                <button
-                  type="button"
-                  key={`${suggestion.normalizedAddress}-${suggestion.postalCode}`}
-                  onClick={() => confirmAddress(suggestion)}
-                  className="border border-[#00876c] bg-white p-3 text-left text-sm text-[#005f4c] hover:bg-[#dff5ed]"
-                >
-                  <span className="block font-semibold">
-                    {suggestion.normalizedAddress}
-                  </span>
-                  <span className="mt-1 block">
-                    {[suggestion.postalCode, suggestion.municipalityName]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                </button>
-              ))}
-            </fieldset>
-          ) : null}
+            {isAddressConfirmed ? (
+              <section className="border-2 border-[#00876c] bg-[#eefaf6] p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-[#005f4c]">
+                      {dictionary.addressConfirmed}
+                    </p>
+                    <p className="mt-1 text-sm text-[#005f4c]">{address}</p>
+                    <p className="mt-2 text-sm leading-6 text-[#005f4c]">
+                      {dictionary.addressConfirmedHelp}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddressConfirmed(false)}
+                    className="border-2 border-[#00876c] bg-white px-3 py-2 text-sm font-semibold text-[#005f4c] hover:bg-[#dff5ed]"
+                  >
+                    {dictionary.addressChange}
+                  </button>
+                </div>
+              </section>
+            ) : null}
 
-          <label className="flex items-start gap-3 border border-[#c8d9e8] bg-[#f5f9fc] p-3 text-sm text-[#003b71]">
-            <input
-              type="checkbox"
-              checked={hasNoAddress}
-              onChange={(event) => {
-                if (event.target.checked) {
-                  clearAddress();
-                  setHasNoAddress(true);
-                } else {
-                  setHasNoAddress(false);
-                }
-              }}
-              className="mt-0.5 h-4 w-4"
-            />
-            {dictionary.addressNotApplicable}
-          </label>
+            {!isAddressConfirmed && addressSuggestions.length > 0 ? (
+              <fieldset className="grid gap-2 border-2 border-[#00876c] bg-[#eefaf6] p-4">
+                <legend className="px-1 text-sm font-medium text-[#005f4c]">
+                  {dictionary.addressSuggestionLabel}
+                </legend>
+                {addressSuggestions.map((suggestion) => (
+                  <button
+                    type="button"
+                    key={`${suggestion.normalizedAddress}-${suggestion.postalCode}`}
+                    onClick={() => confirmAddress(suggestion)}
+                    className="border border-[#00876c] bg-white p-3 text-left text-sm text-[#005f4c] hover:bg-[#dff5ed]"
+                  >
+                    <span className="block font-semibold">
+                      {suggestion.normalizedAddress}
+                    </span>
+                    <span className="mt-1 block">
+                      {[suggestion.postalCode, suggestion.municipalityName]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </button>
+                ))}
+              </fieldset>
+            ) : null}
 
-          {addressSearchMessage ? (
-            <p className="bg-[#eaf4fb] p-3 text-sm text-[#003b71]">
-              {addressSearchMessage}
-            </p>
-          ) : null}
-
-          <Field
-            label={dictionary.caseTitleLabel}
-            hint={dictionary.caseTitleHint}
-            name="title"
-            required
-          />
-          <label className="grid gap-2">
-            <span className="text-sm font-medium text-[#003b71]">
-              {dictionary.descriptionLabel}
-            </span>
-            <span className="text-sm text-slate-600">
-              {dictionary.descriptionHint}
-            </span>
-            <textarea
-              aria-label={dictionary.descriptionLabel}
-              name="description"
-              required
-              minLength={20}
-              rows={7}
-              className="min-h-40 border-2 border-[#c8d9e8] px-3 py-2 text-slate-950 outline-none focus:border-[#003b71]"
-            />
-          </label>
-        </FormSection>
-
-        <FormSection
-          help={dictionary.sectionDocumentsHelp}
-          number={3}
-          title={dictionary.sectionDocumentsTitle}
-        >
-          {uploadsAllowed ? (
-          <div className="grid gap-2">
-            <span className="text-sm font-medium text-[#003b71]">
-              {dictionary.documentsLabel}
-            </span>
-            <label className="flex cursor-pointer flex-col gap-3 border-2 border-dashed border-[#c8d9e8] bg-[#f5f9fc] px-4 py-4 hover:border-[#003b71] hover:bg-white sm:flex-row sm:items-center">
+            <label className="flex items-start gap-3 border border-[#c8d9e8] bg-[#f5f9fc] p-3 text-sm text-[#003b71]">
               <input
-                name="documents"
-                type="file"
-                multiple
-                accept="application/pdf,image/png,image/jpeg"
-                onChange={(event) => updateSelectedDocuments(event.target.files)}
-                className="sr-only"
+                type="checkbox"
+                checked={hasNoAddress}
+                onChange={(event) => {
+                  if (event.target.checked) {
+                    clearAddress();
+                    setHasNoAddress(true);
+                  } else {
+                    setHasNoAddress(false);
+                  }
+                }}
+                className="mt-0.5 h-4 w-4"
               />
-              <span className="inline-flex w-fit border-2 border-[#003b71] bg-white px-3 py-2 text-sm font-semibold text-[#003b71]">
-                {dictionary.documentsChooseFiles}
+              {dictionary.addressNotApplicable}
+            </label>
+
+            {addressSearchMessage ? (
+              <p className="bg-[#eaf4fb] p-3 text-sm text-[#003b71]">
+                {addressSearchMessage}
+              </p>
+            ) : null}
+
+            <Field
+              label={dictionary.caseTitleLabel}
+              hint={dictionary.caseTitleHint}
+              name="title"
+              required
+            />
+            <label className="grid gap-2">
+              <span className="text-sm font-medium text-[#003b71]">
+                {dictionary.descriptionLabel}
+              </span>
+              <span className="text-sm text-slate-600">
+                {dictionary.descriptionHint}
+              </span>
+              <textarea
+                aria-label={dictionary.descriptionLabel}
+                name="description"
+                required
+                minLength={20}
+                rows={7}
+                className="min-h-40 border-2 border-[#c8d9e8] px-3 py-2 text-slate-950 outline-none focus:border-[#003b71]"
+              />
+            </label>
+          </FormSection>
+
+          <FormSection
+            help={dictionary.sectionDocumentsHelp}
+            number={3}
+            title={dictionary.sectionDocumentsTitle}
+          >
+            {uploadsAllowed ? (
+              <div className="grid gap-2">
+                <span className="text-sm font-medium text-[#003b71]">
+                  {dictionary.documentsLabel}
+                </span>
+                <label className="flex cursor-pointer flex-col gap-3 border-2 border-dashed border-[#c8d9e8] bg-[#f5f9fc] px-4 py-4 hover:border-[#003b71] hover:bg-white sm:flex-row sm:items-center">
+                  <input
+                    name="documents"
+                    type="file"
+                    multiple
+                    accept="application/pdf,image/png,image/jpeg"
+                    onChange={(event) =>
+                      updateSelectedDocuments(event.target.files)
+                    }
+                    className="sr-only"
+                  />
+                  <span className="inline-flex w-fit border-2 border-[#003b71] bg-white px-3 py-2 text-sm font-semibold text-[#003b71]">
+                    {dictionary.documentsChooseFiles}
+                  </span>
+                </label>
+                {selectedDocuments.length > 0 ? (
+                  <ul
+                    className="grid gap-2"
+                    aria-label={dictionary.documentsSelected}
+                  >
+                    {selectedDocuments.map((file, index) => (
+                      <li
+                        key={`${file.name}-${file.size}-${index}`}
+                        className="flex items-center justify-between gap-3 border border-[#c8d9e8] p-3 text-sm"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">
+                            {file.name}
+                          </span>
+                          <span className="text-slate-600">
+                            {formatFileSize(file.size)}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeSelectedDocument(index)}
+                          className="font-semibold text-[#003b71] underline"
+                        >
+                          {dictionary.documentsRemove}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className="text-sm text-slate-600">
+                    {dictionary.documentsNoFilesSelected}
+                  </span>
+                )}
+                <span className="text-sm text-slate-600">
+                  {dictionary.documentsHelp}
+                </span>
+              </div>
+            ) : (
+              <p className="border border-amber-300 bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-950">
+                {dictionary.documentsDisabled}
+              </p>
+            )}
+          </FormSection>
+
+          <FormSection
+            help={dictionary.sectionPrivacyHelp}
+            number={4}
+            title={dictionary.sectionSubmitTitle}
+          >
+            <label className="flex gap-3 border-2 border-[#c8d9e8] bg-[#f5f9fc] p-4">
+              <input
+                name="privacyAccepted"
+                type="checkbox"
+                required
+                className="mt-1 h-4 w-4"
+              />
+              <span>
+                <span className="block text-sm font-medium text-[#003b71]">
+                  {dictionary.privacyLabel}
+                </span>
+                <span className="mt-1 block text-sm leading-6 text-slate-700">
+                  {dictionary.privacyText}
+                </span>
               </span>
             </label>
-            {selectedDocuments.length > 0 ? (
-              <ul className="grid gap-2" aria-label={dictionary.documentsSelected}>
-                {selectedDocuments.map((file, index) => (
-                  <li
-                    key={`${file.name}-${file.size}-${index}`}
-                    className="flex items-center justify-between gap-3 border border-[#c8d9e8] p-3 text-sm"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">{file.name}</span>
-                      <span className="text-slate-600">
-                        {formatFileSize(file.size)}
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeSelectedDocument(index)}
-                      className="font-semibold text-[#003b71] underline"
-                    >
-                      {dictionary.documentsRemove}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <span className="text-sm text-slate-600">
-                {dictionary.documentsNoFilesSelected}
-              </span>
-            )}
-            <span className="text-sm text-slate-600">
-              {dictionary.documentsHelp}
-            </span>
-          </div>
-          ) : (
-            <p className="border border-amber-300 bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-950">
-              {dictionary.documentsDisabled}
-            </p>
-          )}
-        </FormSection>
+            <details className="border border-[#c8d9e8] p-4 text-sm text-slate-700">
+              <summary className="cursor-pointer font-semibold text-[#003b71]">
+                {dictionary.privacyDetailsSummary}
+              </summary>
+              <p className="mt-3 leading-6">{dictionary.privacyDetailsText}</p>
+            </details>
+            {error ? (
+              <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+                {error}
+              </p>
+            ) : null}
 
-        <FormSection
-          help={dictionary.sectionPrivacyHelp}
-          number={4}
-          title={dictionary.sectionSubmitTitle}
-        >
-          <label className="flex gap-3 border-2 border-[#c8d9e8] bg-[#f5f9fc] p-4">
-            <input
-              name="privacyAccepted"
-              type="checkbox"
-              required
-              className="mt-1 h-4 w-4"
-            />
-            <span>
-              <span className="block text-sm font-medium text-[#003b71]">
-                {dictionary.privacyLabel}
-              </span>
-              <span className="mt-1 block text-sm leading-6 text-slate-700">
-                {dictionary.privacyText}
-              </span>
-            </span>
-          </label>
-          <details className="border border-[#c8d9e8] p-4 text-sm text-slate-700">
-            <summary className="cursor-pointer font-semibold text-[#003b71]">
-              {dictionary.privacyDetailsSummary}
-            </summary>
-            <p className="mt-3 leading-6">{dictionary.privacyDetailsText}</p>
-          </details>
-          {error ? (
-            <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">
-              {error}
-            </p>
-          ) : null}
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-[#003b71] px-4 py-3 text-sm font-semibold text-white hover:bg-[#002f5a] disabled:cursor-not-allowed disabled:bg-slate-400"
-          >
-            {isSubmitting ? dictionary.submitting : dictionary.submit}
-          </button>
-        </FormSection>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-[#003b71] px-4 py-3 text-sm font-semibold text-white hover:bg-[#002f5a] disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {isSubmitting ? dictionary.submitting : dictionary.submit}
+            </button>
+          </FormSection>
         </form>
       ) : null}
 
@@ -737,115 +774,120 @@ export function IntakeForm({
           onSubmit={handleStatusLookup}
           className="border border-[#003b71] bg-white p-4 sm:p-5"
         >
-        <h2 className="text-xl font-semibold text-[#003b71]">
-          {dictionary.statusLookupTitle}
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-700">
-          {dictionary.statusLookupText}
-        </p>
-        <p className="mt-3 bg-[#eaf4fb] p-3 text-sm leading-6 text-[#003b71]">
-          {dictionary.statusLookupRequirements}
-        </p>
-        <label className="mt-4 grid gap-2">
-          <span className="text-sm font-medium text-[#003b71]">
-            {dictionary.tenantLabel}
-          </span>
-          <select
-            value={selectedTenant?.slug ?? ""}
-            onChange={(event) => selectTenant(event.target.value)}
-            required
-            className="border-2 border-[#c8d9e8] bg-white px-3 py-2 text-base font-semibold text-slate-950 outline-none focus:border-[#003b71]"
-          >
-            <option value="">{dictionary.tenantPlaceholder}</option>
-            {demoTenants.map((tenant) => (
-              <option key={tenant.slug} value={tenant.slug}>
-                {tenant.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field
-            label={dictionary.caseReferenceLabel}
-            name="caseReference"
-            required
-            value={statusCaseReference}
-            onChange={setStatusCaseReference}
-          />
-          <Field
-            label={dictionary.statusAccessCodeLabel}
-            name="statusAccessCode"
-            required
-            value={statusAccessCode}
-            onChange={setStatusAccessCode}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={isCheckingStatus}
-          className="mt-5 bg-[#003b71] px-4 py-3 text-sm font-semibold text-white hover:bg-[#002f5a] disabled:cursor-not-allowed disabled:bg-slate-400"
-        >
-          {isCheckingStatus
-            ? dictionary.statusLookupLoading
-            : dictionary.statusLookupSubmit}
-        </button>
-        {statusLookupError ? (
-          <p className="mt-4 text-sm text-red-700">{statusLookupError}</p>
-        ) : null}
-        {statusResult ? (
-          <>
-          <dl className="mt-5 grid gap-3 bg-[#f5f9fc] p-4 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-slate-600">{dictionary.tenantLabel}</dt>
-              <dd className="font-medium text-[#003b71]">
-                {selectedTenant?.name ?? "-"}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-slate-600">
-                {dictionary.caseReferenceLabel}
-              </dt>
-              <dd className="break-all text-right font-medium text-[#003b71]">
-                {statusResult.caseReference}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-slate-600">{dictionary.statusLabel}</dt>
-              <dd className="font-medium text-[#003b71]">
-                {formatPublicStatus(statusResult.status, dictionary)}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-slate-600">{dictionary.caseTitleLabel}</dt>
-              <dd className="text-right font-medium text-[#003b71]">
-                {statusResult.title}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-slate-600">{dictionary.departmentLabel}</dt>
-              <dd className="font-medium text-[#003b71]">
-                {statusResult.assignedDepartmentName ?? "-"}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-slate-600">{dictionary.updatedLabel}</dt>
-              <dd className="font-medium text-[#003b71]">
-                {formatInternalDateTime(statusResult.updatedAt)}
-              </dd>
-            </div>
-          </dl>
-          {portfolioMode && selectedTenant && lastSubmission ? (
-            <EnterPortfolioDemoButton
-              className="mt-4 w-full bg-[#003b71] px-4 py-3 text-sm font-semibold text-white disabled:bg-slate-400"
-              idleLabel={dictionary.continueEmployeeDemo}
-              loadingLabel={dictionary.enteringEmployeeDemo}
-              redirectTo={`/internal/cases?search=${encodeURIComponent(lastSubmission.caseReference)}`}
-              retryLabel={dictionary.retryEmployeeDemo}
-              tenantSlug={selectedTenant.slug}
+          <h2 className="text-xl font-semibold text-[#003b71]">
+            {dictionary.statusLookupTitle}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            {dictionary.statusLookupText}
+          </p>
+          <p className="mt-3 bg-[#eaf4fb] p-3 text-sm leading-6 text-[#003b71]">
+            {dictionary.statusLookupRequirements}
+          </p>
+          <label className="mt-4 grid gap-2">
+            <span className="text-sm font-medium text-[#003b71]">
+              {dictionary.tenantLabel}
+            </span>
+            <select
+              value={selectedTenant?.slug ?? ""}
+              onChange={(event) => selectTenant(event.target.value)}
+              required
+              className="border-2 border-[#c8d9e8] bg-white px-3 py-2 text-base font-semibold text-slate-950 outline-none focus:border-[#003b71]"
+            >
+              <option value="">{dictionary.tenantPlaceholder}</option>
+              {demoTenants.map((tenant) => (
+                <option key={tenant.slug} value={tenant.slug}>
+                  {tenant.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <Field
+              label={dictionary.caseReferenceLabel}
+              name="caseReference"
+              required
+              value={statusCaseReference}
+              onChange={setStatusCaseReference}
             />
+            <Field
+              label={dictionary.statusAccessCodeLabel}
+              name="statusAccessCode"
+              required
+              value={statusAccessCode}
+              onChange={setStatusAccessCode}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isCheckingStatus}
+            className="mt-5 bg-[#003b71] px-4 py-3 text-sm font-semibold text-white hover:bg-[#002f5a] disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {isCheckingStatus
+              ? dictionary.statusLookupLoading
+              : dictionary.statusLookupSubmit}
+          </button>
+          {statusLookupError ? (
+            <p className="mt-4 text-sm text-red-700">{statusLookupError}</p>
           ) : null}
-          </>
-        ) : null}
+          {statusResult ? (
+            <>
+              <dl className="mt-5 grid gap-3 bg-[#f5f9fc] p-4 text-sm">
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-600">{dictionary.tenantLabel}</dt>
+                  <dd className="font-medium text-[#003b71]">
+                    {selectedTenant?.name ?? "-"}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-600">
+                    {dictionary.caseReferenceLabel}
+                  </dt>
+                  <dd className="break-all text-right font-medium text-[#003b71]">
+                    {statusResult.caseReference}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-600">{dictionary.statusLabel}</dt>
+                  <dd className="font-medium text-[#003b71]">
+                    {formatPublicStatus(statusResult.status, dictionary)}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-600">
+                    {dictionary.caseTitleLabel}
+                  </dt>
+                  <dd className="text-right font-medium text-[#003b71]">
+                    {statusResult.title}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-600">
+                    {dictionary.departmentLabel}
+                  </dt>
+                  <dd className="font-medium text-[#003b71]">
+                    {statusResult.assignedDepartmentName ?? "-"}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-600">{dictionary.updatedLabel}</dt>
+                  <dd className="font-medium text-[#003b71]">
+                    {formatInternalDateTime(statusResult.updatedAt)}
+                  </dd>
+                </div>
+              </dl>
+              {portfolioMode && selectedTenant && lastSubmission ? (
+                <EnterPortfolioDemoButton
+                  className="mt-4 w-full bg-[#003b71] px-4 py-3 text-sm font-semibold text-white disabled:bg-slate-400"
+                  idleLabel={dictionary.continueEmployeeDemo}
+                  loadingLabel={dictionary.enteringEmployeeDemo}
+                  locale={locale}
+                  redirectTo={`/internal/cases?search=${encodeURIComponent(lastSubmission.caseReference)}`}
+                  retryLabel={dictionary.retryEmployeeDemo}
+                  tenantSlug={selectedTenant.slug}
+                />
+              ) : null}
+            </>
+          ) : null}
         </form>
       ) : null}
     </div>

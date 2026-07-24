@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 const steps = [
   {
     title: "Citizen submits a request",
-    text: "The citizen selects a municipality, describes the issue, optionally confirms an address, and attaches relevant documents.",
+    text: "The citizen selects a municipality, describes the issue, and optionally confirms an address.",
   },
   {
     title: "AI prepares a structured suggestion",
@@ -28,7 +28,7 @@ const steps = [
 const proof = [
   {
     title: "Secure multi-tenant workflow",
-    text: "Tenant isolation, server-side RBAC, private uploads, and audit logging protect each municipal workflow.",
+    text: "Tenant isolation, server-side RBAC, private document workflows, and audit logging protect each municipal workflow. Public portfolio uploads are disabled for safety.",
   },
   {
     title: "Human-reviewed AI",
@@ -72,9 +72,9 @@ export default function Home() {
             decision.
           </h1>
           <p className={styles.lede}>
-            A working portfolio application demonstrating secure citizen
-            intake, case handling, tenant isolation, auditability, and AI
-            suggestions that require employee approval.
+            A working portfolio application demonstrating secure citizen intake,
+            case handling, tenant isolation, auditability, and AI suggestions
+            that require employee approval.
           </p>
           <div className={styles.heroActions}>
             <Link
@@ -83,7 +83,10 @@ export default function Home() {
             >
               Try citizen flow
             </Link>
-            <EnterPortfolioDemoButton className={styles.primaryCta} />
+            <EnterPortfolioDemoButton
+              className={styles.primaryCta}
+              locale="en"
+            />
             <a
               className={styles.secondaryCta}
               href="https://github.com/IoanGogozan/KommuneFlow-AI"
@@ -97,8 +100,9 @@ export default function Home() {
             <a href="#workflow">Read how it works</a>
           </p>
           <p className={styles.statusLine}>
-            No account required <span aria-hidden="true">·</span> Synthetic data only{" "}
-            <span aria-hidden="true">·</span> Guest sessions reset automatically
+            No account required <span aria-hidden="true">·</span> Synthetic data
+            only <span aria-hidden="true">·</span> Guest sessions reset
+            automatically
           </p>
         </div>
         <div className={styles.heroPrinciple}>
@@ -132,7 +136,10 @@ export default function Home() {
         </p>
       </section>
 
-      <section className={`${styles.section} ${styles.proofSection}`} id="engineering">
+      <section
+        className={`${styles.section} ${styles.proofSection}`}
+        id="engineering"
+      >
         <header className={styles.sectionHeading}>
           <p className={styles.eyebrow}>Engineering proof</p>
           <h2>Capabilities designed around trust.</h2>
@@ -147,17 +154,20 @@ export default function Home() {
         </div>
       </section>
 
-      <section className={`${styles.section} ${styles.evidenceSection}`} id="evidence">
+      <section
+        className={`${styles.section} ${styles.evidenceSection}`}
+        id="evidence"
+      >
         <div className={styles.evidenceCopy}>
           <p className={styles.eyebrow}>Real application evidence</p>
           <h2>The citizen intake, as implemented.</h2>
           <p>
-            This screenshot comes from the working Norwegian citizen flow, not
-            a decorative dashboard mock-up.
+            This screenshot comes from the working Norwegian citizen flow, not a
+            decorative dashboard mock-up.
           </p>
           <p className={styles.scope}>
-            Functional portfolio demonstration with synthetic data. Not
-            approved for real municipal use.
+            Functional portfolio demonstration with synthetic data. Not approved
+            for real municipal use.
           </p>
         </div>
         <figure>
@@ -168,7 +178,9 @@ export default function Home() {
             sizes="(max-width: 800px) 100vw, 58vw"
             alt="Norwegian KommuneFlow citizen intake showing contact and request fields"
           />
-          <figcaption>Norwegian citizen intake using synthetic data.</figcaption>
+          <figcaption>
+            Norwegian citizen intake using synthetic data.
+          </figcaption>
         </figure>
       </section>
 
