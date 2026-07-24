@@ -31,45 +31,35 @@ describe('analytics deterministic baseline', () => {
     const env = createDemoResetEnv();
     const nowA = new Date('2026-07-24T12:00:00.000Z');
     const nowB = new Date('2026-07-25T12:00:00.000Z');
-    const tenant = await prisma.tenant.findUniqueOrThrow({
-      where: { slug: 'kristiansand' },
-      select: { id: true },
-    });
-
-    await prisma.case.deleteMany({
-      where: {
-        tenantId: tenant.id,
-        NOT: { id: { startsWith: 'seed_' } },
-      },
-    });
+    const tenantId = await seedAndCleanDemoTenant(prisma, env, nowA);
 
     const baselineA = await resetAndSummarize(
       prisma,
       analyticsService,
       env,
       nowA,
-      tenant.id,
+      tenantId,
     );
     const baselineB = await resetAndSummarize(
       prisma,
       analyticsService,
       env,
       nowB,
-      tenant.id,
+      tenantId,
     );
     const baselineC = await resetAndSummarize(
       prisma,
       analyticsService,
       env,
       nowB,
-      tenant.id,
+      tenantId,
     );
     const baselineD = await resetAndSummarize(
       prisma,
       analyticsService,
       env,
       nowB,
-      tenant.id,
+      tenantId,
     );
 
     expect(baselineA).toEqual(expectedKristiansandBaseline);
@@ -122,6 +112,38 @@ async function resetAndSummarize(
     casesWaitingForCitizen: summary.totals.casesWaitingForCitizen,
     estimatedManualMinutesSaved: summary.totals.estimatedManualMinutesSaved,
   };
+}
+
+async function seedAndCleanDemoTenant(
+  prisma: PrismaService,
+  env: NodeJS.ProcessEnv,
+  now: Date,
+) {
+  await runDemoReset(prisma, {
+    env,
+    now,
+    removeFile: () => Promise.resolve(undefined),
+  });
+
+  const tenant = await prisma.tenant.findUniqueOrThrow({
+    where: { slug: 'kristiansand' },
+    select: { id: true },
+  });
+
+  await prisma.case.deleteMany({
+    where: {
+      tenantId: tenant.id,
+      NOT: { id: { startsWith: 'seed_' } },
+    },
+  });
+
+  await runDemoReset(prisma, {
+    env,
+    now,
+    removeFile: () => Promise.resolve(undefined),
+  });
+
+  return tenant.id;
 }
 
 function createDemoResetEnv() {
