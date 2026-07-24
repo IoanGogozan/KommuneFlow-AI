@@ -38,6 +38,12 @@ The application must follow these principles:
 - Auditors must be read-only.
 - Citizens must only access their own cases and documents.
 
+### Public portfolio boundary
+
+The public web shell and citizen routes do not use infrastructure Basic Auth. Internal APIs remain protected by the existing application JWT cookie, permission guards, and tenant predicates. A portfolio guest session is created only when explicitly enabled, for an allowlisted tenant, after Origin/Referer validation and throttling. The cookie is `HttpOnly`, `SameSite=Lax`, secure in production, and shorter-lived than a normal staff session.
+
+The `portfolio_guest` permission set is limited to tenant-wide case read/update, AI triage run/review, seeded document read, and analytics read. It excludes uploads/deletes, aggregation, audit, privacy, operations, tenant/user/department/routing administration, and AI diagnostics. Hidden navigation is only presentation; API permission checks remain authoritative.
+
 ## File Upload Security
 
 Uploads must validate:
@@ -65,6 +71,8 @@ Disallowed file types:
 - unknown binary files
 
 Uploaded files must not be stored in a publicly accessible web directory.
+
+The public portfolio uses `PUBLIC_DEMO_ALLOW_UPLOADS=false`, enforced by the API even if a client submits multipart files. Seeded examples remain readable. Local and controlled test environments may explicitly enable uploads to exercise the validation pipeline.
 
 Before real production use, uploaded files must be scanned asynchronously with ClamAV or an equivalent malware scanning service before case workers can download or process them. A production design should model document scan status, for example `pending_scan`, `clean`, and `blocked`.
 
@@ -117,6 +125,8 @@ Default demo policy:
 - Aggregated analytics snapshots: 1095 days.
 
 Real deployments must adjust these values to the municipality's legal, archival, and operational requirements.
+
+The separate portfolio reset command removes expired visitor-created demo cases and associated physical files, then restores deterministic seeds. It is not an HTTP endpoint and refuses to run without explicit portfolio mode, confirmation, exact demo database-name matching, a safe upload directory, and a positive retention period. A host cron entry may invoke it every six hours; the application does not install host scheduling.
 
 ## Required Privacy Actions
 

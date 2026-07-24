@@ -6,23 +6,23 @@ KommuneFlow AI is a working portfolio application for municipal case management.
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Open_Application-005293?style=for-the-badge)](https://kommune.norvix.no)
 
-> The portfolio web perimeter is public. Internal data requires an application session; portfolio guests receive a short-lived, least-privilege session. All demo data is synthetic. This project is not approved for real municipal use.
+> No account is required for the public portfolio demo. Citizen intake is public, and the employee workspace starts a restricted, short-lived guest session with one click. Normal staff login remains available for controlled RBAC and administration testing.
 
-![KommuneFlow AI citizen intake](./docs/screenshots/02-citizen-intake-en.png)
+The public deployment uses synthetic shared data and deterministic mock AI. Public uploads are disabled, visitor changes may be reset automatically, and the system is not approved for real municipal use.
 
-Case evidence is split between the
-[case list](./docs/screenshots/07-case-list.png) and the
-[opened case Overview](./docs/screenshots/07-case-overview.png).
+![KommuneFlow AI citizen intake](./docs/screenshots/02-citizen-intake-preview.png)
+
+Case evidence is split between the [guest case queue](./docs/screenshots/07-guest-case-queue.png), [opened case Overview](./docs/screenshots/08-case-overview.png), and [human AI review](./docs/screenshots/09-ai-review.png).
 
 **Stack:** TypeScript | Next.js | NestJS | PostgreSQL | Prisma | Zod | Python ELT | Docker Compose | Caddy | OpenAI
 
-**Key capabilities:** bilingual citizen intake and document upload | Kartverket address validation | tenant isolation and RBAC | human-in-the-loop AI triage | case and document workflows | audit, privacy, retention, and operations views | SSB-enriched analytics
+**Key capabilities:** bilingual citizen intake | Kartverket address validation | tenant isolation and RBAC | human-in-the-loop AI triage | case and document workflows | audit, privacy, retention, and operations views | SSB-enriched analytics
 
 **Project status:** functional, access-controlled portfolio demonstration with synthetic data, production-like infrastructure, and automated test coverage. See the current [verification log](./docs/VERIFICATION_LOG.md) for exact executed results. It is **not** a certified or production-approved municipal system and must not be used with real citizen data.
 
 ## Product Walkthrough
 
-Citizens submit a request, attach supporting documents, and receive a case reference. Municipal employees use the internal workspace to review cases, run AI-assisted triage, approve or correct suggestions, manage documents and status, and inspect operational analytics.
+Citizens submit a synthetic request and receive a case reference and private status access code. They can check status and continue directly into the same municipality's employee demo. The restricted guest can review cases, run and review mock-AI triage, update the workflow, and view existing analytics; administrative, privacy, audit, upload, delete, and analytics-aggregation capabilities remain unavailable.
 
 The demo also includes role and tenant boundaries, privacy actions, retention controls, audit evidence, security hardening, and production-like deployment assets so reviewers can assess more than a happy-path UI. See the [demo script](./docs/DEMO_SCRIPT.md) for a concise walkthrough.
 
@@ -102,21 +102,14 @@ Current limitation: AI calls are still synchronous in the request path. Before r
 
 ## Demo Users
 
-Seeded demo users use this password for local development and controlled demos only:
-
-```txt
-DemoPassword123!
-```
-
-Override seed passwords before running `pnpm --filter @kommuneflow/api prisma:seed`:
+Set unpublished local-only seed passwords before running `pnpm --filter @kommuneflow/api prisma:seed`:
 
 ```bash
 SEED_DEMO_PASSWORD='<demo-only internal password>'
 SEED_RECRUITER_PASSWORD='<recruiter review password>'
 ```
 
-`SEED_RECRUITER_PASSWORD` falls back to `SEED_DEMO_PASSWORD` when it is not set. Do not commit real deployment
-passwords.
+`SEED_RECRUITER_PASSWORD` falls back to `SEED_DEMO_PASSWORD` when it is not set. Keep both values in an ignored environment file and never publish deployment passwords.
 
 | Role                          | Email                                 | Notes                                                         |
 | ----------------------------- | ------------------------------------- | ------------------------------------------------------------- |
@@ -315,7 +308,7 @@ AI deployment mode is controlled server-side:
 
 After deploy, log in internally, open Operations, verify the AI Configuration panel, then run AI triage on a seeded or synthetic case.
 
-Deployment status: the protected home-server HTTPS demo was updated to commit `fd172b28` and passed its public/protected-route and authenticated application smoke tests on 2026-07-23. It uses deterministic `AI_PROVIDER=mock`; real OpenAI verification is isolated in the manually triggered, protected `OpenAI Smoke` GitHub Actions workflow. This is still a portfolio/demo deployment, not a formally approved municipal production environment.
+Deployment evidence is recorded by exact commit in the [verification log](./docs/VERIFICATION_LOG.md). The latest PR 6 documentation and screenshots are locally verified until that reviewed commit is merged and deployed; older home-server results must not be treated as verification of the current branch. The public portfolio configuration requires deterministic `AI_PROVIDER=mock`.
 
 ## Testing Status
 
@@ -326,12 +319,11 @@ pnpm test:all PASS
 pnpm build    PASS
 ```
 
-`pnpm test:all` runs lint, typecheck, API coverage, API e2e, web Vitest integration tests, web Playwright browser smoke tests, and Python ELT tests. The API test suite includes unit, service, controller, auth, RBAC, tenant isolation, file upload abuse, AI safety, analytics, privacy, operations, and retention tests. API e2e covers health/security checks and a full business flow from citizen intake to AI review, status update, analytics, operations metrics, and audit evidence. Playwright covers the browser-level public intake/status flow, internal login, and internal case detail actions.
+The exact PR 6 commands and counts are recorded in the [verification log](./docs/VERIFICATION_LOG.md). Coverage includes auth, RBAC, tenant isolation, upload abuse and portfolio upload denial, AI safety, analytics permission separation, privacy, operations, reset safety, the unauthenticated perimeter, and the credential-free citizen-to-guest browser journey.
 
 ## How to Demo
 
-Use synthetic data only. For public portfolio deployments, expose only the application-authenticated perimeter and use
-the short-lived guest session or a temporary recruiter/interview account with the minimum required permissions.
+Use synthetic data only. The public path needs no account: start at `/`, submit through `/en` or `/nb`, then use **Continue in employee demo**. Reserve normal staff credentials for controlled RBAC and administration testing; never publish them.
 
 ### Demo User Table
 
@@ -344,28 +336,27 @@ the short-lived guest session or a temporary recruiter/interview account with th
 | Tenant isolation demo | `case.worker@grimstad.local`          | `case_worker`      | Cross-tenant isolation compared with Kristiansand data             |
 | Full admin demo       | `super.admin@kommuneflow.local`       | `super_admin`      | Tenant-level admin, privacy export/anonymization, diagnostics      |
 
-Local seeded demos use `DemoPassword123!` unless you override `SEED_DEMO_PASSWORD` or `SEED_RECRUITER_PASSWORD` before
-running the seed. Do not publish production passwords in screenshots, docs, or the login UI.
+Set `SEED_DEMO_PASSWORD` and, when needed, `SEED_RECRUITER_PASSWORD` in the ignored local environment before running the seed. Do not publish passwords in screenshots, documentation, logs, or the login UI.
 
 ### Public Citizen Flow
 
 1. Open `http://localhost:3000/nb` or `http://localhost:3000/en`.
 2. Use **Submit new request**.
-3. Select a municipality, enter contact details, search/confirm an address, add request details, and attach a small PDF/PNG/JPG.
+3. Select a municipality, enter synthetic contact details, search/confirm an address, and add request details. Public portfolio uploads are disabled.
 4. Submit the case.
 5. Save the displayed case reference and access code.
 6. Switch to **Check existing case** and verify the status lookup with the saved values.
 
-### Internal Employee Flow
+### Public Guest Employee Flow
 
-1. Open `http://localhost:3000/internal/login`.
-2. Log in as `department.admin@kristiansand.local` or `recruiter.demo@kristiansand.local`.
-3. Confirm the header shows the user role, tenant, and department.
+1. Select **Continue in employee demo** after submission, or **Explore employee demo** on the landing page.
+2. The server creates an allowlisted, short-lived `portfolio_guest` cookie without exposing a password or token.
+3. Confirm the banner shows the portfolio guest role and municipality.
 4. Open **Dashboard** and review case counts by workflow status.
-5. Open **Cases**, use status filters/search, and inspect realistic seeded scenarios.
+5. Open **Cases**; continuation from citizen intake pre-fills the submitted case reference.
 6. Open a case detail page.
-7. Show address enrichment, official case values, workflow timeline, internal notes, documents, and recent activity.
-8. Upload/download a document, add an internal note, and update status when permissions allow.
+7. Show address enrichment, official values, seeded document examples, workflow timeline, internal notes, and recent activity.
+8. Run/review mock AI and update status. Upload, delete, audit, privacy, operations, administration, and analytics aggregation remain denied.
 
 ### AI Triage Flow
 
@@ -388,8 +379,8 @@ running the seed. Do not publish production passwords in screenshots, docs, or t
 
 ### Analytics, Operations, Privacy, And Audit
 
-1. Open **Analytics** and aggregate the current seeded date range if needed.
-2. Show case volume, AI review/correction metrics, AI failures, estimated minutes saved, and SSB population enrichment.
+1. Open **Analytics** as the guest and show existing case volume and AI review/correction metrics.
+2. Point out that aggregation is absent and server-side `analytics:aggregate` authorization denies it.
 3. Open **Operations** and show health/readiness, integration metrics, upload failures, rate-limit blocks, operational events, and AI provider status.
 4. Open **Privacy** as a super admin to demonstrate export, anonymization, retention policy, and cleanup dry-run.
 5. Open **Audit** as auditor or super admin to show tenant-scoped audit events and safe metadata summaries.
@@ -425,7 +416,7 @@ See [Demo Script](./docs/DEMO_SCRIPT.md) for a shorter live walkthrough.
 
 ## Known Limitations
 
-- A protected HTTPS portfolio demo is available, but formal production operations are not complete.
+- The public portfolio deployment is shared rather than isolated per visitor; data can change and is periodically reset.
 - Citizen status lookup is implemented with case reference and access code, but a richer citizen portal is still future work.
 - Email confirmation is logged through a mock provider; real SMTP/transactional email is future production work.
 - Document OCR/PDF text extraction is not implemented.
@@ -438,7 +429,7 @@ See [Demo Script](./docs/DEMO_SCRIPT.md) for a shorter live walkthrough.
 
 ## Future Improvements
 
-- Commit current production screenshots for reviewer evidence
+- Deploy and re-verify the exact reviewed PR 6 commit before calling its evidence live
 - Scheduled restore testing, offsite backup operations, and monitoring hardening
 - Background worker for AI triage, analytics rebuild, SSB import, and notification delivery
 - Real email provider integration

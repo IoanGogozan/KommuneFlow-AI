@@ -200,3 +200,16 @@ The project is ready to show to an employer only when:
 ## Portfolio Positioning
 
 I built KommuneFlow AI, a portfolio project inspired by Norwegian municipal service development. It is a multi-tenant platform for citizen case intake, document handling, AI-assisted case triage, role-based access control, audit logging, privacy workflows, retention, and operational analytics. The system uses human-in-the-loop review for AI suggestions. The target deployment is Hetzner Cloud using Docker Compose, PostgreSQL, HTTPS, firewall rules, and a documented backup strategy.
+
+## Public Portfolio Evidence Standard
+
+The public demonstration must be understandable without an account: public citizen intake continues into a one-click, least-privilege employee guest session. Normal staff login remains available as a separate controlled path for RBAC and administration testing.
+
+Portfolio evidence is acceptable only when:
+
+- screenshots contain synthetic local seed data and no passwords, cookies, access codes, secrets, or server-private information;
+- the guest navigation and read-only analytics state match server-side permissions;
+- mock AI and mandatory human review are visible and accurately described;
+- public upload disablement, throttling, shared/reset data, and rollback are documented;
+- automated, manual-local, and live-deployed results are labeled separately;
+- live claims identify the exact deployed commit and are never inferred from local tests or an older deployment.

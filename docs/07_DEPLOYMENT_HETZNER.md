@@ -132,7 +132,7 @@ OPENAI_TIMEOUT_MS=15000
 
 `OPENAI_API_KEY` must never be committed, pasted into screenshots, included in logs, or stored in backup artifacts. Keep it only in the server-side `.env.production` or a real secret manager. Use `AI_PROVIDER=openai` only after `OPENAI_API_KEY` is configured.
 
-The public web perimeter does not require infrastructure credentials. Application JWT/RBAC protects internal data; enable the allowlisted, least-privilege guest session only for portfolio deployments.
+The public web perimeter does not require infrastructure credentials. Application JWT/RBAC protects internal data; enable the allowlisted, least-privilege guest session only for portfolio deployments. Public portfolio production configuration must also use mock AI, disable public uploads, define endpoint limits, and configure explicit reset safety values. See `.env.production.example` for the complete variable set.
 
 ## Deployment Procedure
 
@@ -215,15 +215,31 @@ The smoke test checks:
 Manual checks after the script:
 
 - open the public portfolio perimeter without infrastructure credentials
-- log in with a demo user
+- submit a synthetic citizen request and verify status
+- create a one-click guest session and verify `/auth/me` reports `portfolio_guest`
+- verify guest cases and analytics succeed while aggregation, audit, privacy, operations, and administration are denied
+- verify public multipart uploads are rejected
+- separately verify normal staff login
 - open `/internal/operations`
 - verify the AI Configuration panel shows the expected provider
 - if `AI_PROVIDER=openai`, verify it shows configured `Yes`
 - create a citizen case
-- upload a document
+- upload a document only through a controlled non-public account/environment where uploads are explicitly enabled
 - run AI triage on a seeded or synthetic case
 - confirm AI review still requires human accept/correction before official case values change
 - verify Caddy issued a valid HTTPS certificate
+
+Live evidence is valid only for the exact deployed commit. Record the commit, deployment time, public status codes, unauthenticated API denials, guest permission matrix, browser journey, normal staff login, and rollback check in `docs/VERIFICATION_LOG.md`. Local screenshots and tests are not substitutes for this live gate.
+
+For a public demo, schedule the guarded CLI reset from the host approximately every six hours. Require the explicit confirmation flag and exact demo database name on every run; never expose it through Caddy or an API route. The equivalent home-server command is documented in `docs/HOME_SERVER_DEPLOYMENT.md`.
+
+Rollback for a portfolio security or availability issue:
+
+1. set `PORTFOLIO_DEMO_ENABLED=false`;
+2. stop the scheduled demo reset while investigating;
+3. restore temporary Caddy Basic Auth from a reviewed prior configuration if an infrastructure gate is required;
+4. reload Caddy and verify normal staff login;
+5. preserve the additive guest-role migration and investigate before reopening guest access.
 
 ## Security Release Gate
 

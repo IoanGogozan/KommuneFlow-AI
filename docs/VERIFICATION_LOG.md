@@ -2,75 +2,77 @@
 
 No secrets, cookies, API keys, deployed access codes, or real citizen data are recorded here.
 
-## 2026-07-23 UX remediation baseline
+## 2026-07-24 public guest portfolio release candidate
 
-| Item | Value |
-| --- | --- |
-| Verified source commit | `573d6c94e1e1c82ed142e93663127f799ce97a34` |
-| Environment | Local Windows 11 / PowerShell / Docker Desktop |
-| Node | `v26.2.0` |
-| pnpm | `10.28.2` |
-| Python | `3.14.4` |
-| AI provider | deterministic mock |
-| Data | local synthetic seed only |
+| Item                | Value                                                                      |
+| ------------------- | -------------------------------------------------------------------------- |
+| Source              | PR 6 working tree on `agent/public-guest-demo`, stacked on PR #23          |
+| Environment         | Local Windows / PowerShell / Docker Desktop                                |
+| Node                | `v26.2.0`                                                                  |
+| pnpm                | `10.28.2`                                                                  |
+| Python              | `3.14.4`                                                                   |
+| AI provider         | deterministic mock                                                         |
+| Data                | dedicated local `kommuneflow_screenshot` database with synthetic seed only |
+| Deployment evidence | **not verified** for the PR 6 commit                                       |
 
-## Automated release gate
+### Automated release gate
 
-| Command | Exact result |
-| --- | --- |
-| `pnpm install --frozen-lockfile` | PASS — lockfile current, dependencies already up to date |
-| `pnpm lint` | PASS — API and web lint completed |
-| `pnpm typecheck` | PASS — API, web, and shared package type checks completed |
-| `pnpm --filter @kommuneflow/api test:cov:ci` | PASS — 37 suites, 218 tests; statements 82.95%, branches 71.03%, functions 87.60%, lines 82.78% |
-| `pnpm --filter @kommuneflow/api test:e2e:ci` | PASS — 3 suites passed, 1 skipped; 29 tests passed, 1 skipped |
-| `pnpm --filter @kommuneflow/web test` | PASS — 3 files, 14 tests |
-| `pnpm --filter @kommuneflow/web test:e2e` | PASS — 5 Chromium tests |
-| `pnpm --filter @kommuneflow/web test:e2e:fullstack` | PASS on clean rerun — 1 Chromium workflow test |
-| `pnpm test:etl` | PASS — 22 tests |
-| `pnpm audit:deps` | PASS — no known vulnerabilities |
-| `pnpm build` | PASS — API, web, and shared builds completed |
-| `docker compose -f compose.home.yml --env-file .env.home.example config --quiet` | PASS |
-| Caddy `validate --config /etc/caddy/Caddyfile` in `caddy:2-alpine` | PASS — valid configuration |
-| `docker compose -f compose.home.yml --env-file .env.home.example build` | PASS — API and web images built |
-| `pnpm screenshots:demo` | PASS — nine required UX screenshots generated from local synthetic data |
+| Command                                                                                       | Exact result                                                                                    |
+| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `pnpm install --frozen-lockfile`                                                              | PASS — lockfile current; dependencies already up to date                                        |
+| `pnpm lint`                                                                                   | PASS — API and web lint completed                                                               |
+| `pnpm typecheck`                                                                              | PASS — API, web, and shared package type checks completed                                       |
+| `pnpm --filter @kommuneflow/api test:cov:ci`                                                  | PASS — 43 suites, 253 tests; statements 83.88%, branches 72.83%, functions 88.37%, lines 83.74% |
+| `pnpm --filter @kommuneflow/api test:e2e:ci`                                                  | PASS — 4 suites passed, 1 intentionally skipped; 64 tests passed, 1 skipped                     |
+| `pnpm --filter @kommuneflow/web test`                                                         | PASS — 4 files, 23 tests                                                                        |
+| `pnpm --filter @kommuneflow/web test:e2e`                                                     | PASS — 6 Chromium tests                                                                         |
+| `pnpm --filter @kommuneflow/web test:e2e:fullstack`                                           | PASS on configured rerun — 1 real workflow test                                                 |
+| `pnpm test:etl`                                                                               | PASS — 22 tests                                                                                 |
+| `pnpm test:screenshots`                                                                       | PASS — 3 screenshot database-safety tests                                                       |
+| `pnpm audit:deps`                                                                             | PASS — no known vulnerabilities                                                                 |
+| `pnpm build`                                                                                  | PASS — API, web, and shared builds completed; 15 Next routes generated                          |
+| `docker compose -f compose.home.yml --env-file .env.home.example config --quiet`              | PASS                                                                                            |
+| `docker compose -f docker-compose.prod.yml --env-file .env.production.example config --quiet` | PASS                                                                                            |
+| Home Caddy validation in `caddy:2-alpine`                                                     | PASS — valid configuration                                                                      |
+| Production Caddy validation in `caddy:2-alpine`                                               | PASS after supplying neutral `ACME_EMAIL` and `APP_DOMAIN` values                               |
+| `docker compose -f compose.home.yml --env-file .env.home.example build`                       | PASS — API and web production images built                                                      |
+| `pnpm screenshots:demo` against the acknowledged screenshot database                          | PASS — reset/migrations/seed and 12 credential-free guest-flow captures                         |
+| `pnpm --filter @kommuneflow/api demo:reset` twice against the isolated screenshot demo target | PASS twice — each run restored exactly 22 seed cases without duplicates                         |
+| `git diff --check`                                                                            | PASS                                                                                            |
 
-The first full-stack attempt was not a product assertion: Playwright correctly refused to start while the screenshot API occupied port 3101. After stopping that local stack, a second attempt reached login but received `401` because its default password differed from the local seed override. The exact command then passed with `FULLSTACK_DEMO_PASSWORD` supplied from the local ignored `.env`; the value was not printed, logged, or committed.
+The first unconfigured full-stack run reached staff login and returned the expected `401` because the test fallback password differed from the ignored local seed override. It passed when `FULLSTACK_DEMO_PASSWORD` was sourced from the ignored `.env`; the value was not printed, logged, or committed.
 
-## UX verification
+The optional production Caddy check initially omitted required Caddy environment placeholders and failed parsing at `email`. It passed after neutral validation-only values were provided. The required home Caddy validation passed on its first run.
 
-| Workflow | Result | Evidence |
-| --- | --- | --- |
-| Landing page | PASS | Browser tests plus `01-landing.png` |
-| Protected-route gate | PASS | Deployment smoke assertions cover public `/` and protected `/nb`, `/en`, `/internal/login`; Caddy config validated |
-| Citizen intake | PASS | Component/browser tests plus English and Norwegian captures |
-| Address selection | PASS | Component tests cover multiple results, non-first selection, no-address mode, and tenant-change reset |
-| Document upload | PASS | Component/browser tests cover list, remove, multipart submission, and existing API validation |
-| Submission success | PASS | Copy/fallback tests plus `04-submission-success.png` |
-| Status lookup | PASS | Automatic prefill/lookup browser test plus `05-status-lookup.png` |
-| Employee login | PASS | Browser test and local screenshot workflow |
-| Case Overview | PASS | Default-tab browser assertion plus `07-case-overview.png` |
-| AI review | PASS | Full-stack official-before/after assertion plus `08-ai-review.png` |
-| Workflow update | PASS | Browser status mutation plus `09-workflow-activity.png` |
+Screenshot generation exposed and corrected three tooling issues during PR 6: reset/seed originally ran after capture instead of before it, Windows Node 26 required a shell wrapper for the static pnpm child commands, and repeated development captures reached the intentionally strict intake throttle. The final successful run used a fresh API process with test-only high limits, reset and seeded the dedicated screenshot database before browsing, created the employee session through `/auth/demo-session`, and generated exactly the twelve files listed in `docs/SCREENSHOTS.md`.
 
-## Deployment status
+### Implemented and verified locally
 
-Deployed to the protected home server on 2026-07-23 from merged commit `fd172b28e883e72c7257e9710a140dec91b189b6`.
+- Public landing, citizen form, text-only submission, status lookup, one-click guest session, tenant-filtered queue, case Overview, AI review, Workflow/activity, read-only Analytics, logout, and separate normal staff login.
+- Unauthenticated application perimeter and representative protected API denials.
+- Guest permission restrictions, tenant isolation, analytics read/aggregate separation, upload denial, origin validation, throttling, mock AI, and reset safety.
+- Twelve consistent 1440 × 1000 synthetic screenshots with code elements masked and no populated staff credentials.
+- Home and production Compose models, Caddy syntax, production builds, dependency audit, and two isolated reset runs.
 
-Release result:
+### Implemented but not deployed
 
-- home-server preflight passed;
-- API and web images built on the server;
-- all 17 migrations were already applied;
-- PostgreSQL, API, web, and gateway reported healthy;
-- local gateway health check passed.
+- PR 1–6 public guest behavior, safety policy, documentation, walkthrough, capture workflow, and screenshots are implemented in the stacked draft branches.
+- The current PR 6 commit has not been merged or deployed to `https://kommune.norvix.no`.
 
-Live smoke result for `https://kommune.norvix.no`:
+### Not verified
 
-- `/` returned `200` without Basic Auth;
-- `/nb`, `/en`, and `/internal/login` returned `401` without Basic Auth;
-- `/nb`, `/en`, and `/internal/login` returned `200` with Basic Auth;
-- internal application login returned `201`;
-- authenticated `/auth/me`, `/cases`, and AI status returned `200`;
-- API health and readiness returned `200`.
+- Exact-commit live checks for `/`, `/demo`, `/en`, `/nb`, `/internal/login`, the unauthenticated API matrix, guest permission matrix, complete browser journey, normal staff login, and rollback.
+- Host cron execution and real deployed visitor/file cleanup.
+- A live absence of the browser Basic Auth prompt for the exact PR 6 commit.
 
-Credentials were sourced from the server's ignored `.credentials` file and were not printed, logged, or committed.
+These checks must be performed only after review, merge, and deployment of the exact commit. Record the deployed SHA and results here; do not promote older home-server evidence to PR 6 evidence.
+
+### Post-merge live checklist
+
+1. Record and compare the deployed Git SHA with the reviewed merge commit.
+2. Run `scripts/smoke-test.sh` without staff credentials and record every status.
+3. Verify one synthetic citizen submission, status lookup, same-tenant continuation, guest case, mock-AI review, Workflow/activity update, and read-only Analytics.
+4. Verify guest aggregation, audit, privacy, operations, users, departments, and routing administration are denied.
+5. Verify normal staff login separately without exposing credentials.
+6. Run the guarded reset twice on the configured demo target and confirm visitor cleanup plus stable seed counts.
+7. Exercise rollback: disable guest sessions, confirm normal staff login, and verify the reviewed temporary Caddy gate procedure without removing the guest-role migration.

@@ -10,93 +10,98 @@ Internal endpoints use the `kommuneflow_access_token` `HttpOnly` cookie after lo
 
 ## Auth
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| `POST` | `/auth/login` | public | Log in internal user and set auth cookie |
-| `POST` | `/auth/logout` | cookie | Clear auth cookie |
-| `GET` | `/auth/me` | internal | Return the current internal user profile and permissions |
+| Method | Path                 | Auth                | Purpose                                                                                                |
+| ------ | -------------------- | ------------------- | ------------------------------------------------------------------------------------------------------ |
+| `POST` | `/auth/login`        | public              | Log in internal user and set auth cookie                                                               |
+| `POST` | `/auth/demo-session` | public when enabled | Resolve an allowlisted tenant's seeded `portfolio_guest` server-side and set a short-lived auth cookie |
+| `POST` | `/auth/logout`       | cookie              | Clear auth cookie                                                                                      |
+| `GET`  | `/auth/me`           | internal            | Return the current internal user profile and permissions                                               |
+
+`POST /auth/demo-session` accepts only an optional `tenantSlug`; callers cannot select a user, role, email, or permissions. It is disabled by default, origin-validated, throttled, and never returns the JWT or credential material in JSON.
 
 ## Public Citizen Intake
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| `POST` | `/public/tenants/:tenantSlug/cases` | public | Create citizen case, optionally with uploaded documents |
-| `GET` | `/public/tenants/:tenantSlug/cases/status?caseReference=...&statusAccessCode=...` | public | Look up safe public status fields for a submitted case |
+| Method | Path                                                                              | Auth   | Purpose                                                                                      |
+| ------ | --------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------- |
+| `POST` | `/public/tenants/:tenantSlug/cases`                                               | public | Create citizen case; multipart documents are rejected when `PUBLIC_DEMO_ALLOW_UPLOADS=false` |
+| `GET`  | `/public/tenants/:tenantSlug/cases/status?caseReference=...&statusAccessCode=...` | public | Look up safe public status fields for a submitted case                                       |
 
 Supports JSON body or multipart form data:
 
 - `payload`: JSON string matching citizen/case intake schema
 - `documents`: optional PDF/PNG/JPG files
 
+The public portfolio deployment uses `PUBLIC_DEMO_ALLOW_UPLOADS=false`. Local upload testing can explicitly enable it. Intake, status lookup, public address search, and demo-session limits are configured through the `PUBLIC_DEMO_*_THROTTLE_*` variables documented in the environment examples.
+
 ## Cases
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/cases` | internal | List tenant/department-scoped cases |
-| `GET` | `/cases/:id` | internal | Get case detail |
-| `GET` | `/cases/:id/activity` | internal | List safe case activity/audit summaries |
-| `PATCH` | `/cases/:id/status` | `case:update:department` | Update case status |
-| `POST` | `/cases/:id/internal-notes` | `case:update:department` | Add internal note |
+| Method  | Path                        | Auth                                                 | Purpose                                            |
+| ------- | --------------------------- | ---------------------------------------------------- | -------------------------------------------------- |
+| `GET`   | `/cases`                    | internal                                             | List tenant/department-scoped cases                |
+| `GET`   | `/cases/:id`                | internal                                             | Get case detail                                    |
+| `GET`   | `/cases/:id/activity`       | internal                                             | List safe case activity/audit summaries            |
+| `PATCH` | `/cases/:id/status`         | `case:update:department` or `case:update:all_tenant` | Update case status within the authenticated tenant |
+| `POST`  | `/cases/:id/internal-notes` | `case:update:department` or `case:update:all_tenant` | Add internal note within the authenticated tenant  |
 
 ## Internal Administration
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/departments` | internal | List departments for the current tenant |
-| `GET` | `/admin/departments` | admin permission | List tenant departments with admin metadata |
-| `GET` | `/admin/users` | `user:manage` | List tenant users without password hashes |
-| `GET` | `/admin/routing-rules` | `routing_rules:manage` | List tenant routing rules |
+| Method | Path                   | Auth                   | Purpose                                     |
+| ------ | ---------------------- | ---------------------- | ------------------------------------------- |
+| `GET`  | `/departments`         | internal               | List departments for the current tenant     |
+| `GET`  | `/admin/departments`   | admin permission       | List tenant departments with admin metadata |
+| `GET`  | `/admin/users`         | `user:manage`          | List tenant users without password hashes   |
+| `GET`  | `/admin/routing-rules` | `routing_rules:manage` | List tenant routing rules                   |
 
 ## Documents
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/cases/:caseId/documents` | internal | List accessible documents |
-| `POST` | `/cases/:caseId/documents` | `document:upload` | Upload internal document |
-| `GET` | `/cases/:caseId/documents/:documentId/download` | internal | Download accessible document and create audit event |
-| `DELETE` | `/cases/:caseId/documents/:documentId` | `document:upload` | Soft-delete document metadata |
+| Method   | Path                                            | Auth              | Purpose                                             |
+| -------- | ----------------------------------------------- | ----------------- | --------------------------------------------------- |
+| `GET`    | `/cases/:caseId/documents`                      | internal          | List accessible documents                           |
+| `POST`   | `/cases/:caseId/documents`                      | `document:upload` | Upload internal document                            |
+| `GET`    | `/cases/:caseId/documents/:documentId/download` | internal          | Download accessible document and create audit event |
+| `DELETE` | `/cases/:caseId/documents/:documentId`          | `document:upload` | Soft-delete document metadata                       |
 
 ## AI Triage
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/cases/:caseId/ai-triage/latest` | internal | Get latest AI triage result |
-| `POST` | `/cases/:caseId/ai-triage` | `ai:triage:run` | Generate AI triage suggestion |
-| `POST` | `/cases/:caseId/ai-triage/:resultId/review` | `ai:triage:review` | Human review/approval/correction |
-| `GET` | `/ai/status` | operations or AI diagnostics permission | Return safe AI provider status |
-| `GET` | `/internal/ai/diagnostics` | `ai:diagnostics:read` | Return safe AI diagnostics for privileged users |
+| Method | Path                                        | Auth                                    | Purpose                                         |
+| ------ | ------------------------------------------- | --------------------------------------- | ----------------------------------------------- |
+| `GET`  | `/cases/:caseId/ai-triage/latest`           | internal                                | Get latest AI triage result                     |
+| `POST` | `/cases/:caseId/ai-triage`                  | `ai:triage:run`                         | Generate AI triage suggestion                   |
+| `POST` | `/cases/:caseId/ai-triage/:resultId/review` | `ai:triage:review`                      | Human review/approval/correction                |
+| `GET`  | `/ai/status`                                | operations or AI diagnostics permission | Return safe AI provider status                  |
+| `GET`  | `/internal/ai/diagnostics`                  | `ai:diagnostics:read`                   | Return safe AI diagnostics for privileged users |
 
 ## Audit
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/audit/events` | `audit:read` | List tenant-scoped audit events with safe metadata summaries |
+| Method | Path            | Auth         | Purpose                                                      |
+| ------ | --------------- | ------------ | ------------------------------------------------------------ |
+| `GET`  | `/audit/events` | `audit:read` | List tenant-scoped audit events with safe metadata summaries |
 
 ## Analytics
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/analytics/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` | `analytics:read` | Read aggregated analytics |
-| `POST` | `/analytics/aggregate` | `analytics:read` | Rerun aggregation for date range |
+| Method | Path                                               | Auth                  | Purpose                                                           |
+| ------ | -------------------------------------------------- | --------------------- | ----------------------------------------------------------------- |
+| `GET`  | `/analytics/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` | `analytics:read`      | Read aggregated analytics                                         |
+| `POST` | `/analytics/aggregate`                             | `analytics:aggregate` | Rerun aggregation for date range; unavailable to portfolio guests |
 
 ## Public API Integrations
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/integrations/kartverket/address-search?q=address` | internal | Search Kartverket Adresse-API through authenticated internal endpoint |
-| `GET` | `/public/tenants/:tenantSlug/integrations/kartverket/address-search?q=address` | public, rate-limited | Search Kartverket Adresse-API during citizen intake |
-| `POST` | `/integrations/ssb/imports/municipality-population` | `tenant:manage` | Import municipality population statistics from SSB table `07459` |
+| Method | Path                                                                           | Auth                 | Purpose                                                               |
+| ------ | ------------------------------------------------------------------------------ | -------------------- | --------------------------------------------------------------------- |
+| `GET`  | `/integrations/kartverket/address-search?q=address`                            | internal             | Search Kartverket Adresse-API through authenticated internal endpoint |
+| `GET`  | `/public/tenants/:tenantSlug/integrations/kartverket/address-search?q=address` | public, rate-limited | Search Kartverket Adresse-API during citizen intake                   |
+| `POST` | `/integrations/ssb/imports/municipality-population`                            | `tenant:manage`      | Import municipality population statistics from SSB table `07459`      |
 
 ## Privacy
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/privacy/status` | `audit:read` | Show privacy module capabilities |
-| `GET` | `/privacy/citizen-data-export` | `privacy:export` | Export citizen data by profile ID or email |
-| `POST` | `/privacy/citizen-profiles/:citizenProfileId/anonymize` | `privacy:anonymize` | Anonymize citizen profile identifiers |
-| `GET` | `/privacy/retention-policy` | `privacy:export` | Read tenant retention policy |
-| `PATCH` | `/privacy/retention-policy` | `privacy:anonymize` | Update tenant retention policy |
-| `POST` | `/privacy/retention-cleanup` | `privacy:anonymize` | Run retention cleanup dry-run or confirmed delete |
+| Method  | Path                                                    | Auth                | Purpose                                           |
+| ------- | ------------------------------------------------------- | ------------------- | ------------------------------------------------- |
+| `GET`   | `/privacy/status`                                       | `audit:read`        | Show privacy module capabilities                  |
+| `GET`   | `/privacy/citizen-data-export`                          | `privacy:export`    | Export citizen data by profile ID or email        |
+| `POST`  | `/privacy/citizen-profiles/:citizenProfileId/anonymize` | `privacy:anonymize` | Anonymize citizen profile identifiers             |
+| `GET`   | `/privacy/retention-policy`                             | `privacy:export`    | Read tenant retention policy                      |
+| `PATCH` | `/privacy/retention-policy`                             | `privacy:anonymize` | Update tenant retention policy                    |
+| `POST`  | `/privacy/retention-cleanup`                            | `privacy:anonymize` | Run retention cleanup dry-run or confirmed delete |
 
 Retention cleanup responses include candidate counts, deleted counts, and `documentStorage` counters for physical uploaded-file cleanup:
 
@@ -119,11 +124,11 @@ Retention cleanup responses include candidate counts, deleted counts, and `docum
 
 ## Operations
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/health` | public | Liveness check |
-| `GET` | `/readiness` | public | Database and upload storage readiness |
-| `GET` | `/operations/metrics-summary` | `operations:read` | Read operational metrics for the current tenant |
+| Method | Path                          | Auth              | Purpose                                         |
+| ------ | ----------------------------- | ----------------- | ----------------------------------------------- |
+| `GET`  | `/health`                     | public            | Liveness check                                  |
+| `GET`  | `/readiness`                  | public            | Database and upload storage readiness           |
+| `GET`  | `/operations/metrics-summary` | `operations:read` | Read operational metrics for the current tenant |
 
 ## Error Shape
 
