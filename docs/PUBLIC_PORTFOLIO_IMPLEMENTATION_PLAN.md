@@ -29,14 +29,14 @@ Security invariants for every PR:
 
 ## Delivery tracker
 
-| PR   | Scope                                         | Status                                     | Evidence / outcome                                                            |
-| ---- | --------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------- |
-| PR 1 | Portfolio guest authorization model           | Implemented and verified; draft PR pending | Branch `agent/portfolio-guest-role`; Basic Auth and public behavior unchanged |
-| PR 2 | One-click guest session                       | Not started                                | Must wait for PR 1 review                                                     |
-| PR 3 | Public application perimeter                  | Not started                                | Security-critical; Basic Auth removal only here                               |
-| PR 4 | Portfolio journey UX                          | Not started                                | Landing, citizen-to-employee continuation, guest UX                           |
-| PR 5 | Public demo safety and reset                  | Not started                                | Upload controls, rate limits, safe reset                                      |
-| PR 6 | Documentation, screenshots, live verification | Not started                                | Evidence must match deployed behavior                                         |
+| PR   | Scope                                         | Status        | Evidence / outcome                                                                                                      |
+| ---- | --------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| PR 1 | Portfolio guest authorization model           | Draft PR open | [PR #19](https://github.com/IoanGogozan/KommuneFlow-AI/pull/19); implemented and verified locally; Basic Auth unchanged |
+| PR 2 | One-click guest session                       | Not started   | Must wait for PR 1 review                                                                                               |
+| PR 3 | Public application perimeter                  | Not started   | Security-critical; Basic Auth removal only here                                                                         |
+| PR 4 | Portfolio journey UX                          | Not started   | Landing, citizen-to-employee continuation, guest UX                                                                     |
+| PR 5 | Public demo safety and reset                  | Not started   | Upload controls, rate limits, safe reset                                                                                |
+| PR 6 | Documentation, screenshots, live verification | Not started   | Evidence must match deployed behavior                                                                                   |
 
 ## PR 1 — Portfolio guest authorization model
 
@@ -79,13 +79,14 @@ Acceptance checklist:
 - [x] Auditor and existing staff behavior remain correct.
 - [x] Basic Auth and public behavior remain unchanged.
 - [x] Relevant automated checks pass.
-- [ ] Draft PR opened and results recorded below.
+- [x] Draft PR opened and results recorded below.
 
 PR 1 result (update at completion):
 
 - Implemented: additive Prisma role/migration; restricted permission map; any-of permission guard; tenant-scoped case and AI mutations; separate analytics aggregation authorization and UI visibility; three idempotently seeded guests; typed/labeled frontend role support; focused regression tests
 - Verified: migration deploy; seed executed repeatedly with exactly three guest records; lint; workspace typecheck; 228 API unit tests with coverage; 30 API e2e tests (plus one intentionally skipped); 17 web unit tests; one full-stack browser workflow; production build
-- Not verified / manual work: no deployed-environment verification was performed; draft PR URL and commit will be added after publication
+- Not verified / manual work: no deployed-environment verification was performed
+- Draft PR: [#19 — feat: add restricted portfolio guest authorization model](https://github.com/IoanGogozan/KommuneFlow-AI/pull/19)
 - Deployment: not deployed
 - Rollback: revert the additive code/migration before production adoption; do not remove existing roles
 
