@@ -6,7 +6,7 @@ KommuneFlow AI is a working portfolio application for municipal case management.
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Open_Application-005293?style=for-the-badge)](https://kommune.norvix.no)
 
-> The portfolio landing page is public. Citizen and employee routes require protected demo credentials. All demo data is synthetic. This project is not approved for real municipal use.
+> The portfolio web perimeter is public. Internal data requires an application session; portfolio guests receive a short-lived, least-privilege session. All demo data is synthetic. This project is not approved for real municipal use.
 
 ![KommuneFlow AI citizen intake](./docs/screenshots/02-citizen-intake-en.png)
 
@@ -127,7 +127,7 @@ passwords.
 | Kristiansand auditor          | `auditor@kristiansand.local`          | Read-only audit/privacy visibility                            |
 | Grimstad case worker          | `case.worker@grimstad.local`          | Cross-tenant isolation demo                                   |
 
-Demo credentials are local demo credentials only. They are not displayed in the public login form and must not be enabled in an open public deployment. Protect public portfolio demos with a separate access control such as Caddy Basic Auth or a temporary recruiter/interview account, and use synthetic data only.
+Demo credentials are local demo credentials only. They are not displayed in the public login form and must not be enabled in an open public deployment. Use the short-lived, least-privilege guest session for public portfolio access, reserve seeded credentials for controlled reviewer access, and use synthetic data only.
 
 ## Demo Data
 
@@ -280,7 +280,7 @@ The repository includes production-like deployment assets:
 
 ### Home-server portfolio deployment
 
-The protected home-server demo runs behind the server's global Caddy reverse proxy. Only the project gateway joins the shared `proxy` network; PostgreSQL, API, and web stay on a private project network, and no application service publishes host ports. Basic Auth protects the full demo, AI uses the mock provider, and only synthetic data is permitted.
+The home-server demo runs behind the server's global Caddy reverse proxy. Only the project gateway joins the shared `proxy` network; PostgreSQL, API, and web stay on a private project network, and no application service publishes host ports. The web perimeter is public, application JWT/RBAC protects internal data, the optional guest session is feature-flagged and least-privilege, AI uses the mock provider, and only synthetic data is permitted.
 
 This deployment is not approved for real municipal use. Automated backup and restore operations remain future work. See [Home-Server Deployment](./docs/HOME_SERVER_DEPLOYMENT.md) for topology, secrets, release, seed, DNS, and verification steps.
 
@@ -292,8 +292,6 @@ docker compose -f docker-compose.prod.yml --env-file .env.production build
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d postgres
 docker compose -f docker-compose.prod.yml --env-file .env.production run --rm --entrypoint sh api -lc "./node_modules/.bin/prisma migrate deploy"
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d
-SMOKE_BASIC_AUTH_USER=demo-user \
-SMOKE_BASIC_AUTH_PASSWORD=demo-password \
 sh scripts/smoke-test.sh https://your-domain.example
 ```
 
@@ -301,8 +299,6 @@ Authenticated smoke checks are optional. Add internal demo credentials only when
 seeded with synthetic demo users:
 
 ```bash
-SMOKE_BASIC_AUTH_USER=demo-user \
-SMOKE_BASIC_AUTH_PASSWORD=demo-password \
 SMOKE_INTERNAL_EMAIL=department.admin@kristiansand.local \
 SMOKE_INTERNAL_PASSWORD='<demo internal password>' \
 sh scripts/smoke-test.sh https://your-domain.example
@@ -334,8 +330,8 @@ pnpm build    PASS
 
 ## How to Demo
 
-Use synthetic data only. For public portfolio deployments, keep the app behind separate access control such as Caddy
-Basic Auth and use a temporary recruiter/interview password.
+Use synthetic data only. For public portfolio deployments, expose only the application-authenticated perimeter and use
+the short-lived guest session or a temporary recruiter/interview account with the minimum required permissions.
 
 ### Demo User Table
 
@@ -411,16 +407,12 @@ running the seed. Do not publish production passwords in screenshots, docs, or t
 After a deployed update:
 
 ```bash
-SMOKE_BASIC_AUTH_USER=<demo gate username> \
-SMOKE_BASIC_AUTH_PASSWORD=<demo gate password> \
 sh scripts/smoke-test.sh https://your-domain.example
 ```
 
-For seeded protected demos, also verify authenticated internal APIs:
+For seeded demos, also verify authenticated internal APIs:
 
 ```bash
-SMOKE_BASIC_AUTH_USER=<demo gate username> \
-SMOKE_BASIC_AUTH_PASSWORD=<demo gate password> \
 SMOKE_INTERNAL_EMAIL=recruiter.demo@kristiansand.local \
 SMOKE_INTERNAL_PASSWORD='<demo internal password>' \
 sh scripts/smoke-test.sh https://your-domain.example

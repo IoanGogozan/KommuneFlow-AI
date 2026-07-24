@@ -91,8 +91,6 @@ services:
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN is required}
       ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL is required}
-      DEMO_BASIC_AUTH_USER: ${DEMO_BASIC_AUTH_USER:?DEMO_BASIC_AUTH_USER is required}
-      DEMO_BASIC_AUTH_HASH: ${DEMO_BASIC_AUTH_HASH:?DEMO_BASIC_AUTH_HASH is required}
     ports:
       - "80:80"
       - "443:443"

@@ -2,7 +2,7 @@
 
 ## Five-minute walkthrough
 
-Use synthetic data only. Interactive routes require protected demo credentials supplied separately; never show passwords in a recording or screenshot.
+Use synthetic data only. Internal records require an application session. Use the one-click least-privilege guest session where enabled or supply reviewer credentials separately; never show passwords in a recording or screenshot.
 
 1. Open `/` and explain the three-step workflow: citizen request, structured AI suggestion, employee review and processing.
 2. Enter `/en`, explicitly select a municipality, provide synthetic contact details, choose an address result or no-address mode, describe the request, and optionally attach a safe demo document.

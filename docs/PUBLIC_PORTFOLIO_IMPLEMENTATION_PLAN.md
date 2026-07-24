@@ -33,7 +33,7 @@ Security invariants for every PR:
 | ---- | --------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | PR 1 | Portfolio guest authorization model           | Draft PR open | [PR #19](https://github.com/IoanGogozan/KommuneFlow-AI/pull/19); implemented and verified locally; Basic Auth unchanged |
 | PR 2 | One-click guest session                       | Draft PR open | [PR #20](https://github.com/IoanGogozan/KommuneFlow-AI/pull/20); stacked on draft PR #19; disabled by default           |
-| PR 3 | Public application perimeter                  | Not started   | Security-critical; Basic Auth removal only here                                                                         |
+| PR 3 | Public application perimeter                  | Draft PR open | [PR #21](https://github.com/IoanGogozan/KommuneFlow-AI/pull/21); stacked on draft PR #20; verified locally               |
 | PR 4 | Portfolio journey UX                          | Not started   | Landing, citizen-to-employee continuation, guest UX                                                                     |
 | PR 5 | Public demo safety and reset                  | Not started   | Upload controls, rate limits, safe reset                                                                                |
 | PR 6 | Documentation, screenshots, live verification | Not started   | Evidence must match deployed behavior                                                                                   |
@@ -108,6 +108,20 @@ PR 2 result (update at completion):
 ## PR 3 — Public application perimeter
 
 Inventory and classify every endpoint, add unauthenticated perimeter e2e coverage, audit server-rendered internal pages, then remove Caddy Basic Auth and obsolete secrets. Update smoke tests to prove public routes work and protected APIs return 401 without an application cookie. Validate Caddy/Compose and retain gateway security controls.
+
+PR 3 result (update at completion):
+
+- Implemented: complete API endpoint security inventory; 31-check unauthenticated perimeter e2e suite; Next.js internal rendering audit; removal of Caddy Basic Auth and its obsolete environment/Compose/script wiring; simplified API/web gateway routing; application-perimeter smoke checks; aligned deployment, security, demo, and README guidance
+- Authorization: no API authorization rules were weakened; public endpoints remain limited to health, citizen intake/status/address, login/logout, and the feature-flagged demo session; authenticated and permission-protected routes continue to rely on JWT, RBAC, and tenant scoping
+- Gateway controls retained: trusted proxy restrictions, HTTPS/security headers, compression, API request-body limit, private application network, and API/web reverse-proxy separation
+- Verified before Basic Auth removal: focused unauthenticated perimeter suite passed with 31 tests
+- Verified after removal: full `test:all` passed with 246 API unit tests, 64 API e2e tests plus one intentionally skipped, 19 web unit tests, 6 browser e2e tests, and 22 ETL tests; production build passed; both Compose configurations rendered successfully; both Caddyfiles validated; shell scripts passed POSIX syntax validation; `git diff --check` passed
+- User-facing scope: the portfolio, citizen, and internal application shells are reachable without infrastructure credentials; internal data still requires an application cookie; no PR 4 journey UI was added
+- Database migrations: none
+- Not verified / manual work: the deployment smoke script was updated but was not executed against a live deployment; no deployment was performed
+- Deployment: implemented and verified locally, but not deployed
+- Rollback: revert PR 3 to restore the prior Caddy gate and its environment wiring; application authentication remains independently usable throughout
+- Draft PR: [#21 — deploy: expose application-authenticated portfolio perimeter](https://github.com/IoanGogozan/KommuneFlow-AI/pull/21)
 
 ## PR 4 — Portfolio journey UX
 

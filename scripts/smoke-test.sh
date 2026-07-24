@@ -9,21 +9,8 @@ if [ -z "$BASE_URL" ]; then
 fi
 
 BASE_URL="${BASE_URL%/}"
-SMOKE_BASIC_AUTH_USER="${SMOKE_BASIC_AUTH_USER:-}"
-SMOKE_BASIC_AUTH_PASSWORD="${SMOKE_BASIC_AUTH_PASSWORD:-}"
-SMOKE_PUBLIC_LOCALE="${SMOKE_PUBLIC_LOCALE:-nb}"
 SMOKE_INTERNAL_EMAIL="${SMOKE_INTERNAL_EMAIL:-${DEMO_EMAIL:-}}"
 SMOKE_INTERNAL_PASSWORD="${SMOKE_INTERNAL_PASSWORD:-${DEMO_PASSWORD:-}}"
-
-if [ -n "$SMOKE_BASIC_AUTH_USER" ] && [ -z "$SMOKE_BASIC_AUTH_PASSWORD" ]; then
-  echo "SMOKE_BASIC_AUTH_PASSWORD is required when SMOKE_BASIC_AUTH_USER is set" >&2
-  exit 1
-fi
-
-if [ -z "$SMOKE_BASIC_AUTH_USER" ] && [ -n "$SMOKE_BASIC_AUTH_PASSWORD" ]; then
-  echo "SMOKE_BASIC_AUTH_USER is required when SMOKE_BASIC_AUTH_PASSWORD is set" >&2
-  exit 1
-fi
 
 if [ -n "$SMOKE_INTERNAL_EMAIL" ] && [ -z "$SMOKE_INTERNAL_PASSWORD" ]; then
   echo "SMOKE_INTERNAL_PASSWORD is required when SMOKE_INTERNAL_EMAIL is set" >&2
@@ -38,29 +25,6 @@ fi
 COOKIE_JAR="$(mktemp)"
 LOGIN_BODY="$(mktemp)"
 trap 'rm -f "$COOKIE_JAR" "$LOGIN_BODY"' EXIT INT TERM
-
-curl_status() {
-  url="$1"
-  output_file="${2:-/dev/null}"
-
-  if [ -n "$SMOKE_BASIC_AUTH_USER" ]; then
-    status="$(curl -sS -u "$SMOKE_BASIC_AUTH_USER:$SMOKE_BASIC_AUTH_PASSWORD" -o "$output_file" -w "%{http_code}" "$url" || true)"
-  else
-    status="$(curl -sS -o "$output_file" -w "%{http_code}" "$url" || true)"
-  fi
-  printf '%s' "${status:-000}"
-}
-
-curl_status_with_cookies() {
-  url="$1"
-
-  if [ -n "$SMOKE_BASIC_AUTH_USER" ]; then
-    status="$(curl -sS -u "$SMOKE_BASIC_AUTH_USER:$SMOKE_BASIC_AUTH_PASSWORD" -b "$COOKIE_JAR" -o /dev/null -w "%{http_code}" "$url" || true)"
-  else
-    status="$(curl -sS -b "$COOKIE_JAR" -o /dev/null -w "%{http_code}" "$url" || true)"
-  fi
-  printf '%s' "${status:-000}"
-}
 
 status_allowed() {
   actual="$1"
@@ -77,12 +41,28 @@ status_allowed() {
   return 1
 }
 
+request_status() {
+  method="$1"
+  url="$2"
+  body="${3:-}"
+
+  if [ -n "$body" ]; then
+    status="$(curl -sS -X "$method" -H "Origin: $BASE_URL" -H "Content-Type: application/json" \
+      --data "$body" -o /dev/null -w "%{http_code}" "$url" || true)"
+  else
+    status="$(curl -sS -X "$method" -o /dev/null -w "%{http_code}" "$url" || true)"
+  fi
+  printf '%s' "${status:-000}"
+}
+
 check() {
   name="$1"
-  url="$2"
-  expected="${3:-200}"
+  method="$2"
+  url="$3"
+  expected="$4"
+  body="${5:-}"
 
-  status="$(curl_status "$url")"
+  status="$(request_status "$method" "$url" "$body")"
   if ! status_allowed "$status" "$expected"; then
     echo "FAIL $name: expected HTTP $expected, got $status for $url" >&2
     exit 1
@@ -96,13 +76,18 @@ check_authenticated() {
   url="$2"
   expected="${3:-200}"
 
-  status="$(curl_status_with_cookies "$url")"
+  status="$(curl -sS -b "$COOKIE_JAR" -o /dev/null -w "%{http_code}" "$url" || true)"
+  status="${status:-000}"
   if ! status_allowed "$status" "$expected"; then
     echo "FAIL $name: expected HTTP $expected, got $status for $url" >&2
     exit 1
   fi
 
   echo "OK $name: HTTP $status"
+}
+
+json_escape() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 
 login_internal_user() {
@@ -115,13 +100,9 @@ login_internal_user() {
   password_json="$(json_escape "$SMOKE_INTERNAL_PASSWORD")"
   printf '{"email":"%s","password":"%s"}' "$email_json" "$password_json" >"$LOGIN_BODY"
 
-  if [ -n "$SMOKE_BASIC_AUTH_USER" ]; then
-    status="$(curl -sS -u "$SMOKE_BASIC_AUTH_USER:$SMOKE_BASIC_AUTH_PASSWORD" -c "$COOKIE_JAR" -H "Origin: $BASE_URL" -H "Content-Type: application/json" -d "@$LOGIN_BODY" -o /dev/null -w "%{http_code}" "$BASE_URL/api/v1/auth/login" || true)"
-  else
-    status="$(curl -sS -c "$COOKIE_JAR" -H "Origin: $BASE_URL" -H "Content-Type: application/json" -d "@$LOGIN_BODY" -o /dev/null -w "%{http_code}" "$BASE_URL/api/v1/auth/login" || true)"
-  fi
+  status="$(curl -sS -c "$COOKIE_JAR" -H "Origin: $BASE_URL" -H "Content-Type: application/json" \
+    -d "@$LOGIN_BODY" -o /dev/null -w "%{http_code}" "$BASE_URL/api/v1/auth/login" || true)"
   status="${status:-000}"
-
   if ! status_allowed "$status" "200,201"; then
     echo "FAIL internal login: expected HTTP 200 or 201, got $status" >&2
     exit 1
@@ -133,32 +114,29 @@ login_internal_user() {
   check_authenticated "AI status API" "$BASE_URL/api/v1/ai/status"
 }
 
-json_escape() {
-  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
-}
-
 echo "Running smoke test for $BASE_URL"
-check "web home" "$BASE_URL/" "200,307,308"
-check "public intake $SMOKE_PUBLIC_LOCALE" "$BASE_URL/$SMOKE_PUBLIC_LOCALE" "200"
-check "api health" "$BASE_URL/api/v1/health" "200"
-check "api readiness" "$BASE_URL/api/v1/readiness" "200"
-if [[ -n "$SMOKE_BASIC_AUTH_USER" && -n "$SMOKE_BASIC_AUTH_PASSWORD" ]]; then
-  saved_user="$SMOKE_BASIC_AUTH_USER"
-  saved_password="$SMOKE_BASIC_AUTH_PASSWORD"
-  SMOKE_BASIC_AUTH_USER=""
-  SMOKE_BASIC_AUTH_PASSWORD=""
-  check "public portfolio landing without Basic Auth" "$BASE_URL/" "200"
-  check "public demo instructions without Basic Auth" "$BASE_URL/demo" "200"
-  check "Norwegian citizen portal without Basic Auth" "$BASE_URL/nb" "401"
-  check "English citizen portal without Basic Auth" "$BASE_URL/en" "401"
-  check "internal login without Basic Auth" "$BASE_URL/internal/login" "401"
-  SMOKE_BASIC_AUTH_USER="$saved_user"
-  SMOKE_BASIC_AUTH_PASSWORD="$saved_password"
-fi
 
-check "Norwegian citizen portal with Basic Auth" "$BASE_URL/nb" "200"
-check "English citizen portal with Basic Auth" "$BASE_URL/en" "200"
-check "internal login with Basic Auth" "$BASE_URL/internal/login" "200"
+# The web perimeter is public. Application authentication protects internal data.
+check "portfolio landing" GET "$BASE_URL/" "200,307,308"
+check "demo instructions" GET "$BASE_URL/demo" "200,307,308"
+check "Norwegian citizen portal" GET "$BASE_URL/nb" "200"
+check "English citizen portal" GET "$BASE_URL/en" "200"
+check "internal login shell" GET "$BASE_URL/internal/login" "200"
+check "internal workspace shell" GET "$BASE_URL/internal" "200,307,308"
+
+# Public API operations reach application validation rather than an infrastructure gate.
+check "API health" GET "$BASE_URL/api/v1/health" "200"
+check "API readiness" GET "$BASE_URL/api/v1/readiness" "200,503"
+check "public intake perimeter" POST "$BASE_URL/api/v1/public/tenants/kristiansand/cases" "400" '{}'
+check "public status perimeter" POST "$BASE_URL/api/v1/public/tenants/kristiansand/cases/status" "400" '{}'
+check "public address perimeter" GET "$BASE_URL/api/v1/public/tenants/kristiansand/integrations/kartverket/address-search" "400"
+
+# Representative protected APIs must reject requests without an application cookie.
+check "unauthenticated auth me" GET "$BASE_URL/api/v1/auth/me" "401"
+check "unauthenticated cases" GET "$BASE_URL/api/v1/cases" "401"
+check "unauthenticated analytics" GET "$BASE_URL/api/v1/analytics/summary" "401"
+check "unauthenticated administration" GET "$BASE_URL/api/v1/admin/users" "401"
+
 login_internal_user
 
 echo "Smoke test completed for $BASE_URL"

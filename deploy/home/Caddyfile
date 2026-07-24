@@ -19,17 +19,6 @@
 			X-Frame-Options "DENY"
 		}
 
-		# Keep the portfolio landing page public while the application,
-		# internal workspace, and API remain behind the demo gate.
-		@public_landing path / /demo /favicon.ico /screenshots/citizen-intake-preview.png /_next/*
-		handle @public_landing {
-			reverse_proxy web:3000
-		}
-
-		basic_auth {
-			{$DEMO_BASIC_AUTH_USER} {$DEMO_BASIC_AUTH_HASH}
-		}
-
 		handle /api/* {
 			request_body {
 				max_size 60MB
