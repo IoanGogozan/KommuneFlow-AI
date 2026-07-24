@@ -88,6 +88,11 @@ test("security page is public, accessible, and does not trigger auth requests on
     "_blank",
   );
   await expect(
+    page.getByText(
+      "These cells describe role permissions. Portfolio guest edits are still narrowed by backend checks to visitor-created and designated demo cases.",
+    ),
+  ).toBeVisible();
+  await expect(
     page.getByRole("link", { name: "Return to portfolio", exact: true }),
   ).toHaveAttribute(
     "href",

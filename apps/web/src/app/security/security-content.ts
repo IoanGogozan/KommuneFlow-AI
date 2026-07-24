@@ -86,7 +86,7 @@ export const securitySections: SecuritySection[] = [
     bullets: [
       "The session cookie is `HttpOnly`, uses `SameSite=Lax`, and is marked `Secure` in production.",
       "The cookie is scoped to `/api/v1`, and session-changing requests pass origin validation before they can mutate state.",
-      "Login and demo-session responses return the user profile and expiry metadata, not the JWT itself.",
+      "Login returns the user profile in JSON; demo-session returns the user profile plus expiry metadata. The JWT itself stays in the protected cookie.",
     ],
     evidenceLabel: "Source: auth-cookie.ts, auth.controller.ts, auth.guard.ts",
     sourceLabel: "Tests: auth.controller.spec.ts, origin-validation.middleware.spec.ts",
@@ -99,7 +99,7 @@ export const securitySections: SecuritySection[] = [
     bullets: [
       "Controllers and services check permissions before returning protected data or accepting workflow mutations.",
       "The permission guard supports both all-required and any-of permission groups.",
-      "The portfolio guest role is intentionally narrow: it can demonstrate the guest workflow, but it cannot manage users, privacy operations or audit data.",
+      "The portfolio guest role is intentionally narrow: it can demonstrate the guest workflow, but it cannot manage users, privacy operations or audit data. Guest edits are still narrowed by backend checks to visitor-created and designated demo cases.",
     ],
     evidenceLabel: "Source: permissions.ts, permissions.guard.ts, permissions.decorator.ts",
     sourceLabel: "Tests: permissions.spec.ts, controller permission specs",

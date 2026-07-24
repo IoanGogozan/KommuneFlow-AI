@@ -336,6 +336,14 @@
   overflow-x: auto;
 }
 
+.matrixNote {
+  margin: 14px 0 0;
+  max-width: 760px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
 .matrix {
   width: 100%;
   min-width: 760px;

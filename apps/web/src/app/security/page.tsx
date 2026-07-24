@@ -166,6 +166,11 @@ export default function SecurityPage() {
             </tbody>
           </table>
         </div>
+        <p className={styles.matrixNote}>
+          These cells describe role permissions. Portfolio guest edits are
+          still narrowed by backend checks to visitor-created and designated
+          demo cases.
+        </p>
       </section>
 
       <section className={styles.section} id="limits" aria-labelledby="limits-heading">
