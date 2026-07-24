@@ -1,15 +1,35 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import publicSecurityMatrix from "@kommuneflow/shared/public-security.json";
 import styles from "./security.module.css";
 import {
-  permissionMatrix,
   securityArchitectureLines,
   securityLinks,
   securityProofItems,
+  securityIntro,
   securitySections,
   securityStatusLabels,
-  securityIntro,
 } from "./security-content";
+
+type PublicSecurityRoleKey =
+  | "guest"
+  | "caseWorker"
+  | "departmentAdmin"
+  | "auditor";
+
+type PublicSecurityMatrix = {
+  roleColumns: Array<{ key: PublicSecurityRoleKey; label: string }>;
+  capabilities: Array<{
+    capability: string;
+    permissions: Record<PublicSecurityRoleKey, readonly string[]>;
+    allowed: Record<PublicSecurityRoleKey, boolean>;
+  }>;
+};
+
+const {
+  capabilities: PUBLIC_SECURITY_CAPABILITY_MATRIX,
+  roleColumns: PUBLIC_SECURITY_ROLE_COLUMNS,
+} = publicSecurityMatrix as PublicSecurityMatrix;
 
 export const metadata: Metadata = {
   title: "Security architecture - KommuneFlow AI",
@@ -67,12 +87,13 @@ export default function SecurityPage() {
 
       <section className={styles.section} id="architecture" aria-labelledby="architecture-heading">
         <header className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>Architecture overview</p>
+          <p className={styles.eyebrow}>Architecture</p>
           <h2 id="architecture-heading">Layered trust boundaries</h2>
           <p>
-            The browser reaches the gateway over HTTPS. The gateway routes to
-            the web app and API, while application authorization, tenant scope
-            and audit trails stay behind the private backend boundary.
+            The browser reaches global Caddy over HTTPS. The home-server gateway
+            remains on HTTP 8080 behind the private proxy network, where it
+            applies routing, security headers and request-size limits before
+            forwarding traffic to the web app and API.
           </p>
         </header>
 
@@ -80,20 +101,20 @@ export default function SecurityPage() {
           <div
             className={styles.diagram}
             role="img"
-            aria-label="Browser over HTTPS to gateway, then Next.js web application and NestJS API with authentication and permission checks, municipality-scoped data access, audit and activity events, human-reviewed AI workflow, and PostgreSQL."
+            aria-label="Browser over HTTPS on 80/443 to global Caddy, then the KommuneFlow gateway on HTTP 8080 behind the private proxy network, then the Next.js web application and NestJS API with authentication and permission checks, municipality-scoped data access, audit and activity events, human-reviewed AI workflow, and PostgreSQL."
           >
             <pre aria-hidden="true">{securityArchitectureLines.join("\n")}</pre>
           </div>
           <figcaption>
-            Only the gateway is externally reachable in the verified home
-            deployment.
+            The verified home deployment keeps only the gateway externally
+            reachable.
           </figcaption>
         </figure>
       </section>
 
       <section className={styles.section} id="proof" aria-labelledby="proof-heading">
         <header className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>Security proof</p>
+          <p className={styles.eyebrow}>Proof</p>
           <h2 id="proof-heading">Four concise claims, each tied to implementation evidence.</h2>
         </header>
         <div className={styles.proofGrid}>
@@ -115,7 +136,7 @@ export default function SecurityPage() {
           key={section.id}
         >
           <header className={styles.sectionHeading}>
-            <p className={styles.eyebrow}>{section.title}</p>
+            <p className={styles.eyebrow}>{section.eyebrow}</p>
             <h2 id={`${section.id}-heading`}>{section.title}</h2>
             <p>{section.summary}</p>
           </header>
@@ -134,7 +155,7 @@ export default function SecurityPage() {
 
       <section className={styles.section} id="permissions" aria-labelledby="permissions-heading">
         <header className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>Authorization matrix</p>
+          <p className={styles.eyebrow}>Matrix</p>
           <h2 id="permissions-heading">Compact role comparison</h2>
           <p>
             The values below mirror the current application permission model for
@@ -147,20 +168,22 @@ export default function SecurityPage() {
             <thead>
               <tr>
                 <th scope="col">Capability</th>
-                <th scope="col">Guest</th>
-                <th scope="col">Case worker</th>
-                <th scope="col">Department admin</th>
-                <th scope="col">Auditor</th>
+                {PUBLIC_SECURITY_ROLE_COLUMNS.map((column) => (
+                  <th scope="col" key={column.key}>
+                    {column.label}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {permissionMatrix.map((row) => (
+              {PUBLIC_SECURITY_CAPABILITY_MATRIX.map((row) => (
                 <tr key={row.capability}>
                   <th scope="row">{row.capability}</th>
-                  <td data-label="Guest">{row.guest}</td>
-                  <td data-label="Case worker">{row.caseWorker}</td>
-                  <td data-label="Department admin">{row.departmentAdmin}</td>
-                  <td data-label="Auditor">{row.auditor}</td>
+                  {PUBLIC_SECURITY_ROLE_COLUMNS.map((column) => (
+                    <td data-label={column.label} key={column.key}>
+                      {row.allowed[column.key] ? "Yes" : "No"}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -175,7 +198,7 @@ export default function SecurityPage() {
 
       <section className={styles.section} id="limits" aria-labelledby="limits-heading">
         <header className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>Known assurance limits</p>
+          <p className={styles.eyebrow}>Limitations</p>
           <h2 id="limits-heading">What this portfolio does not claim</h2>
         </header>
         <p className={styles.callout}>
@@ -198,7 +221,7 @@ export default function SecurityPage() {
 
       <section className={styles.section} id="verification-links" aria-labelledby="verification-links-heading">
         <header className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>Evidence links</p>
+          <p className={styles.eyebrow}>Sources</p>
           <h2 id="verification-links-heading">Source and verification</h2>
           <p>
             These links point to the public repository and the documentation

@@ -1,5 +1,12 @@
 import { UserRole } from '@prisma/client';
-import { ROLE_PERMISSIONS, roleHasPermission } from './permissions';
+import publicSecurityMatrix from '@kommuneflow/shared/public-security.json';
+import { ROLE_PERMISSIONS, roleHasPermission, type Permission } from './permissions';
+
+type PublicSecurityRoleKey =
+  | 'guest'
+  | 'caseWorker'
+  | 'departmentAdmin'
+  | 'auditor';
 
 describe('roleHasPermission', () => {
   it('allows case workers to update department cases', () => {
@@ -72,47 +79,39 @@ describe('roleHasPermission', () => {
     );
   });
 
-  it('matches the public security matrix roles used on the portfolio site', () => {
-    expect(ROLE_PERMISSIONS[UserRole.portfolio_guest]).toEqual([
-      'case:read:all_tenant',
-      'case:update:all_tenant',
-      'document:read:department',
-      'ai:triage:run',
-      'ai:triage:review',
-      'analytics:read',
+  it('matches the shared public security capability matrix against backend permissions', () => {
+    const {
+      capabilities: PUBLIC_SECURITY_CAPABILITY_MATRIX,
+      roleColumns: PUBLIC_SECURITY_ROLE_COLUMNS,
+    } = publicSecurityMatrix as {
+      capabilities: Array<{
+        capability: string;
+        permissions: Record<string, readonly string[]>;
+        allowed: Record<string, boolean>;
+      }>;
+      roleColumns: Array<{ key: string; label: string }>;
+    };
+    const roleMap: Record<PublicSecurityRoleKey, UserRole> = {
+      guest: UserRole.portfolio_guest,
+      caseWorker: UserRole.case_worker,
+      departmentAdmin: UserRole.department_admin,
+      auditor: UserRole.auditor,
+    };
+
+    expect(PUBLIC_SECURITY_ROLE_COLUMNS).toEqual([
+      { key: 'guest', label: 'Guest' },
+      { key: 'caseWorker', label: 'Case worker' },
+      { key: 'departmentAdmin', label: 'Department admin' },
+      { key: 'auditor', label: 'Auditor' },
     ]);
-    expect(ROLE_PERMISSIONS[UserRole.case_worker]).toEqual([
-      'case:read:department',
-      'case:update:department',
-      'case:close',
-      'document:upload',
-      'document:read:department',
-      'ai:triage:run',
-      'ai:triage:review',
-    ]);
-    expect(ROLE_PERMISSIONS[UserRole.department_admin]).toEqual([
-      'case:read:department',
-      'case:read:all_tenant',
-      'case:update:department',
-      'case:close',
-      'document:upload',
-      'document:read:department',
-      'document:read:sensitive',
-      'ai:triage:run',
-      'ai:triage:review',
-      'analytics:read',
-      'analytics:aggregate',
-      'operations:read',
-      'user:manage',
-      'routing_rules:manage',
-    ]);
-    expect(ROLE_PERMISSIONS[UserRole.auditor]).toEqual([
-      'case:read:all_tenant',
-      'document:read:department',
-      'document:read:sensitive',
-      'audit:read',
-      'analytics:read',
-      'operations:read',
-    ]);
+
+    for (const row of PUBLIC_SECURITY_CAPABILITY_MATRIX) {
+      for (const column of PUBLIC_SECURITY_ROLE_COLUMNS) {
+        const actual = row.permissions[column.key].some((permission) =>
+          roleHasPermission(roleMap[column.key], permission as Permission),
+        );
+        expect(actual).toBe(row.allowed[column.key]);
+      }
+    }
   });
 });

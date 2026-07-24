@@ -1,0 +1,130 @@
+{
+  "roleColumns": [
+    { "key": "guest", "label": "Guest" },
+    { "key": "caseWorker", "label": "Case worker" },
+    { "key": "departmentAdmin", "label": "Department admin" },
+    { "key": "auditor", "label": "Auditor" }
+  ],
+  "capabilities": [
+    {
+      "capability": "View permitted cases",
+      "permissions": {
+        "guest": ["case:read:all_tenant"],
+        "caseWorker": ["case:read:department"],
+        "departmentAdmin": ["case:read:all_tenant"],
+        "auditor": ["case:read:all_tenant"]
+      },
+      "allowed": {
+        "guest": true,
+        "caseWorker": true,
+        "departmentAdmin": true,
+        "auditor": true
+      }
+    },
+    {
+      "capability": "Review AI suggestions",
+      "permissions": {
+        "guest": ["ai:triage:review"],
+        "caseWorker": ["ai:triage:review"],
+        "departmentAdmin": ["ai:triage:review"],
+        "auditor": []
+      },
+      "allowed": {
+        "guest": true,
+        "caseWorker": true,
+        "departmentAdmin": true,
+        "auditor": false
+      }
+    },
+    {
+      "capability": "Update workflow",
+      "permissions": {
+        "guest": ["case:update:all_tenant"],
+        "caseWorker": ["case:update:department"],
+        "departmentAdmin": ["case:update:department"],
+        "auditor": []
+      },
+      "allowed": {
+        "guest": true,
+        "caseWorker": true,
+        "departmentAdmin": true,
+        "auditor": false
+      }
+    },
+    {
+      "capability": "View analytics",
+      "permissions": {
+        "guest": ["analytics:read"],
+        "caseWorker": [],
+        "departmentAdmin": ["analytics:read"],
+        "auditor": ["analytics:read"]
+      },
+      "allowed": {
+        "guest": true,
+        "caseWorker": false,
+        "departmentAdmin": true,
+        "auditor": true
+      }
+    },
+    {
+      "capability": "Aggregate analytics",
+      "permissions": {
+        "guest": [],
+        "caseWorker": [],
+        "departmentAdmin": ["analytics:aggregate"],
+        "auditor": []
+      },
+      "allowed": {
+        "guest": false,
+        "caseWorker": false,
+        "departmentAdmin": true,
+        "auditor": false
+      }
+    },
+    {
+      "capability": "Manage users",
+      "permissions": {
+        "guest": [],
+        "caseWorker": [],
+        "departmentAdmin": ["user:manage"],
+        "auditor": []
+      },
+      "allowed": {
+        "guest": false,
+        "caseWorker": false,
+        "departmentAdmin": true,
+        "auditor": false
+      }
+    },
+    {
+      "capability": "Privacy operations",
+      "permissions": {
+        "guest": [],
+        "caseWorker": [],
+        "departmentAdmin": [],
+        "auditor": []
+      },
+      "allowed": {
+        "guest": false,
+        "caseWorker": false,
+        "departmentAdmin": false,
+        "auditor": false
+      }
+    },
+    {
+      "capability": "Audit access",
+      "permissions": {
+        "guest": [],
+        "caseWorker": [],
+        "departmentAdmin": [],
+        "auditor": ["audit:read"]
+      },
+      "allowed": {
+        "guest": false,
+        "caseWorker": false,
+        "departmentAdmin": false,
+        "auditor": true
+      }
+    }
+  ]
+}

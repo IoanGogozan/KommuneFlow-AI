@@ -70,7 +70,11 @@ test("security page is public, accessible, and does not trigger auth requests on
   await expect(page.getByText(/GDPR certified/i)).toHaveCount(0);
   await expect(page.getByText(/penetration tested/i)).toHaveCount(0);
   await expect(page.getByText(/Military-grade/i)).toHaveCount(0);
-  await expect(page.getByRole("img", { name: /Browser over HTTPS to gateway/ })).toBeVisible();
+  await expect(
+    page.getByRole("img", {
+      name: /Browser over HTTPS on 80\/443 to global Caddy/,
+    }),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: "View source code" })).toHaveAttribute(
     "target",
     "_blank",

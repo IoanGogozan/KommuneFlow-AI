@@ -6,19 +6,12 @@ export type SecurityProofItem = {
 
 export type SecuritySection = {
   id: string;
+  eyebrow: string;
   title: string;
   summary: string;
   bullets: string[];
   evidenceLabel: string;
   sourceLabel: string;
-};
-
-export type MatrixRow = {
-  capability: string;
-  guest: string;
-  caseWorker: string;
-  departmentAdmin: string;
-  auditor: string;
 };
 
 export type SecurityLink = {
@@ -66,10 +59,13 @@ export const securityProofItems: SecurityProofItem[] = [
 
 export const securityArchitectureLines = [
   "Browser",
-  "  \u2193 HTTPS",
-  "Gateway",
-  "  \u251c\u2500\u2500 Next.js web application",
-  "  \u2514\u2500\u2500 NestJS API",
+  "  \u2193 HTTPS on 80/443",
+  "Global Caddy",
+  "  \u2514\u2500\u2500 KommuneFlow gateway on HTTP 8080",
+  "        \u251c\u2500\u2500 Routing and security headers",
+  "        \u251c\u2500\u2500 Request-size limits",
+  "        \u251c\u2500\u2500 Next.js web application",
+  "        \u251c\u2500\u2500 NestJS API",
   "        \u251c\u2500\u2500 Authentication and permission checks",
   "        \u251c\u2500\u2500 Municipality-scoped data access",
   "        \u251c\u2500\u2500 Audit and activity events",
@@ -80,6 +76,7 @@ export const securityArchitectureLines = [
 export const securitySections: SecuritySection[] = [
   {
     id: "authentication",
+    eyebrow: "Session boundary",
     title: "Authentication and sessions",
     summary:
       "Normal login and restricted guest entry both create a JWT-backed application session. The cookie is protected, short-lived and validated before sensitive mutations.",
@@ -93,6 +90,7 @@ export const securitySections: SecuritySection[] = [
   },
   {
     id: "authorization",
+    eyebrow: "RBAC",
     title: "Authorization and RBAC",
     summary:
       "Permissions are enforced server-side through NestJS guards and explicit role-to-permission mappings. The UI only reflects the underlying authorization model.",
@@ -106,6 +104,7 @@ export const securitySections: SecuritySection[] = [
   },
   {
     id: "tenant",
+    eyebrow: "Tenant scope",
     title: "Tenant isolation",
     summary:
       "The authenticated user's tenant is part of the server-side authorization context. Case queries and mutations include tenant scope, and cross-tenant access is tested.",
@@ -119,6 +118,7 @@ export const securitySections: SecuritySection[] = [
   },
   {
     id: "ai",
+    eyebrow: "AI review",
     title: "Human-reviewed AI",
     summary:
       "AI generates a suggestion, but the official case state changes only after a person reviews and applies it. The public deployment uses a mock provider.",
@@ -132,6 +132,7 @@ export const securitySections: SecuritySection[] = [
   },
   {
     id: "public-demo",
+    eyebrow: "Public demo",
     title: "Public demo safety",
     summary:
       "The public demo is synthetic, allowlisted and rate limited. Public uploads are intentionally disabled in the portfolio environment.",
@@ -145,19 +146,22 @@ export const securitySections: SecuritySection[] = [
   },
   {
     id: "deployment",
+    eyebrow: "Deployment",
     title: "Deployment boundary",
     summary:
-      "The documented home-server deployment keeps the gateway public and the application services private behind Docker networks and Caddy routing.",
+      "The documented home-server deployment has global Caddy terminating TLS on 80/443, while the KommuneFlow gateway listens on HTTP 8080 behind the private proxy network and applies routing, security headers and request-size limits.",
     bullets: [
       "Only the gateway is externally reachable in the verified home deployment.",
       "The web app, API and PostgreSQL stay on private networks and are not published on host ports.",
-      "Caddy terminates TLS and applies the security headers and request-size limits described in the deployment docs.",
+      "Global Caddy terminates TLS, and the private KommuneFlow gateway applies the routing, security headers and request-size limits documented in the home-server runbook.",
     ],
-    evidenceLabel: "Source: HOME_SERVER_DEPLOYMENT.md, docker-compose.prod.yml, deploy/Caddyfile",
+    evidenceLabel:
+      "Sources: compose.home.yml, deploy/home/Caddyfile, HOME_SERVER_DEPLOYMENT.md",
     sourceLabel: "Evidence: VERIFICATION_LOG.md",
   },
   {
     id: "verification",
+    eyebrow: "Verification",
     title: "Automated verification",
     summary:
       "The public security story is backed by tests instead of marketing claims. The repository already contains negative security and workflow coverage.",
@@ -168,65 +172,6 @@ export const securitySections: SecuritySection[] = [
     ],
     evidenceLabel: "Source: VERIFICATION_LOG.md, testing strategy docs",
     sourceLabel: "Tests: API, web and full-stack suites",
-  },
-] as const;
-
-export const permissionMatrix: MatrixRow[] = [
-  {
-    capability: "View permitted cases",
-    guest: "Yes",
-    caseWorker: "Yes",
-    departmentAdmin: "Yes",
-    auditor: "Yes",
-  },
-  {
-    capability: "Review AI suggestions",
-    guest: "Yes",
-    caseWorker: "Yes",
-    departmentAdmin: "Yes",
-    auditor: "No",
-  },
-  {
-    capability: "Update workflow",
-    guest: "Yes",
-    caseWorker: "Yes",
-    departmentAdmin: "Yes",
-    auditor: "No",
-  },
-  {
-    capability: "View analytics",
-    guest: "Yes",
-    caseWorker: "No",
-    departmentAdmin: "Yes",
-    auditor: "Yes",
-  },
-  {
-    capability: "Aggregate analytics",
-    guest: "No",
-    caseWorker: "No",
-    departmentAdmin: "Yes",
-    auditor: "No",
-  },
-  {
-    capability: "Manage users",
-    guest: "No",
-    caseWorker: "No",
-    departmentAdmin: "Yes",
-    auditor: "No",
-  },
-  {
-    capability: "Privacy operations",
-    guest: "No",
-    caseWorker: "No",
-    departmentAdmin: "No",
-    auditor: "No",
-  },
-  {
-    capability: "Audit access",
-    guest: "No",
-    caseWorker: "No",
-    departmentAdmin: "No",
-    auditor: "Yes",
   },
 ] as const;
 
