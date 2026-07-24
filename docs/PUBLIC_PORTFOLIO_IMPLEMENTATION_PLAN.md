@@ -6,7 +6,7 @@ This living document tracks the six-PR rollout for public portfolio access. It m
 
 ### PR 7 — Guest journey consistency and deterministic reset
 
-Status: implemented and locally verified in PR 7.
+Status: merged in PR #26 and deployed to the home server.
 
 - Preserve the selected `en` or `nb` locale when entering the employee demo.
 - Keep tenant-wide synthetic case reading, but restrict guest mutations to visitor-created cases and one explicitly designated demo case per tenant.
@@ -22,6 +22,8 @@ Verification:
 - Web tests: 4 files, 23 tests passed.
 - API and web type checks passed.
 - Production build and repository lint passed.
+- GitHub CI, CodeQL, and Gitleaks passed after the Playwright case-overview assertion was aligned with the public case reference.
+- Home-server release `253913af67f4422d209477da667c094d44f41854` passed backup, preflight, build, migration, health, public/staff smoke, guest mutation-scope, deterministic reset, and live English-locale verification.
 
 ## Mission and invariants
 
