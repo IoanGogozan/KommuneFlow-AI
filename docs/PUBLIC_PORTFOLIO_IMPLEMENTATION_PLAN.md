@@ -34,7 +34,7 @@ Security invariants for every PR:
 | PR 1 | Portfolio guest authorization model           | Draft PR open | [PR #19](https://github.com/IoanGogozan/KommuneFlow-AI/pull/19); implemented and verified locally; Basic Auth unchanged |
 | PR 2 | One-click guest session                       | Draft PR open | [PR #20](https://github.com/IoanGogozan/KommuneFlow-AI/pull/20); stacked on draft PR #19; disabled by default           |
 | PR 3 | Public application perimeter                  | Draft PR open | [PR #21](https://github.com/IoanGogozan/KommuneFlow-AI/pull/21); stacked on draft PR #20; verified locally               |
-| PR 4 | Portfolio journey UX                          | Ready for PR  | Branch `agent/portfolio-guest-journey`; implemented and verified locally; stacked on draft PR #21                       |
+| PR 4 | Portfolio journey UX                          | Draft PR open | [PR #22](https://github.com/IoanGogozan/KommuneFlow-AI/pull/22); stacked on draft PR #21; verified locally               |
 | PR 5 | Public demo safety and reset                  | Not started   | Upload controls, rate limits, safe reset                                                                                |
 | PR 6 | Documentation, screenshots, live verification | Not started   | Evidence must match deployed behavior                                                                                   |
 
@@ -140,7 +140,7 @@ PR 4 result (update at completion):
 - Not implemented in this PR: public upload restrictions, reset automation, new rate-limit policy, screenshot regeneration, or live deployment verification
 - Deployment: implemented and verified locally, but not deployed
 - Rollback: revert PR 4; PR 1–3 authorization, one-click endpoint, application perimeter, and normal staff login remain independently usable
-- Draft PR: pending
+- Draft PR: [#22 — feat: add public portfolio guest journey](https://github.com/IoanGogozan/KommuneFlow-AI/pull/22)
 
 ## PR 5 — Public demo safety and reset
 
