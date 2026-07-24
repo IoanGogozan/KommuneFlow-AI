@@ -5,8 +5,141 @@ import { UserRole, UserStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AuthService } from './auth.service';
 import { ROLE_PERMISSIONS } from './permissions';
+import { PortfolioDemoConfig } from './portfolio-demo.config';
 
 describe('AuthService', () => {
+  it('returns non-enumerating disabled behavior for demo sessions', async () => {
+    const operationalRecordMock = jest.fn().mockResolvedValue(undefined);
+    const service = new AuthService(
+      {} as PrismaService,
+      {} as JwtService,
+      operationalEvents(operationalRecordMock),
+      demoConfig({ enabled: false }),
+    );
+
+    await expect(
+      service.createDemoSession(
+        { tenantSlug: 'kristiansand' },
+        { requestId: 'req_demo_disabled' },
+      ),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(operationalRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'auth.demo_session_denied',
+        requestId: 'req_demo_disabled',
+        safeMessage: 'Portfolio demo session denied.',
+        metadata: {
+          reason: 'disabled',
+          tenantSlug: 'kristiansand',
+        },
+      }),
+    );
+  });
+
+  it('creates a short-lived guest session for an allowlisted tenant', async () => {
+    const operationalRecordMock = jest.fn().mockResolvedValue(undefined);
+    const findFirst = jest.fn().mockResolvedValue({
+      id: 'guest_1',
+      tenantId: 'tenant_1',
+      departmentId: null,
+      email: 'portfolio.guest@kristiansand.local',
+      name: 'Kristiansand Portfolio Guest',
+      role: UserRole.portfolio_guest,
+      tenant: {
+        id: 'tenant_1',
+        slug: 'kristiansand',
+        name: 'Kristiansand Kommune',
+      },
+    });
+    const signAsync = jest.fn().mockResolvedValue('guest-access-token');
+    const service = new AuthService(
+      { user: { findFirst } } as unknown as PrismaService,
+      { signAsync } as unknown as JwtService,
+      operationalEvents(operationalRecordMock),
+      demoConfig(),
+    );
+
+    const result = await service.createDemoSession(
+      { tenantSlug: 'kristiansand' },
+      { requestId: 'req_demo_success' },
+    );
+
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          role: UserRole.portfolio_guest,
+          status: UserStatus.active,
+          tenant: { slug: 'kristiansand' },
+        },
+      }),
+    );
+    expect(signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'guest_1',
+        tenantId: 'tenant_1',
+        role: UserRole.portfolio_guest,
+      }),
+      { expiresIn: 1800 },
+    );
+    expect(result).toMatchObject({
+      accessToken: 'guest-access-token',
+      ttlSeconds: 1800,
+      user: {
+        role: UserRole.portfolio_guest,
+        tenant: {
+          slug: 'kristiansand',
+          name: 'Kristiansand Kommune',
+        },
+      },
+    });
+    expect(JSON.stringify(result.user)).not.toContain('email');
+    expect(operationalRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'auth.demo_session_started',
+        tenantId: 'tenant_1',
+        userId: 'guest_1',
+        requestId: 'req_demo_success',
+      }),
+    );
+  });
+
+  it('uses the configured default tenant only when the request omits it', async () => {
+    let capturedQuery: unknown;
+    const findFirst = jest.fn((input: unknown) => {
+      capturedQuery = input;
+      return Promise.resolve(null);
+    });
+    const service = new AuthService(
+      { user: { findFirst } } as unknown as PrismaService,
+      {} as JwtService,
+      operationalEvents(),
+      demoConfig(),
+    );
+
+    await expect(service.createDemoSession({})).rejects.toMatchObject({
+      status: 503,
+    });
+    const query = capturedQuery as {
+      where: { tenant: { slug: string } };
+    };
+    expect(query.where.tenant.slug).toBe('kristiansand');
+  });
+
+  it('rejects non-allowlisted tenants before querying for a user', async () => {
+    const findFirst = jest.fn();
+    const service = new AuthService(
+      { user: { findFirst } } as unknown as PrismaService,
+      {} as JwtService,
+      operationalEvents(),
+      demoConfig(),
+    );
+
+    await expect(
+      service.createDemoSession({ tenantSlug: 'unknown' }),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(findFirst).not.toHaveBeenCalled();
+  });
+
   it('logs in an active seeded-style user with valid credentials', async () => {
     const operationalRecordMock = jest.fn().mockResolvedValue(undefined);
     const passwordHash = await hash('DemoPassword123!', 4);
@@ -323,4 +456,16 @@ function operationalEvents(
   return {
     record: recordMock,
   } as never;
+}
+
+function demoConfig(
+  overrides: Partial<PortfolioDemoConfig> = {},
+): PortfolioDemoConfig {
+  return {
+    enabled: true,
+    allowedTenantSlugs: new Set(['kristiansand', 'arendal', 'grimstad']),
+    defaultTenantSlug: 'kristiansand',
+    sessionTtlSeconds: 1800,
+    ...overrides,
+  };
 }

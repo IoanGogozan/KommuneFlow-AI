@@ -38,9 +38,11 @@ export class OperationalThrottlerGuard extends ThrottlerGuard {
 
     await this.operationalEventService.record({
       eventType:
-        routeSurface === 'public'
-          ? 'public.rate_limited'
-          : 'security.rate_limited',
+        routeSurface === 'demo_session'
+          ? 'auth.demo_session_rate_limited'
+          : routeSurface === 'public'
+            ? 'public.rate_limited'
+            : 'security.rate_limited',
       severity: 'warning',
       source: 'throttler',
       tenantId: request.user?.tenantId,
@@ -68,6 +70,10 @@ function classifyRouteSurface(request: Request) {
 
   if (request.path === '/api/v1/auth/login') {
     return 'auth';
+  }
+
+  if (request.path === '/api/v1/auth/demo-session') {
+    return 'demo_session';
   }
 
   return 'internal';

@@ -10,6 +10,7 @@ import {
   getJwtSecret,
 } from './auth.constants';
 import { OperationalEventsModule } from '../operations/operational-events.module';
+import { PortfolioDemoConfig } from './portfolio-demo.config';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { OperationalEventsModule } from '../operations/operational-events.module
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, PortfolioDemoConfig],
   exports: [JwtModule, AuthService],
 })
 export class AuthModule {}

@@ -3,6 +3,11 @@ import { NextFunction, Request, Response } from 'express';
 import { AUTH_COOKIE_NAME } from '../../modules/auth/auth.constants';
 
 const unsafeMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const sessionMutationPaths = new Set([
+  '/api/v1/auth/login',
+  '/api/v1/auth/demo-session',
+  '/api/v1/auth/logout',
+]);
 
 @Injectable()
 export class OriginValidationMiddleware implements NestMiddleware {
@@ -47,6 +52,10 @@ export function getAllowedOrigins() {
 function shouldValidateOrigin(request: Request) {
   if (!unsafeMethods.has(request.method)) {
     return false;
+  }
+
+  if (sessionMutationPaths.has(request.path)) {
+    return true;
   }
 
   const cookies = request.cookies as Record<string, unknown> | undefined;
