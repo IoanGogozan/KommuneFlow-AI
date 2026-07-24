@@ -254,14 +254,18 @@ export function IntakeForm({
     setStatusResult(null);
     setIsCheckingStatus(true);
 
-    const query = new URLSearchParams({
-      caseReference,
-      statusAccessCode: accessCode,
-    });
-
     try {
       const response = await fetch(
-        `${getApiBaseUrl()}/public/tenants/${selectedTenant.slug}/cases/status?${query.toString()}`,
+        `${getApiBaseUrl()}/public/tenants/${selectedTenant.slug}/cases/status`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({
+            caseReference,
+            statusAccessCode: accessCode,
+          }),
+        },
       );
 
       if (!response.ok) {
@@ -372,6 +376,21 @@ export function IntakeForm({
 
   return (
     <div className="grid gap-5">
+      <div>
+        <p className="mb-4 inline-flex bg-[#eaf4fb] px-3 py-1 text-sm font-semibold text-[#003b71]">
+          {dictionary.badge}
+        </p>
+        <h1 className="max-w-xl text-4xl font-semibold tracking-normal text-[#003b71]">
+          {activeTab === "submit"
+            ? dictionary.title
+            : dictionary.statusPageTitle}
+        </h1>
+        <p className="mt-5 max-w-lg text-base leading-7 text-slate-700 sm:text-lg sm:leading-8">
+          {activeTab === "submit"
+            ? dictionary.intro
+            : dictionary.statusPageIntro}
+        </p>
+      </div>
       <div
         className="grid gap-2 border border-[#003b71] bg-white p-1.5 sm:grid-cols-2"
         role="tablist"
@@ -551,11 +570,6 @@ export function IntakeForm({
             </p>
           ) : null}
 
-          <div className="mt-3 border-t border-[#c8d9e8] pt-4">
-            <h3 className="text-base font-semibold text-[#003b71]">
-              {dictionary.sectionRequestTitle}
-            </h3>
-          </div>
           <Field
             label={dictionary.caseTitleLabel}
             hint={dictionary.caseTitleHint}

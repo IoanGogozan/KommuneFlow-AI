@@ -1,4 +1,7 @@
-import { createPublicCaseSchema } from './cases.schemas';
+import {
+  createPublicCaseSchema,
+  publicCaseStatusSchema,
+} from './cases.schemas';
 
 describe('createPublicCaseSchema', () => {
   it('accepts a valid public intake payload', () => {
@@ -32,6 +35,26 @@ describe('createPublicCaseSchema', () => {
           sourceLanguage: 'de',
         },
         privacyAccepted: false,
+      }),
+    ).toThrow();
+  });
+});
+
+describe('publicCaseStatusSchema', () => {
+  it('trims and bounds status lookup credentials', () => {
+    expect(
+      publicCaseStatusSchema.parse({
+        caseReference: '  KF-2026-0001 ',
+        statusAccessCode: ' ABC12345 ',
+      }),
+    ).toEqual({
+      caseReference: 'KF-2026-0001',
+      statusAccessCode: 'ABC12345',
+    });
+    expect(() =>
+      publicCaseStatusSchema.parse({
+        caseReference: 'KF-2026-0001',
+        statusAccessCode: 'x'.repeat(41),
       }),
     ).toThrow();
   });

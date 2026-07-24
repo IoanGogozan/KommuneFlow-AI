@@ -3,6 +3,8 @@ import {
   Body,
   Controller,
   Get,
+  Header,
+  HttpCode,
   Param,
   Patch,
   Post,
@@ -25,7 +27,7 @@ import {
   createInternalNoteSchema,
   createPublicCaseSchema,
   listCasesQuerySchema,
-  publicCaseStatusQuerySchema,
+  publicCaseStatusSchema,
   updateCaseStatusSchema,
 } from './cases.schemas';
 
@@ -62,20 +64,23 @@ export class PublicCasesController {
     }
   }
 
-  @Get('status')
+  @Post('status')
+  @HttpCode(200)
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   async findPublicStatus(
     @Param('tenantSlug') tenantSlug: string,
-    @Query() query: unknown,
+    @Body() body: unknown,
   ) {
     try {
       return await this.casesService.findPublicStatus(
         tenantSlug,
-        publicCaseStatusQuerySchema.parse(query),
+        publicCaseStatusSchema.parse(body),
       );
     } catch (error) {
       if (error instanceof ZodError) {
-        throw new BadRequestException('Invalid case status lookup query.');
+        throw new BadRequestException('Invalid case status lookup payload.');
       }
 
       throw error;

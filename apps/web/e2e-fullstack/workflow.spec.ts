@@ -46,10 +46,10 @@ test("real citizen and employee workflow keeps AI suggestions separate until rev
   expect(created.caseReference).toBeTruthy();
   expect(created.statusAccessCode).toBeTruthy();
 
-  const status = await request.get(
+  const status = await request.post(
     `${api}/public/tenants/kristiansand/cases/status`,
     {
-      params: {
+      data: {
         caseReference: created.caseReference,
         statusAccessCode: created.statusAccessCode,
       },

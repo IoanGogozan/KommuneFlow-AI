@@ -9,6 +9,8 @@ export type IntakeDictionary = {
   badge: string;
   title: string;
   intro: string;
+  statusPageTitle: string;
+  statusPageIntro: string;
   tenantLabel: string;
   tenantPlaceholder: string;
   tenantRequired: string;
@@ -99,6 +101,9 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     title: "Send inn en henvendelse",
     intro:
       "Beskriv saken din, så registrerer kommunen den for videre behandling.",
+    statusPageTitle: "Sjekk en sak",
+    statusPageIntro:
+      "Skriv inn saksreferansen og tilgangskoden for å se gjeldende status.",
     tenantLabel: "Kommune",
     tenantPlaceholder: "Velg kommune…",
     tenantRequired: "Velg en kommune før du fortsetter.",
@@ -108,7 +113,7 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     checkExistingCaseTab: "Sjekk eksisterende sak",
     sectionMunicipalityHelp:
       "Velg riktig kommune slik at saken registreres hos riktig mottaker.",
-    sectionContactTitle: "Kontaktinformasjon",
+    sectionContactTitle: "Kommune og kontaktinformasjon",
     sectionContactHelp:
       "Oppgi kontaktinformasjon kommunen kan bruke ved oppfølging.",
     sectionAddressTitle: "Adresse",
@@ -117,13 +122,13 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     sectionRequestTitle: "Detaljer om henvendelsen",
     sectionRequestHelp:
       "Beskriv hva saken gjelder. Jo tydeligere beskrivelse, desto enklere er det å behandle saken.",
-    sectionDocumentsTitle: "Dokumenter",
+    sectionDocumentsTitle: "Vedlegg",
     sectionDocumentsHelp:
       "Legg ved relevante filer hvis de hjelper kommunen å forstå saken.",
     sectionPrivacyTitle: "Personvernbekreftelse",
     sectionPrivacyHelp:
-      "Bekreft at kommunen kan bruke opplysningene til a registrere og behandle saken.",
-    sectionSubmitTitle: "Send inn",
+      "Bekreft at kommunen kan bruke opplysningene til å registrere og behandle saken.",
+    sectionSubmitTitle: "Bekreft og send inn",
     sectionSubmitHelp:
       "Kontroller informasjonen og send inn henvendelsen når alt er klart.",
     nameLabel: "Navn",
@@ -146,7 +151,7 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     descriptionLabel: "Beskrivelse",
     descriptionHint:
       "Forklar hva som har skjedd, hvor det skjedde, og hvilken hjelp du trenger.",
-    documentsLabel: "Dokumenter",
+    documentsLabel: "Filer",
     documentsHelp:
       "Valgfritt. Last opp PDF, PNG eller JPG. Maks 10 MB per fil.",
     documentsChooseFiles: "Velg filer",
@@ -170,7 +175,7 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     successMunicipalityLabel: "Kommune",
     successNextStepsLabel: "Neste steg",
     successNextStepsText:
-      "Bruk saksreferansen og tilgangskoden i fanen Sjekk eksisterende sak for å teste statusoppslag med en gang.",
+      "Lagre tilgangskoden for senere, eller velg «Sjekk denne saken nå» for å se den registrerte saken med en gang.",
     copyReference: "Kopier saksreferanse",
     copyAccessCode: "Kopier tilgangskode",
     copied: "Kopiert",
@@ -185,7 +190,7 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     statusLookupText:
       "Bruk saksreferansen og tilgangskoden du fikk da saken ble sendt inn.",
     statusLookupRequirements:
-      "Du trenger både saksreferanse og tilgangskode for a se status.",
+      "Du trenger både saksreferanse og tilgangskode for å se status.",
     statusLookupSubmit: "Sjekk status",
     statusLookupLoading: "Sjekker...",
     statusLookupError: "Fant ikke saken med denne kombinasjonen.",
@@ -213,6 +218,9 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     title: "Submit a request",
     intro:
       "Describe your case and the municipality will register it for processing.",
+    statusPageTitle: "Check a case",
+    statusPageIntro:
+      "Enter your case reference and access code to view its current status.",
     tenantLabel: "Municipality",
     tenantPlaceholder: "Select municipality…",
     tenantRequired: "Select a municipality before continuing.",
@@ -222,7 +230,7 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     checkExistingCaseTab: "Check existing case",
     sectionMunicipalityHelp:
       "Choose the correct municipality so the request is registered with the right recipient.",
-    sectionContactTitle: "Contact information",
+    sectionContactTitle: "Municipality and contact",
     sectionContactHelp:
       "Provide contact details the municipality can use for follow-up.",
     sectionAddressTitle: "Address",
@@ -231,13 +239,13 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     sectionRequestTitle: "Request details",
     sectionRequestHelp:
       "Describe what the case is about. Clear details make the request easier to process.",
-    sectionDocumentsTitle: "Documents",
+    sectionDocumentsTitle: "Supporting documents",
     sectionDocumentsHelp:
       "Attach relevant files if they help the municipality understand the case.",
     sectionPrivacyTitle: "Privacy confirmation",
     sectionPrivacyHelp:
       "Confirm that the municipality may use the information to register and process the request.",
-    sectionSubmitTitle: "Submit",
+    sectionSubmitTitle: "Confirm and submit",
     sectionSubmitHelp:
       "Review the information and submit the request when everything is ready.",
     nameLabel: "Name",
@@ -260,7 +268,7 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     descriptionLabel: "Description",
     descriptionHint:
       "Explain what happened, where it happened, and what help is needed.",
-    documentsLabel: "Documents",
+    documentsLabel: "Files",
     documentsHelp: "Optional. Upload PDF, PNG, or JPG. Maximum 10 MB per file.",
     documentsChooseFiles: "Choose files",
     documentsNoFilesSelected: "No files selected",
@@ -283,7 +291,7 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     successMunicipalityLabel: "Municipality",
     successNextStepsLabel: "Next steps",
     successNextStepsText:
-      "Use the case reference and access code in the Check existing case tab to test status lookup immediately.",
+      "Save the access code for later, or select “Check this case now” to view the newly registered case immediately.",
     copyReference: "Copy reference",
     copyAccessCode: "Copy access code",
     copied: "Copied",

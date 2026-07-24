@@ -138,11 +138,14 @@ test("public citizen intake and status lookup work through the browser", async (
     }
 
     if (
-      request.method() === "GET" &&
+      request.method() === "POST" &&
       url.pathname.endsWith("/public/tenants/arendal/cases/status")
     ) {
-      expect(url.searchParams.get("caseReference")).toBe("KF-2026-0001");
-      expect(url.searchParams.get("statusAccessCode")).toBe("ABC123");
+      expect(url.search).toBe("");
+      expect(request.postDataJSON()).toEqual({
+        caseReference: "KF-2026-0001",
+        statusAccessCode: "ABC123",
+      });
       return fulfillJson(route, {
         caseReference: "KF-2026-0001",
         title: "Water leak near school entrance",
