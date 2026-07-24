@@ -78,6 +78,11 @@ describe('portfolio demo reset', () => {
     };
     const removeFile = jest.fn().mockResolvedValue(undefined);
     const restoreSeeds = jest.fn().mockResolvedValue(18);
+    const restoreAnalytics = jest.fn().mockResolvedValue({
+      analyticsSnapshotsDeleted: 14,
+      analyticsSnapshotsRestored: 14,
+      analyticsBaselineCases: 18,
+    });
     const now = new Date('2026-07-24T12:00:00.000Z');
 
     const first = await runDemoReset(prisma as never, {
@@ -85,12 +90,14 @@ describe('portfolio demo reset', () => {
       now,
       removeFile,
       restoreSeeds,
+      restoreAnalytics,
     });
     const second = await runDemoReset(prisma as never, {
       env: safeEnv,
       now,
       removeFile,
       restoreSeeds,
+      restoreAnalytics,
     });
 
     expect(findMany).toHaveBeenCalledWith(
@@ -116,13 +123,20 @@ describe('portfolio demo reset', () => {
       deletedCitizenProfiles: 1,
       deletedFiles: 1,
       seedCasesRestored: 18,
+      analyticsSnapshotsDeleted: 14,
+      analyticsSnapshotsRestored: 14,
+      analyticsBaselineCases: 18,
     });
     expect(second).toMatchObject({
       deletedCases: 0,
       deletedCitizenProfiles: 0,
       deletedFiles: 0,
       seedCasesRestored: 18,
+      analyticsSnapshotsDeleted: 14,
+      analyticsSnapshotsRestored: 14,
+      analyticsBaselineCases: 18,
     });
     expect(restoreSeeds).toHaveBeenCalledTimes(2);
+    expect(restoreAnalytics).toHaveBeenCalledTimes(2);
   });
 });

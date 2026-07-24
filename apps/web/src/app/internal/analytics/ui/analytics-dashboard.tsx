@@ -4,10 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
-import {
-  formatInternalDateTime,
-  formatInternalNumber,
-} from "@/lib/internal-display";
+import { formatInternalDateTime, formatInternalNumber } from "@/lib/internal-display";
 import type { InternalDictionary } from "@/lib/internal-i18n";
 import { useInternalI18n } from "@/lib/internal-locale";
 import { useInternalSession } from "@/lib/use-internal-session";
@@ -37,6 +34,12 @@ type AnalyticsSummary = {
     aiSuggestionAcceptanceRate: number;
     estimatedManualMinutesSaved: number;
     casesPer1000Inhabitants: number | null;
+  };
+  sampleSizes: {
+    aiReviews: number;
+    aiTriageRuns: number;
+    triageDurations: number;
+    closeDurations: number;
   };
   assumptions: {
     acceptedAiSuggestionMinutesSaved: number;
@@ -181,6 +184,20 @@ export function AnalyticsDashboard() {
     );
   }
 
+  if (currentUser.role === "portfolio_guest") {
+    return (
+      <InternalShell
+        currentUser={currentUser}
+        locale={locale}
+        setLocale={setLocale}
+        t={t}
+        title={t.analytics.title}
+      >
+        <GuestAnalyticsView summary={summary} t={t} />
+      </InternalShell>
+    );
+  }
+
   return (
     <InternalShell
       currentUser={currentUser}
@@ -189,6 +206,192 @@ export function AnalyticsDashboard() {
       t={t}
       title={t.analytics.title}
     >
+      <StaffAnalyticsView
+        aggregate={aggregate}
+        canAggregateAnalytics={canAggregateAnalytics}
+        error={error}
+        from={from}
+        isAggregating={isAggregating}
+        setFrom={setFrom}
+        setTo={setTo}
+        summary={summary}
+        t={t}
+        to={to}
+      />
+    </InternalShell>
+  );
+}
+
+function GuestAnalyticsView({
+  summary,
+  t,
+}: {
+  summary: AnalyticsSummary | null;
+  t: InternalDictionary;
+}) {
+  const acceptedReviews = summary?.totals.aiSuggestionsAccepted ?? 0;
+  const reviewCount = summary?.totals.aiReviewsTotal ?? 0;
+  const correctionCount = summary?.totals.aiCorrectionsTotal ?? 0;
+  const waitingCount = summary?.totals.casesWaitingForCitizen ?? 0;
+
+  return (
+    <div className="mt-6 space-y-5">
+      <section className="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 via-white to-slate-50 p-5 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
+          {t.analytics.guestEyebrow}
+        </p>
+        <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <h2 className="text-2xl font-semibold text-slate-950">
+              {t.analytics.guestTitle}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              {t.analytics.guestIntro}
+            </p>
+          </div>
+          <div className="rounded-xl border border-sky-200 bg-white/90 p-3 text-sm text-slate-700 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              {t.analytics.guestRangeLabel}
+            </p>
+            <p className="mt-1 font-medium text-slate-950">
+              {summary ? `${summary.from} - ${summary.to}` : t.common.missing}
+            </p>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              {t.analytics.guestDisclaimer}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <CompactMetricCard
+          label={t.analytics.guestCases}
+          value={summary ? summary.totals.totalCases : "..."}
+          detail={t.analytics.guestCasesDetail}
+        />
+        <CompactMetricCard
+          label={t.analytics.aiReviews}
+          value={summary ? reviewCount : "..."}
+          detail={
+            summary
+              ? `${acceptedReviews}/${reviewCount} ${t.analytics.guestReviewsDetail}`
+              : t.analytics.noData
+          }
+        />
+        <CompactMetricCard
+          label={t.analytics.aiAcceptanceRate}
+          value={summary ? formatPercent(summary.totals.aiSuggestionAcceptanceRate) : "..."}
+          detail={summary ? t.analytics.guestAcceptanceDetail : t.analytics.noData}
+        />
+        <CompactMetricCard
+          label={t.analytics.waitingForCitizen}
+          value={summary ? waitingCount : "..."}
+          detail={summary ? t.analytics.guestWaitingDetail : t.analytics.noData}
+        />
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-slate-950">
+          {t.analytics.guestAiSectionTitle}
+        </h2>
+        <p className="mt-1 text-sm leading-6 text-slate-600">
+          {t.analytics.guestAiSectionText}
+        </p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <CompactMetricCard
+            label={t.analytics.aiAcceptanceRate}
+            value={summary ? formatPercent(summary.totals.aiSuggestionAcceptanceRate) : "..."}
+            detail={
+              summary
+                ? `${acceptedReviews}/${reviewCount} ${t.analytics.guestReviewsDetail}`
+                : t.analytics.noData
+            }
+          />
+          <CompactMetricCard
+            label={t.analytics.aiCorrectionRate}
+            value={summary ? formatPercent(summary.totals.aiCorrectionRate) : "..."}
+            detail={
+              summary
+                ? `${correctionCount}/${reviewCount} ${t.analytics.guestReviewsDetail}`
+                : t.analytics.noData
+            }
+          />
+        </div>
+        <p className="mt-4 text-sm leading-6 text-slate-600">
+          {t.analytics.guestAiNote}
+        </p>
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-slate-950">
+          {t.analytics.guestWorkflowTitle}
+        </h2>
+        <p className="mt-1 text-sm leading-6 text-slate-600">
+          {t.analytics.guestWorkflowText}
+        </p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <CompactMetricCard
+            label={t.analytics.medianTriage}
+            value={summary
+              ? `${formatNullableNumber(
+                  summary.totals.medianTimeToTriageMinutes,
+                  t.common.missing,
+                )} min`
+              : "..."}
+            detail={
+              summary
+                ? `${summary.sampleSizes.triageDurations} ${t.analytics.guestMeasuredTriage}`
+                : t.analytics.noData
+            }
+          />
+          <CompactMetricCard
+            label={t.analytics.avgClose}
+            value={summary
+              ? `${formatNullableNumber(
+                  summary.totals.averageTimeToCloseHours,
+                  t.common.missing,
+                )} h`
+              : "..."}
+            detail={
+              summary
+                ? `${summary.sampleSizes.closeDurations} ${t.analytics.guestMeasuredClose}`
+                : t.analytics.noData
+            }
+          />
+        </div>
+        <p className="mt-4 text-sm leading-6 text-slate-600">
+          {t.analytics.guestWorkflowNote}
+        </p>
+      </section>
+    </div>
+  );
+}
+
+function StaffAnalyticsView({
+  aggregate,
+  canAggregateAnalytics,
+  error,
+  from,
+  isAggregating,
+  setFrom,
+  setTo,
+  summary,
+  t,
+  to,
+}: {
+  aggregate: () => Promise<void>;
+  canAggregateAnalytics: boolean;
+  error: string | null;
+  from: string;
+  isAggregating: boolean;
+  setFrom: (value: string) => void;
+  setTo: (value: string) => void;
+  summary: AnalyticsSummary | null;
+  t: InternalDictionary;
+  to: string;
+}) {
+  return (
+    <>
       <section className="mt-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[1fr_1fr_auto]">
         <DateField label={t.analytics.from} value={from} onChange={setFrom} />
         <DateField label={t.analytics.to} value={to} onChange={setTo} />
@@ -238,7 +441,7 @@ export function AnalyticsDashboard() {
                 ? formatPercent(summary.totals.aiSuggestionAcceptanceRate)
                 : "...",
               detail: summary
-                ? `${summary.totals.aiSuggestionsAccepted}/${summary.totals.aiReviewsTotal} ${t.analytics.aiReviews.toLowerCase()}`
+                ? `${summary.totals.aiSuggestionsAccepted}/${summary.sampleSizes.aiReviews} ${t.analytics.aiReviews.toLowerCase()}.`
                 : t.analytics.noData,
             },
             {
@@ -247,7 +450,7 @@ export function AnalyticsDashboard() {
                 ? formatPercent(summary.totals.aiCorrectionRate)
                 : "...",
               detail: summary
-                ? `${summary.totals.aiCorrectionsTotal} ${t.analytics.aiCorrections.toLowerCase()}`
+                ? `${summary.totals.aiCorrectionsTotal}/${summary.sampleSizes.aiReviews} ${t.analytics.aiReviews.toLowerCase()}.`
                 : t.analytics.noData,
             },
             {
@@ -257,7 +460,9 @@ export function AnalyticsDashboard() {
                     summary.totals.aiTriageFailureRate,
                   )})`
                 : "...",
-              detail: t.analytics.aiFailureDetail,
+              detail: summary
+                ? `${summary.totals.aiTriageFailureCount}/${summary.sampleSizes.aiTriageRuns} ${t.analytics.aiTriageRuns.toLowerCase()}.`
+                : t.analytics.noData,
             },
           ]}
         />
@@ -273,14 +478,16 @@ export function AnalyticsDashboard() {
                     t.common.missing,
                   )} min`
                 : "...",
-              detail: `${t.analytics.median}: ${
-                summary
-                  ? formatNullableNumber(
-                      summary.totals.medianTimeToTriageMinutes,
-                      t.common.missing,
-                    )
-                  : "..."
-              } min`,
+              detail: summary
+                ? `${t.analytics.median}: ${
+                    summary
+                      ? formatNullableNumber(
+                          summary.totals.medianTimeToTriageMinutes,
+                          t.common.missing,
+                        )
+                      : "..."
+                  } min · ${summary.sampleSizes.triageDurations} ${t.analytics.sampledTriage}`
+                : t.analytics.noData,
             },
             {
               label: t.analytics.avgClose,
@@ -290,19 +497,23 @@ export function AnalyticsDashboard() {
                     t.common.missing,
                   )} h`
                 : "...",
-              detail: `${t.analytics.median}: ${
-                summary
-                  ? formatNullableNumber(
-                      summary.totals.medianTimeToCloseHours,
-                      t.common.missing,
-                    )
-                  : "..."
-              } h`,
+              detail: summary
+                ? `${t.analytics.median}: ${
+                    summary
+                      ? formatNullableNumber(
+                          summary.totals.medianTimeToCloseHours,
+                          t.common.missing,
+                        )
+                      : "..."
+                  } h · ${summary.sampleSizes.closeDurations} ${t.analytics.sampledClose}`
+                : t.analytics.noData,
             },
             {
               label: t.analytics.waitingForCitizen,
               value: summary ? summary.totals.casesWaitingForCitizen : "...",
-              detail: t.analytics.waitingDetail,
+              detail: summary
+                ? `${summary.totals.casesWaitingForCitizen} ${t.analytics.waitingDetail}`
+                : t.analytics.noData,
             },
           ]}
         />
@@ -323,16 +534,14 @@ export function AnalyticsDashboard() {
                     t.common.missing,
                   )
                 : "...",
-              detail: summary
-                ? formatPopulationDetail(summary, t)
-                : t.analytics.noData,
+              detail: summary ? formatPopulationDetail(summary, t) : t.analytics.noData,
             },
             {
               label: t.analytics.minutesSaved,
-              value: summary
-                ? summary.totals.estimatedManualMinutesSaved
-                : "...",
-              detail: t.analytics.estimateDetail,
+              value: summary ? summary.totals.estimatedManualMinutesSaved : "...",
+              detail: summary
+                ? `${summary.assumptions.estimatedManualMinutesSavedLabel} ${summary.assumptions.acceptedAiSuggestionMinutesSaved} ${t.analytics.minutes} / ${summary.assumptions.correctedAiSuggestionMinutesSaved} ${t.analytics.minutes}.`
+                : t.analytics.noData,
             },
           ]}
         />
@@ -373,7 +582,7 @@ export function AnalyticsDashboard() {
             <p className="mt-1 text-sm text-slate-600">{t.analytics.ssbText}</p>
           </div>
           <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
-            {t.analytics.source}: SSB
+            {t.analytics.ssbSourceLabel}
           </span>
         </div>
         {summary?.ssbEnrichment.status === "missing" ? (
@@ -449,7 +658,7 @@ export function AnalyticsDashboard() {
           ) : null}
         </div>
       </section>
-    </InternalShell>
+    </>
   );
 }
 
@@ -472,6 +681,24 @@ function DateField({
         className="rounded-md border border-slate-300 px-3 py-2 text-slate-950"
       />
     </label>
+  );
+}
+
+function CompactMetricCard({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string | number;
+  detail: string;
+}) {
+  return (
+    <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-sm font-medium text-slate-500">{label}</p>
+      <p className="mt-1 text-3xl font-semibold text-slate-950">{value}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{detail}</p>
+    </article>
   );
 }
 
@@ -609,6 +836,38 @@ function buildInsights(
         title: t.analytics.volumeTitle,
         value: "...",
         text: t.analytics.loadingInsight,
+        tone: "neutral",
+      },
+    ];
+  }
+
+  const smallSample =
+    summary.sampleSizes.aiReviews < 30 ||
+    summary.sampleSizes.aiTriageRuns < 30 ||
+    summary.sampleSizes.triageDurations < 30 ||
+    summary.sampleSizes.closeDurations < 30;
+
+  if (smallSample) {
+    return [
+      {
+        title: t.analytics.aiQualityTitle,
+        value: formatPercent(summary.totals.aiSuggestionAcceptanceRate),
+        text: t.analytics.smallSampleInsight,
+        tone: "neutral",
+      },
+      {
+        title: t.analytics.flowTitle,
+        value: `${formatNullableNumber(
+          summary.totals.medianTimeToTriageMinutes,
+          t.common.missing,
+        )} min`,
+        text: t.analytics.smallSampleInsight,
+        tone: "neutral",
+      },
+      {
+        title: t.analytics.volumeTitle,
+        value: `${summary.totals.totalCases}`,
+        text: t.analytics.smallSampleInsight,
         tone: "neutral",
       },
     ];

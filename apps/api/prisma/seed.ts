@@ -4,9 +4,7 @@ import { hash } from 'bcryptjs';
 import { randomBytes } from 'node:crypto';
 import { config } from 'dotenv';
 import { cases } from './seed/data/cases';
-import { hoursAgo, startOfUtcDay } from './seed/time';
-import { SeedContext } from './seed/types';
-import { seedAnalytics } from './seed/seed-analytics';
+import { createDemoSeedContext, rebuildDemoAnalytics } from './seed/analytics-baseline';
 import { seedCases } from './seed/seed-cases';
 import { seedOperationalEvents } from './seed/seed-operational-events';
 import { seedSsbStatistics } from './seed/seed-ssb';
@@ -25,14 +23,7 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
-  const context: SeedContext = {
-    snapshotDate: startOfUtcDay(new Date()),
-    importedAt: hoursAgo(2),
-    analyticsRebuiltAt: hoursAgo(1),
-    tenantMap: new Map(),
-    departmentMap: new Map(),
-    adminByTenant: new Map(),
-  };
+  const context = createDemoSeedContext(new Date());
   const demoPasswordHash = await hash(
     getSeedPassword('SEED_DEMO_PASSWORD'),
     12,
@@ -53,7 +44,7 @@ async function main() {
   });
   await seedSsbStatistics(prisma, context);
   await seedCases(prisma, cases, context);
-  await seedAnalytics(prisma, context);
+  await rebuildDemoAnalytics(prisma, context);
   await seedOperationalEvents(prisma, context);
 }
 

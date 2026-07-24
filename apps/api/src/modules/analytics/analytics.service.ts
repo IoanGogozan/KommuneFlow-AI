@@ -7,9 +7,11 @@ import { OperationalEventService } from '../operations/operational-event.service
 import { AnalyticsRange } from './analytics.schemas';
 
 type CountMap = Record<string, number>;
-type WeightedValue = {
-  value: number;
-  weight: number;
+type SampleSizes = {
+  aiReviews: number;
+  aiTriageRuns: number;
+  triageDurations: number;
+  closeDurations: number;
 };
 const SSB_STALE_AFTER_DAYS = 395;
 const DEFAULT_ACCEPTED_AI_MINUTES_SAVED = 5;
@@ -55,70 +57,152 @@ export class AnalyticsService {
 
   async getSummary(user: CurrentUser, range: AnalyticsRange) {
     assertValidRange(range);
-
-    const snapshots = await this.prisma.analyticsDailySnapshot.findMany({
-      where: {
-        tenantId: user.tenantId,
-        date: {
-          gte: range.from,
-          lte: range.to,
+    const [snapshots, cases, aiReviews, aiTriageResults] = await Promise.all([
+      this.prisma.analyticsDailySnapshot.findMany({
+        where: {
+          tenantId: user.tenantId,
+          date: {
+            gte: range.from,
+            lte: range.to,
+          },
         },
-      },
-      orderBy: { date: 'asc' },
-      select: {
-        date: true,
-        totalCases: true,
-        casesByStatusJson: true,
-        casesByCategoryJson: true,
-        casesByDepartmentJson: true,
-        aiReviewsTotal: true,
-        aiCorrectionsTotal: true,
-        aiCorrectionRate: true,
-        averageTimeToTriageMinutes: true,
-        medianTimeToTriageMinutes: true,
-        averageTimeToCloseHours: true,
-        medianTimeToCloseHours: true,
-        casesWaitingForCitizen: true,
-        aiTriageSuccessCount: true,
-        aiTriageFailureCount: true,
-        aiTriageFailureRate: true,
-        aiSuggestionsAccepted: true,
-        aiSuggestionAcceptanceRate: true,
-        estimatedManualMinutesSaved: true,
-        municipalityPopulation: true,
-        municipalityPopulationYear: true,
-        casesPer1000Inhabitants: true,
-        ssbDataStatus: true,
-        ssbImportedAt: true,
-        analyticsRebuiltAt: true,
-      },
-    });
+        orderBy: { date: 'asc' },
+        select: {
+          date: true,
+          totalCases: true,
+          casesByStatusJson: true,
+          casesByCategoryJson: true,
+          casesByDepartmentJson: true,
+          aiReviewsTotal: true,
+          aiCorrectionsTotal: true,
+          aiCorrectionRate: true,
+          averageTimeToTriageMinutes: true,
+          medianTimeToTriageMinutes: true,
+          averageTimeToCloseHours: true,
+          medianTimeToCloseHours: true,
+          casesWaitingForCitizen: true,
+          aiTriageSuccessCount: true,
+          aiTriageFailureCount: true,
+          aiTriageFailureRate: true,
+          aiSuggestionsAccepted: true,
+          aiSuggestionAcceptanceRate: true,
+          estimatedManualMinutesSaved: true,
+          municipalityPopulation: true,
+          municipalityPopulationYear: true,
+          casesPer1000Inhabitants: true,
+          ssbDataStatus: true,
+          ssbImportedAt: true,
+          analyticsRebuiltAt: true,
+        },
+      }),
+      this.prisma.case.findMany({
+        where: {
+          tenantId: user.tenantId,
+          createdAt: {
+            gte: range.from,
+            lte: range.to,
+          },
+        },
+        select: {
+          createdAt: true,
+          closedAt: true,
+          status: true,
+          category: true,
+          assignedDepartment: {
+            select: {
+              slug: true,
+            },
+          },
+          aiTriageResults: {
+            orderBy: { createdAt: 'asc' },
+            select: {
+              createdAt: true,
+              status: true,
+            },
+          },
+        },
+      }),
+      this.prisma.aIReview.findMany({
+        where: {
+          tenantId: user.tenantId,
+          createdAt: {
+            gte: range.from,
+            lte: range.to,
+          },
+        },
+        select: {
+          wasAiSuggestionAccepted: true,
+        },
+      }),
+      this.prisma.aITriageResult.findMany({
+        where: {
+          tenantId: user.tenantId,
+          createdAt: {
+            gte: range.from,
+            lte: range.to,
+          },
+        },
+        select: {
+          status: true,
+        },
+      }),
+    ]);
 
+    const casesByStatus = countBy(cases, (item) => item.status);
+    const casesByCategory = countBy(cases, (item) => item.category);
+    const casesByDepartment = countBy(
+      cases,
+      (item) => item.assignedDepartment?.slug ?? 'unassigned',
+    );
+    const aiReviewsTotal = aiReviews.length;
+    const aiSuggestionsAccepted = aiReviews.filter(
+      (review) => review.wasAiSuggestionAccepted,
+    ).length;
+    const aiCorrectionsTotal = aiReviewsTotal - aiSuggestionsAccepted;
+    const aiTriageSuccessCount = aiTriageResults.filter((result) =>
+      ['completed', 'reviewed'].includes(result.status),
+    ).length;
+    const aiTriageFailureCount = aiTriageResults.filter(
+      (result) => result.status === 'failed',
+    ).length;
+    const triageDurations = getTimeToTriageMinutes(cases);
+    const closeDurations = getTimeToCloseHours(cases);
+    const sampleSizes: SampleSizes = {
+      aiReviews: aiReviewsTotal,
+      aiTriageRuns: aiTriageSuccessCount + aiTriageFailureCount,
+      triageDurations: triageDurations.length,
+      closeDurations: closeDurations.length,
+    };
     const totals = {
-      totalCases: 0,
-      casesByStatus: {} as CountMap,
-      casesByCategory: {} as CountMap,
-      casesByDepartment: {} as CountMap,
-      aiReviewsTotal: 0,
-      aiCorrectionsTotal: 0,
-      aiCorrectionRate: 0,
-      averageTimeToTriageMinutes: null as number | null,
-      medianTimeToTriageMinutes: null as number | null,
-      averageTimeToCloseHours: null as number | null,
-      medianTimeToCloseHours: null as number | null,
-      casesWaitingForCitizen: 0,
-      aiTriageSuccessCount: 0,
-      aiTriageFailureCount: 0,
-      aiTriageFailureRate: 0,
-      aiSuggestionsAccepted: 0,
-      aiSuggestionAcceptanceRate: 0,
-      estimatedManualMinutesSaved: 0,
+      totalCases: cases.length,
+      casesByStatus,
+      casesByCategory,
+      casesByDepartment,
+      aiReviewsTotal,
+      aiCorrectionsTotal,
+      aiCorrectionRate:
+        aiReviewsTotal === 0 ? 0 : aiCorrectionsTotal / aiReviewsTotal,
+      averageTimeToTriageMinutes: average(triageDurations),
+      medianTimeToTriageMinutes: median(triageDurations),
+      averageTimeToCloseHours: average(closeDurations),
+      medianTimeToCloseHours: median(closeDurations),
+      casesWaitingForCitizen: cases.filter(
+        (caseRecord) => caseRecord.status === 'waiting_for_citizen',
+      ).length,
+      aiTriageSuccessCount,
+      aiTriageFailureCount,
+      aiTriageFailureRate:
+        sampleSizes.aiTriageRuns === 0
+          ? 0
+          : aiTriageFailureCount / sampleSizes.aiTriageRuns,
+      aiSuggestionsAccepted,
+      aiSuggestionAcceptanceRate:
+        aiReviewsTotal === 0 ? 0 : aiSuggestionsAccepted / aiReviewsTotal,
+      estimatedManualMinutesSaved:
+        aiSuggestionsAccepted * getAcceptedAiMinutesSaved() +
+        aiCorrectionsTotal * getCorrectedAiMinutesSaved(),
       casesPer1000Inhabitants: null as number | null,
     };
-    const weightedTriageAverageValues: WeightedValue[] = [];
-    const weightedCloseAverageValues: WeightedValue[] = [];
-    const medianTriageValues: number[] = [];
-    const medianCloseValues: number[] = [];
     let latestAnalyticsRebuiltAtIso: string | null = null;
     const ssbEnrichment = {
       status: 'missing',
@@ -132,47 +216,6 @@ export class AnalyticsService {
       const casesByStatus = jsonToCountMap(snapshot.casesByStatusJson);
       const casesByCategory = jsonToCountMap(snapshot.casesByCategoryJson);
       const casesByDepartment = jsonToCountMap(snapshot.casesByDepartmentJson);
-
-      totals.totalCases += snapshot.totalCases;
-      totals.casesByStatus = mergeCounts(totals.casesByStatus, casesByStatus);
-      totals.casesByCategory = mergeCounts(
-        totals.casesByCategory,
-        casesByCategory,
-      );
-      totals.casesByDepartment = mergeCounts(
-        totals.casesByDepartment,
-        casesByDepartment,
-      );
-      totals.aiReviewsTotal += snapshot.aiReviewsTotal;
-      totals.aiCorrectionsTotal += snapshot.aiCorrectionsTotal;
-      totals.casesWaitingForCitizen += snapshot.casesWaitingForCitizen;
-      totals.aiTriageSuccessCount += snapshot.aiTriageSuccessCount;
-      totals.aiTriageFailureCount += snapshot.aiTriageFailureCount;
-      totals.aiSuggestionsAccepted += snapshot.aiSuggestionsAccepted;
-      totals.estimatedManualMinutesSaved +=
-        snapshot.estimatedManualMinutesSaved;
-
-      if (snapshot.averageTimeToTriageMinutes !== null) {
-        weightedTriageAverageValues.push({
-          value: snapshot.averageTimeToTriageMinutes,
-          weight: snapshot.totalCases,
-        });
-      }
-
-      if (snapshot.averageTimeToCloseHours !== null) {
-        weightedCloseAverageValues.push({
-          value: snapshot.averageTimeToCloseHours,
-          weight: snapshot.totalCases,
-        });
-      }
-
-      if (snapshot.medianTimeToTriageMinutes !== null) {
-        medianTriageValues.push(snapshot.medianTimeToTriageMinutes);
-      }
-
-      if (snapshot.medianTimeToCloseHours !== null) {
-        medianCloseValues.push(snapshot.medianTimeToCloseHours);
-      }
 
       if (
         snapshot.analyticsRebuiltAt &&
@@ -212,28 +255,6 @@ export class AnalyticsService {
       };
     });
 
-    totals.aiCorrectionRate =
-      totals.aiReviewsTotal === 0
-        ? 0
-        : totals.aiCorrectionsTotal / totals.aiReviewsTotal;
-    totals.aiSuggestionAcceptanceRate =
-      totals.aiReviewsTotal === 0
-        ? 0
-        : totals.aiSuggestionsAccepted / totals.aiReviewsTotal;
-    totals.aiTriageFailureRate =
-      totals.aiTriageSuccessCount + totals.aiTriageFailureCount === 0
-        ? 0
-        : totals.aiTriageFailureCount /
-          (totals.aiTriageSuccessCount + totals.aiTriageFailureCount);
-    totals.averageTimeToTriageMinutes = weightedAverage(
-      weightedTriageAverageValues,
-    );
-    totals.averageTimeToCloseHours = weightedAverage(
-      weightedCloseAverageValues,
-    );
-    totals.medianTimeToTriageMinutes = median(medianTriageValues);
-    totals.medianTimeToCloseHours = median(medianCloseValues);
-
     const latestPopulationSnapshot = [...snapshots]
       .reverse()
       .find((snapshot) => snapshot.municipalityPopulation !== null);
@@ -260,10 +281,12 @@ export class AnalyticsService {
       from: toDateKey(range.from),
       to: toDateKey(range.to),
       totals,
+      sampleSizes,
       assumptions: {
         acceptedAiSuggestionMinutesSaved: getAcceptedAiMinutesSaved(),
         correctedAiSuggestionMinutesSaved: getCorrectedAiMinutesSaved(),
-        estimatedManualMinutesSavedLabel: 'Estimate, not exact measurement.',
+        estimatedManualMinutesSavedLabel:
+          'Illustrative time-saving assumption, not a measured result.',
       },
       analyticsLastRebuiltAt: latestAnalyticsRebuiltAtIso,
       ssbEnrichment,
@@ -292,7 +315,7 @@ export class AnalyticsService {
           category: true,
           assignedDepartment: {
             select: {
-              name: true,
+              slug: true,
             },
           },
           addresses: {
@@ -406,7 +429,7 @@ export class AnalyticsService {
         ),
         casesByDepartmentJson: countBy(
           cases,
-          (caseRecord) => caseRecord.assignedDepartment?.name ?? 'Unassigned',
+          (caseRecord) => caseRecord.assignedDepartment?.slug ?? 'unassigned',
         ),
         aiReviewsTotal: aiReviews.length,
         aiCorrectionsTotal,
@@ -427,7 +450,7 @@ export class AnalyticsService {
         ),
         casesByDepartmentJson: countBy(
           cases,
-          (caseRecord) => caseRecord.assignedDepartment?.name ?? 'Unassigned',
+          (caseRecord) => caseRecord.assignedDepartment?.slug ?? 'unassigned',
         ),
         aiReviewsTotal: aiReviews.length,
         aiCorrectionsTotal,
@@ -531,16 +554,6 @@ function countBy<T>(items: T[], getKey: (item: T) => string): CountMap {
   }, {});
 }
 
-function mergeCounts(left: CountMap, right: CountMap) {
-  return Object.entries(right).reduce<CountMap>(
-    (result, [key, value]) => ({
-      ...result,
-      [key]: (result[key] ?? 0) + value,
-    }),
-    { ...left },
-  );
-}
-
 function jsonToCountMap(value: Prisma.JsonValue): CountMap {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return {};
@@ -602,25 +615,34 @@ function getTimeToTriageMinutes(
     );
 }
 
+function getTimeToCloseHours(
+  cases: Array<{
+    createdAt: Date;
+    closedAt: Date | null;
+  }>,
+) {
+  return cases
+    .map((caseRecord) => {
+      if (!caseRecord.closedAt) {
+        return null;
+      }
+
+      return (
+        (caseRecord.closedAt.getTime() - caseRecord.createdAt.getTime()) /
+        (1000 * 60 * 60)
+      );
+    })
+    .filter(
+      (duration): duration is number => duration !== null && duration >= 0,
+    );
+}
+
 function average(values: number[]) {
   if (values.length === 0) {
     return null;
   }
 
   return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function weightedAverage(values: WeightedValue[]) {
-  const totalWeight = values.reduce((sum, item) => sum + item.weight, 0);
-
-  if (totalWeight === 0) {
-    return null;
-  }
-
-  return (
-    values.reduce((sum, item) => sum + item.value * item.weight, 0) /
-    totalWeight
-  );
 }
 
 function median(values: number[]) {

@@ -6,20 +6,30 @@ import { average, countBy, median } from './math';
 import { DemoCase, SeedContext } from './types';
 
 export async function seedAnalytics(prisma: PrismaClient, context: SeedContext) {
+  let analyticsRowsCreated = 0;
+  let baselineCases = 0;
+
   for (const tenantSpec of tenants) {
     const tenantCases = cases.filter((item) => item.tenantSlug === tenantSpec.slug);
     const metrics = aiMetrics(tenantCases);
     const durations = durationMetrics(tenantCases);
     const tenant = context.tenantMap.get(tenantSpec.slug)!;
+    baselineCases += tenantCases.length;
 
     await seedDailySnapshot(prisma, context, tenant.id, tenantSpec, tenantCases, {
       ...metrics,
       ...durations,
     });
+    analyticsRowsCreated += 1;
     await seedDepartmentAnalytics(prisma, context, tenant.id, tenantSpec, tenantCases);
+    analyticsRowsCreated += departments.length;
     await seedAiQuality(prisma, context, tenant.id, metrics);
+    analyticsRowsCreated += 1;
     await seedMunicipalityAnalytics(prisma, context, tenant.id, tenantSpec, tenantCases);
+    analyticsRowsCreated += 1;
   }
+
+  return { analyticsRowsCreated, baselineCases };
 }
 
 async function seedDailySnapshot(

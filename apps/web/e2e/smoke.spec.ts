@@ -490,6 +490,221 @@ test("internal case detail supports status update, document upload, and AI revie
   ).toBeVisible();
 });
 
+test("internal analytics guest view stays compact and avoids advanced staff sections", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.addInitScript(() => {
+    window.localStorage.setItem("kommuneflow.internal.locale", "en");
+  });
+
+  await mockApi(page, async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (request.method() === "OPTIONS") {
+      return fulfillJson(route, {}, 204);
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/auth/me")) {
+      return fulfillJson(route, portfolioGuest());
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/analytics/summary")) {
+      return fulfillJson(route, {
+        from: "2026-05-01",
+        to: "2026-05-31",
+        totals: {
+          totalCases: 3,
+          casesByStatus: {
+            new: 1,
+            closed: 1,
+            waiting_for_citizen: 1,
+          },
+          casesByCategory: {
+            building_case: 2,
+            road_transport: 1,
+          },
+          casesByDepartment: {
+            technical_department: 2,
+            unassigned: 1,
+          },
+          aiReviewsTotal: 3,
+          aiCorrectionsTotal: 2,
+          aiCorrectionRate: 2 / 3,
+          averageTimeToTriageMinutes: 40 / 3,
+          medianTimeToTriageMinutes: 15,
+          averageTimeToCloseHours: 14 / 3,
+          medianTimeToCloseHours: 5,
+          casesWaitingForCitizen: 1,
+          aiTriageSuccessCount: 3,
+          aiTriageFailureCount: 1,
+          aiTriageFailureRate: 0.25,
+          aiSuggestionsAccepted: 1,
+          aiSuggestionAcceptanceRate: 1 / 3,
+          estimatedManualMinutesSaved: 9,
+          casesPer1000Inhabitants: (3 / 46568) * 1000,
+        },
+        sampleSizes: {
+          aiReviews: 3,
+          aiTriageRuns: 4,
+          triageDurations: 3,
+          closeDurations: 3,
+        },
+        assumptions: {
+          acceptedAiSuggestionMinutesSaved: 5,
+          correctedAiSuggestionMinutesSaved: 2,
+          estimatedManualMinutesSavedLabel:
+            "Illustrative time-saving assumption, not a measured result.",
+        },
+        analyticsLastRebuiltAt: "2026-05-09T12:00:00.000Z",
+        ssbEnrichment: {
+          status: "available",
+          populationUsed: 46568,
+          populationYear: 2026,
+          casesPer1000Inhabitants: (3 / 46568) * 1000,
+          lastImportedAt: "2026-05-09T10:00:00.000Z",
+        },
+        daily: [],
+      });
+    }
+
+    return route.abort("notfound");
+  });
+
+  await page.goto("/internal/analytics");
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Analytics" }),
+  ).toBeVisible();
+  await expect(page.getByText("Synthetic analytics snapshot")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Human-reviewed AI" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Workflow snapshot" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Aggregate" })).toHaveCount(0);
+  await expect(page.getByText("Daily volume")).toHaveCount(0);
+  await expect(page.getByText("SSB enrichment")).toHaveCount(0);
+  await expect(page.getByText("Illustrative minutes saved")).toHaveCount(0);
+  await expect(page.getByText("Reference: SSB table 07459")).toHaveCount(0);
+
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+});
+
+test("internal analytics staff view keeps detailed metrics and rebuild controls", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("kommuneflow.internal.locale", "en");
+  });
+
+  await mockApi(page, async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (request.method() === "OPTIONS") {
+      return fulfillJson(route, {}, 204);
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/auth/me")) {
+      return fulfillJson(route, {
+        ...internalUser(),
+        role: "super_admin",
+        permissions: ["analytics:read", "analytics:aggregate"],
+      });
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/analytics/summary")) {
+      return fulfillJson(route, {
+        from: "2026-05-01",
+        to: "2026-05-31",
+        totals: {
+          totalCases: 3,
+          casesByStatus: {
+            new: 1,
+            closed: 1,
+            waiting_for_citizen: 1,
+          },
+          casesByCategory: {
+            building_case: 2,
+            road_transport: 1,
+          },
+          casesByDepartment: {
+            technical_department: 2,
+            unassigned: 1,
+          },
+          aiReviewsTotal: 3,
+          aiCorrectionsTotal: 2,
+          aiCorrectionRate: 2 / 3,
+          averageTimeToTriageMinutes: 40 / 3,
+          medianTimeToTriageMinutes: 15,
+          averageTimeToCloseHours: 14 / 3,
+          medianTimeToCloseHours: 5,
+          casesWaitingForCitizen: 1,
+          aiTriageSuccessCount: 3,
+          aiTriageFailureCount: 1,
+          aiTriageFailureRate: 0.25,
+          aiSuggestionsAccepted: 1,
+          aiSuggestionAcceptanceRate: 1 / 3,
+          estimatedManualMinutesSaved: 9,
+          casesPer1000Inhabitants: (3 / 46568) * 1000,
+        },
+        sampleSizes: {
+          aiReviews: 3,
+          aiTriageRuns: 4,
+          triageDurations: 3,
+          closeDurations: 3,
+        },
+        assumptions: {
+          acceptedAiSuggestionMinutesSaved: 5,
+          correctedAiSuggestionMinutesSaved: 2,
+          estimatedManualMinutesSavedLabel:
+            "Illustrative time-saving assumption, not a measured result.",
+        },
+        analyticsLastRebuiltAt: "2026-05-09T12:00:00.000Z",
+        ssbEnrichment: {
+          status: "available",
+          populationUsed: 46568,
+          populationYear: 2026,
+          casesPer1000Inhabitants: (3 / 46568) * 1000,
+          lastImportedAt: "2026-05-09T10:00:00.000Z",
+        },
+        daily: [
+          {
+            date: "2026-05-01",
+            totalCases: 3,
+            aiCorrectionRate: 2 / 3,
+            aiTriageFailureRate: 0.25,
+            estimatedManualMinutesSaved: 9,
+            casesPer1000Inhabitants: (3 / 46568) * 1000,
+            ssbDataStatus: "available",
+          },
+        ],
+      });
+    }
+
+    return route.abort("notfound");
+  });
+
+  await page.goto("/internal/analytics");
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Analytics" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Aggregate" })).toBeVisible();
+  await expect(page.getByText("Illustrative minutes saved")).toBeVisible();
+  await expect(page.getByText("Reference: SSB table 07459")).toBeVisible();
+  await expect(page.getByText("Daily volume")).toBeVisible();
+  await expect(page.getByText("SSB enrichment")).toBeVisible();
+  await expect(page.getByText("Sample size is below 30 observations")).toHaveCount(3);
+});
+
 async function mockApi(
   page: Page,
   handler: (route: Route) => Promise<void> | void,

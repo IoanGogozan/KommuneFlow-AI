@@ -354,12 +354,13 @@ export const internalDictionaryNb = {
     aggregateError: "Kunne ikke aggregere analyse.",
     cases: "Saker",
     aiReviews: "KI-vurderinger",
+    aiTriageRuns: "KI-triagekjøringer",
     aiCorrections: "KI-korrigeringer",
     aiCorrectionRate: "KI-korrigeringsrate",
     aiAcceptanceRate: "KI-godkjenningsrate",
     aiTriageFailures: "KI-triagefeil",
     waitingForCitizen: "Venter på innbygger",
-    minutesSaved: "Estimerte minutter spart",
+    minutesSaved: "Illustrative minutter spart",
     avgTriage: "Snitt tid til triage",
     medianTriage: "Median tid til triage",
     avgClose: "Snitt tid til lukking",
@@ -368,9 +369,9 @@ export const internalDictionaryNb = {
     population: "Befolkningsgrunnlag",
     ssbYear: "SSB-år",
     ssbStatus: "SSB-status",
-    effectTitle: "Effektmåling",
+    effectTitle: "Illustrativ tidsbesparelse",
     effectText:
-      "Estimert manuell tid spart er en dokumentert beregning, ikke en eksakt måling.",
+      "Dette er en dokumentert antakelse basert på godkjente og korrigerte KI-vurderinger, ikke en målt tidsstudie.",
     lastRebuild: "Siste rebuild",
     assumption: "Antakelse",
     acceptedSave: "godkjente KI-forslag sparer",
@@ -378,13 +379,14 @@ export const internalDictionaryNb = {
     minutes: "minutter",
     ssbTitle: "SSB-berikelse",
     ssbText:
-      "Befolkningsdata fra Statistisk sentralbyrå tabell 07459 brukes til å beregne saker per 1 000 innbyggere.",
+      "Befolkningsreferansen bygger på SSB tabell 07459. Demomiljøer kan bruke en seedet referanseverdi i stedet for en live import.",
     source: "Kilde",
     ssbMissing:
-      "SSB-befolkningsdata mangler for dette intervallet. Importer kommunestatistikk og bygg analysen på nytt.",
+      "SSB-befolkningsdata mangler for dette intervallet. Importer kommunestatistikk og bygg analysen på nytt for å aktivere normaliserte metrikker.",
     ssbStale:
-      "SSB-befolkningsdata er utdatert. Importer statistikk på nytt for bruk i beslutninger.",
+      "SSB-befolkningsdata er utdatert. Importer statistikk på nytt før normaliserte metrikker brukes i beslutninger.",
     imported: "Sist importert",
+    ssbSourceLabel: "Referanse: SSB tabell 07459",
     byDepartment: "Saksvolum per avdeling",
     byCategory: "Saksvolum per kategori",
     byStatus: "Saksvolum per status",
@@ -393,11 +395,13 @@ export const internalDictionaryNb = {
     noDaily: "Ingen aggregert analyse for dette intervallet.",
     aiCorrection: "KI-korrigering",
     aiFailure: "KI-feil",
-    minSaved: "min spart",
+    minSaved: "Illustrative minutter",
     executiveTitle: "Hva tallene betyr",
     executiveText:
       "Bruk analysen til å se om KI gir verdi, hvor sakene stopper opp, og om volumet endrer seg.",
-    loadingInsight: "Laster beslutningsgrunnlag for valgt periode.",
+    loadingInsight: "Laster sammendrag for valgt periode.",
+    smallSampleInsight:
+      "Utvalget er under 30 observasjoner, så dette er kun veiledende.",
     aiQualityTitle: "KI-kvalitet",
     aiQualityText:
       "Viser om KI-forslagene kan brukes direkte, eller om modellen/rutingen bør justeres.",
@@ -411,7 +415,7 @@ export const internalDictionaryNb = {
     flowHealthy: "Sakene flyter uten tydelig blokkering i valgt periode.",
     flowBlocked:
       "En merkbar andel saker venter på innbygger. Sjekk om forespørsler om mer informasjon kan bli tydeligere.",
-    reliabilityTitle: "KI-stabilitet",
+    reliabilityTitle: "KI-pålitelighet",
     reliabilityHealthy: "KI-triage feiler sjelden i valgt periode.",
     reliabilityNeedsReview:
       "KI-feilraten er høy nok til at integrasjon, prompt eller datagrunnlag bør sjekkes.",
@@ -423,11 +427,38 @@ export const internalDictionaryNb = {
       "Høyt tall betyr at saksbehandlere venter på svar før saken kan gå videre.",
     aiFailureDetail:
       "Feil her betyr at KI-triage ikke klarte å lage et brukbart forslag.",
-    selectedPeriod: "Totalt for valgt periode.",
-    estimateDetail:
-      "Estimert spart tid basert på godkjente og korrigerte KI-vurderinger.",
+    selectedPeriod:
+      "Saker telles etter opprettelsesdato. KI-vurderinger telles etter datoen de ble opprettet.",
+    estimateDetail: "Illustrativt kun. Ikke et målt resultat.",
     populationMissingDetail:
-      "Mangler SSB-befolkningstall for normalisert sammenligning.",
+      "Mangler SSB-befolkningsreferanse for normalisert sammenligning.",
+    sampledTriage: "målte triagetider",
+    sampledClose: "målte lukketider",
+    guestEyebrow: "Offentlig demo",
+    guestTitle: "Syntetisk analyseutsnitt",
+    guestIntro:
+      "Denne visningen oppsummerer bare seedede demodata. Den utelater daglige trender, SSB-normalisering, rebuild-kontroller og andre avanserte medarbeidermetrikker.",
+    guestRangeLabel: "Valgt intervall",
+    guestDisclaimer:
+      "Kun for porteføljevisning. Tallene er syntetiske og kan nullstilles.",
+    guestCases: "Saker",
+    guestCasesDetail: "opprettet i valgt periode",
+    guestReviewsDetail: "menneskelige vurderinger",
+    guestAcceptanceDetail:
+      "Menneskelig vurdert KI-godkjenning, vist som andel av vurderingene.",
+    guestWaitingDetail: "saker venter på innbyggerrespons",
+    guestAiSectionTitle: "Menneskelig vurdert KI",
+    guestAiSectionText:
+      "Godkjente og korrigerte KI-forslag vises sammen med antall vurderinger.",
+    guestAiNote:
+      "Denne gjestevisningen skjuler daglige trender, SSB-referansedata, estimerte minutter spart og aggregeringskontroller.",
+    guestWorkflowTitle: "Arbeidsflytutsnitt",
+    guestWorkflowText:
+      "Gjestevisningen holder det operative bildet kompakt.",
+    guestMeasuredTriage: "målte triagetider",
+    guestMeasuredClose: "målte lukketider",
+    guestWorkflowNote:
+      "Detaljert trendanalyse er fortsatt tilgjengelig for ansatte.",
   },
   operations: {
     title: "Drift",
