@@ -101,3 +101,25 @@ The synthetic live-verification case is intentionally subject to the six-hour de
 - The rollback procedure and prerequisites were reviewed, but an actual rollback was not triggered because the release was healthy.
 - The scheduled cron entry is installed and the identical command passed twice manually; its first timer-triggered execution remains future operational evidence.
 - Hetzner was not modified. This verification applies only to the home-server deployment at `https://kommune.norvix.no`.
+
+## 2026-07-24 — Portfolio polish deployment
+
+PR #26 was merged after CI, CodeQL, and Gitleaks passed, then commit
+`253913af67f4422d209477da667c094d44f41854` was deployed only to the physical
+home server. Hetzner was not modified.
+
+| Check                   | Exact result                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Backup                  | PASS — `kommuneflow_ai_20260724T140753Z.dump`, 102 KB, SHA-256 verified, mode `600`                            |
+| Preflight               | PASS — all repository, Docker, configuration, mock-AI, HTTPS, branch, Compose, network, Caddy, and disk checks |
+| Release                 | PASS — API/web images rebuilt; no pending migrations; all 18 migrations current                                |
+| Runtime                 | PASS — PostgreSQL, API, web, and gateway healthy; health/readiness `200`                                       |
+| Public/staff smoke      | PASS — public pages and perimeter responses correct; staff login/profile/cases/AI status succeeded             |
+| Guest mutation boundary | PASS — session `201`; ordinary seed mutation `403`; designated mutable seed mutation `201`                     |
+| Deterministic reset     | PASS — 22 seed cases restored and the synthetic mutable-seed note count returned to `0`                        |
+| Locale continuity       | PASS — English landing entered `/internal` with `kommuneflow.internal.locale=en` and English employee UI       |
+| Guest UI                | PASS — one Exit demo action, compact portfolio banner, public case references, no duplicate guest logout       |
+| Network isolation       | PASS — only `kommuneflow-ai-gateway-1` from this application joins the shared `proxy` network                  |
+
+The deployment required no schema migration and no global Caddy change. The
+existing six-hour guarded reset schedule remains installed.
