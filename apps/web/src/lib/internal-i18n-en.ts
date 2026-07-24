@@ -384,7 +384,7 @@ export const internalDictionaryEn = {
       "SSB population data is missing for this range. Import municipality statistics and rebuild analytics to enable normalized metrics.",
     ssbStale:
       "SSB population data is stale. Re-import municipality statistics and rebuild analytics before using normalized metrics in decisions.",
-    imported: "Last imported",
+    imported: "Reference timestamp",
     ssbSourceLabel: "Reference: SSB table 07459",
     byDepartment: "Case volume by department",
     byCategory: "Case volume by category",
@@ -444,17 +444,21 @@ export const internalDictionaryEn = {
     guestCases: "Cases",
     guestCasesDetail: "created in the selected period",
     guestReviewsDetail: "human reviews",
-    guestAcceptanceDetail:
-      "Human-reviewed AI acceptance, shown as a share of the review count.",
-    guestWaitingDetail: "cases are waiting for citizen input",
     guestAiSectionTitle: "Human-reviewed AI",
     guestAiSectionText:
       "Accepted and corrected AI suggestions are shown with their review counts.",
     guestAiNote:
       "This guest view hides daily trends, SSB reference data, estimated minutes saved and aggregate controls.",
+    guestAcceptedCorrected: "Accepted / corrected reviews",
+    guestAccepted: "accepted",
+    guestCorrected: "corrected",
+    guestAcceptedCorrectedDetail: "Accepted and corrected review counts.",
+    guestFailedRuns: "Failed triage runs",
+    guestFailedRunsDetail: "Failures shown against the total triage runs.",
+    guestWaitingDetail: "cases are waiting for citizen input",
+    guestWorkflowEyebrow: "Workflow",
     guestWorkflowTitle: "Workflow snapshot",
-    guestWorkflowText:
-      "The guest view keeps the operational picture compact.",
+    guestWorkflowText: "The guest view keeps the operational picture compact.",
     guestMeasuredTriage: "measured triage timings",
     guestMeasuredClose: "measured close timings",
     guestWorkflowNote:

@@ -3,30 +3,68 @@ import { cases } from './data/cases';
 import { departments } from './data/departments';
 import { tenants } from './data/tenants';
 import { average, countBy, median } from './math';
+import { daysAgo, startOfUtcDay } from './time';
 import { DemoCase, SeedContext } from './types';
 
-export async function seedAnalytics(prisma: PrismaClient, context: SeedContext) {
+export async function seedAnalytics(
+  prisma: PrismaClient,
+  context: SeedContext,
+) {
   let analyticsRowsCreated = 0;
   let baselineCases = 0;
 
   for (const tenantSpec of tenants) {
-    const tenantCases = cases.filter((item) => item.tenantSlug === tenantSpec.slug);
-    const metrics = aiMetrics(tenantCases);
-    const durations = durationMetrics(tenantCases);
+    const tenantCases = cases.filter(
+      (item) => item.tenantSlug === tenantSpec.slug,
+    );
     const tenant = context.tenantMap.get(tenantSpec.slug)!;
     baselineCases += tenantCases.length;
 
-    await seedDailySnapshot(prisma, context, tenant.id, tenantSpec, tenantCases, {
-      ...metrics,
-      ...durations,
-    });
-    analyticsRowsCreated += 1;
-    await seedDepartmentAnalytics(prisma, context, tenant.id, tenantSpec, tenantCases);
-    analyticsRowsCreated += departments.length;
-    await seedAiQuality(prisma, context, tenant.id, metrics);
-    analyticsRowsCreated += 1;
-    await seedMunicipalityAnalytics(prisma, context, tenant.id, tenantSpec, tenantCases);
-    analyticsRowsCreated += 1;
+    const casesByDay = groupCasesByDay(tenantCases);
+    for (const [daysAgoValue, dayCases] of casesByDay) {
+      const dayDate = startOfUtcDay(
+        daysAgo(context.snapshotDate, daysAgoValue),
+      );
+      const metrics = aiMetrics(dayCases);
+      const durations = durationMetrics(dayCases);
+
+      await seedDailySnapshot(
+        prisma,
+        context,
+        tenant.id,
+        tenantSpec,
+        dayDate,
+        dayCases,
+        {
+          ...metrics,
+          ...durations,
+        },
+      );
+      analyticsRowsCreated += 1;
+
+      await seedDepartmentAnalytics(
+        prisma,
+        context,
+        tenant.id,
+        tenantSpec,
+        dayDate,
+        dayCases,
+      );
+      analyticsRowsCreated += departments.length;
+
+      await seedAiQuality(prisma, tenant.id, dayDate, metrics);
+      analyticsRowsCreated += 1;
+
+      await seedMunicipalityAnalytics(
+        prisma,
+        context,
+        tenant.id,
+        tenantSpec,
+        dayDate,
+        dayCases,
+      );
+      analyticsRowsCreated += 1;
+    }
   }
 
   return { analyticsRowsCreated, baselineCases };
@@ -37,6 +75,7 @@ async function seedDailySnapshot(
   context: SeedContext,
   tenantId: string,
   tenantSpec: (typeof tenants)[number],
+  date: Date,
   tenantCases: DemoCase[],
   metrics: ReturnType<typeof aiMetrics> & ReturnType<typeof durationMetrics>,
 ) {
@@ -48,7 +87,9 @@ async function seedDailySnapshot(
     casesByDepartmentJson: countBy(tenantCases, (item) => item.departmentSlug),
     aiReviewsTotal: metrics.reviewsTotal,
     aiCorrectionsTotal: metrics.corrected,
-    aiCorrectionRate: metrics.reviewsTotal ? metrics.corrected / metrics.reviewsTotal : 0,
+    aiCorrectionRate: metrics.reviewsTotal
+      ? metrics.corrected / metrics.reviewsTotal
+      : 0,
     averageTimeToTriageMinutes: average(metrics.triageDurations),
     medianTimeToTriageMinutes: median(metrics.triageDurations),
     averageTimeToCloseHours: average(metrics.closeDurations),
@@ -68,17 +109,18 @@ async function seedDailySnapshot(
       : 0,
     estimatedManualMinutesSaved: metrics.accepted * 5 + metrics.corrected * 2,
     municipalityPopulation: tenantSpec.population,
-    municipalityPopulationYear: context.snapshotDate.getUTCFullYear(),
-    casesPer1000Inhabitants: (tenantCases.length / tenantSpec.population) * 1000,
+    municipalityPopulationYear: date.getUTCFullYear(),
+    casesPer1000Inhabitants:
+      (tenantCases.length / tenantSpec.population) * 1000,
     ssbDataStatus: 'available',
     ssbImportedAt: context.importedAt,
     analyticsRebuiltAt: context.analyticsRebuiltAt,
   };
 
   await prisma.analyticsDailySnapshot.upsert({
-    where: { tenantId_date: { tenantId, date: context.snapshotDate } },
+    where: { tenantId_date: { tenantId, date } },
     update: data,
-    create: { ...data, date: context.snapshotDate },
+    create: { ...data, date },
   });
 }
 
@@ -87,6 +129,7 @@ async function seedDepartmentAnalytics(
   context: SeedContext,
   tenantId: string,
   tenantSpec: (typeof tenants)[number],
+  date: Date,
   tenantCases: DemoCase[],
 ) {
   for (const department of departments) {
@@ -107,28 +150,32 @@ async function seedDepartmentAnalytics(
       where: {
         tenantId_date_departmentName: {
           tenantId,
-          date: context.snapshotDate,
+          date,
           departmentName: department.name,
         },
       },
       update: data,
-      create: { tenantId, date: context.snapshotDate, ...data },
+      create: { tenantId, date, ...data },
     });
   }
 }
 
 async function seedAiQuality(
   prisma: PrismaClient,
-  context: SeedContext,
   tenantId: string,
+  date: Date,
   metrics: ReturnType<typeof aiMetrics>,
 ) {
   const data = {
     aiReviewsTotal: metrics.reviewsTotal,
     aiSuggestionsAccepted: metrics.accepted,
     aiCorrectionsTotal: metrics.corrected,
-    aiAcceptanceRate: metrics.reviewsTotal ? metrics.accepted / metrics.reviewsTotal : 0,
-    aiCorrectionRate: metrics.reviewsTotal ? metrics.corrected / metrics.reviewsTotal : 0,
+    aiAcceptanceRate: metrics.reviewsTotal
+      ? metrics.accepted / metrics.reviewsTotal
+      : 0,
+    aiCorrectionRate: metrics.reviewsTotal
+      ? metrics.corrected / metrics.reviewsTotal
+      : 0,
     aiTriageSuccessCount: metrics.successes,
     aiTriageFailureCount: metrics.failures,
     aiTriageFailureRate:
@@ -138,9 +185,9 @@ async function seedAiQuality(
   };
 
   await prisma.analyticsAiQualityDaily.upsert({
-    where: { tenantId_date: { tenantId, date: context.snapshotDate } },
+    where: { tenantId_date: { tenantId, date } },
     update: data,
-    create: { tenantId, date: context.snapshotDate, ...data },
+    create: { tenantId, date, ...data },
   });
 }
 
@@ -149,14 +196,16 @@ async function seedMunicipalityAnalytics(
   context: SeedContext,
   tenantId: string,
   tenantSpec: (typeof tenants)[number],
+  date: Date,
   tenantCases: DemoCase[],
 ) {
   const data = {
     municipalityName: tenantSpec.municipalityName,
     caseCount: tenantCases.length,
     population: tenantSpec.population,
-    populationYear: context.snapshotDate.getUTCFullYear(),
-    casesPer1000Inhabitants: (tenantCases.length / tenantSpec.population) * 1000,
+    populationYear: date.getUTCFullYear(),
+    casesPer1000Inhabitants:
+      (tenantCases.length / tenantSpec.population) * 1000,
     ssbImportedAt: context.importedAt,
   };
 
@@ -164,14 +213,14 @@ async function seedMunicipalityAnalytics(
     where: {
       tenantId_date_municipalityCode: {
         tenantId,
-        date: context.snapshotDate,
+        date,
         municipalityCode: tenantSpec.municipalityCode,
       },
     },
     update: data,
     create: {
       tenantId,
-      date: context.snapshotDate,
+      date,
       municipalityCode: tenantSpec.municipalityCode,
       ...data,
     },
@@ -188,7 +237,8 @@ function aiMetrics(tenantCases: DemoCase[]) {
   return {
     reviewsTotal: reviews.length,
     accepted: tenantCases.filter((item) => item.aiReview === 'accepted').length,
-    corrected: tenantCases.filter((item) => item.aiReview === 'corrected').length,
+    corrected: tenantCases.filter((item) => item.aiReview === 'corrected')
+      .length,
     successes,
     failures,
   };
@@ -211,4 +261,16 @@ function closeDurations(tenantCases: DemoCase[]) {
   return tenantCases
     .map((item) => item.closeAfterHours)
     .filter((value): value is number => typeof value === 'number');
+}
+
+function groupCasesByDay(tenantCases: DemoCase[]) {
+  const grouped = new Map<number, DemoCase[]>();
+
+  for (const demoCase of tenantCases) {
+    const bucket = grouped.get(demoCase.createdDaysAgo) ?? [];
+    bucket.push(demoCase);
+    grouped.set(demoCase.createdDaysAgo, bucket);
+  }
+
+  return [...grouped.entries()].sort(([left], [right]) => left - right);
 }

@@ -116,8 +116,7 @@ export const internalDictionaryNb = {
     title: "Ansattilgang",
     intro: "Bruk en seedet kommunal ansattkonto for å åpne saksoversikten.",
     demoTitle: "Utforsk porteføljedemoen",
-    demoIntro:
-      "Åpne et begrenset, syntetisk arbeidsområde uten brukerkonto.",
+    demoIntro: "Åpne et begrenset, syntetisk arbeidsområde uten brukerkonto.",
     staffTitle: "Logg inn med ansattinformasjon",
     email: "E-post",
     password: "Passord",
@@ -385,7 +384,7 @@ export const internalDictionaryNb = {
       "SSB-befolkningsdata mangler for dette intervallet. Importer kommunestatistikk og bygg analysen på nytt for å aktivere normaliserte metrikker.",
     ssbStale:
       "SSB-befolkningsdata er utdatert. Importer statistikk på nytt før normaliserte metrikker brukes i beslutninger.",
-    imported: "Sist importert",
+    imported: "Referansetidspunkt",
     ssbSourceLabel: "Referanse: SSB tabell 07459",
     byDepartment: "Saksvolum per avdeling",
     byCategory: "Saksvolum per kategori",
@@ -444,17 +443,21 @@ export const internalDictionaryNb = {
     guestCases: "Saker",
     guestCasesDetail: "opprettet i valgt periode",
     guestReviewsDetail: "menneskelige vurderinger",
-    guestAcceptanceDetail:
-      "Menneskelig vurdert KI-godkjenning, vist som andel av vurderingene.",
+    guestAcceptedCorrected: "Godkjente / korrigerte vurderinger",
+    guestAccepted: "godkjente",
+    guestCorrected: "korrigerte",
+    guestAcceptedCorrectedDetail: "Antall godkjente og korrigerte vurderinger.",
+    guestFailedRuns: "Feilede triagekjÃ¸ringer",
+    guestFailedRunsDetail: "Feil vist mot totalt antall triagekjÃ¸ringer.",
     guestWaitingDetail: "saker venter på innbyggerrespons",
+    guestWorkflowEyebrow: "Arbeidsflyt",
     guestAiSectionTitle: "Menneskelig vurdert KI",
     guestAiSectionText:
       "Godkjente og korrigerte KI-forslag vises sammen med antall vurderinger.",
     guestAiNote:
       "Denne gjestevisningen skjuler daglige trender, SSB-referansedata, estimerte minutter spart og aggregeringskontroller.",
     guestWorkflowTitle: "Arbeidsflytutsnitt",
-    guestWorkflowText:
-      "Gjestevisningen holder det operative bildet kompakt.",
+    guestWorkflowText: "Gjestevisningen holder det operative bildet kompakt.",
     guestMeasuredTriage: "målte triagetider",
     guestMeasuredClose: "målte lukketider",
     guestWorkflowNote:

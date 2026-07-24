@@ -538,6 +538,169 @@ describe('AnalyticsService', () => {
     });
   });
 
+  it('excludes next-day boundary records from whole-day summary ranges', async () => {
+    const finalDay = new Date('2026-05-03T00:00:00.000Z');
+    const nextDay = new Date('2026-05-04T00:00:00.000Z');
+    const boundaryFilter = {
+      gte: finalDay,
+      lt: nextDay,
+    };
+
+    const caseRows = [
+      {
+        createdAt: new Date('2026-05-03T12:00:00.000Z'),
+        closedAt: new Date('2026-05-03T15:00:00.000Z'),
+        status: 'new',
+        category: 'building_case',
+        assignedDepartment: { slug: 'technical_department' },
+        aiTriageResults: [
+          {
+            createdAt: new Date('2026-05-03T12:10:00.000Z'),
+            status: 'completed',
+          },
+        ],
+      },
+      {
+        createdAt: new Date('2026-05-04T00:00:00.000Z'),
+        closedAt: null,
+        status: 'waiting_for_citizen',
+        category: 'road_transport',
+        assignedDepartment: null,
+        aiTriageResults: [
+          {
+            createdAt: new Date('2026-05-04T00:05:00.000Z'),
+            status: 'failed',
+          },
+        ],
+      },
+    ];
+    const reviewRows = [
+      {
+        createdAt: new Date('2026-05-03T12:20:00.000Z'),
+        wasAiSuggestionAccepted: true,
+      },
+      {
+        createdAt: new Date('2026-05-04T00:20:00.000Z'),
+        wasAiSuggestionAccepted: false,
+      },
+    ];
+    const triageRows = [
+      { createdAt: new Date('2026-05-03T12:10:00.000Z'), status: 'completed' },
+      { createdAt: new Date('2026-05-04T00:05:00.000Z'), status: 'failed' },
+    ];
+
+    const service = createService({
+      analyticsDailySnapshot: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            date: finalDay,
+            totalCases: 1,
+            casesByStatusJson: { new: 1 },
+            casesByCategoryJson: { building_case: 1 },
+            casesByDepartmentJson: { technical_department: 1 },
+            aiReviewsTotal: 1,
+            aiCorrectionsTotal: 0,
+            aiCorrectionRate: 0,
+            averageTimeToTriageMinutes: 10,
+            medianTimeToTriageMinutes: 10,
+            averageTimeToCloseHours: 3,
+            medianTimeToCloseHours: 3,
+            casesWaitingForCitizen: 0,
+            aiTriageSuccessCount: 1,
+            aiTriageFailureCount: 0,
+            aiTriageFailureRate: 0,
+            aiSuggestionsAccepted: 1,
+            aiSuggestionAcceptanceRate: 1,
+            estimatedManualMinutesSaved: 5,
+            municipalityPopulation: 46568,
+            municipalityPopulationYear: 2026,
+            casesPer1000Inhabitants: (1 / 46568) * 1000,
+            ssbDataStatus: 'available',
+            ssbImportedAt: new Date('2026-05-03T10:00:00.000Z'),
+            analyticsRebuiltAt: new Date('2026-05-03T12:00:00.000Z'),
+          },
+        ]),
+      },
+      case: {
+        findMany: jest
+          .fn()
+          .mockImplementation(
+            ({
+              where,
+            }: {
+              where?: { createdAt?: { gte: Date; lt: Date } };
+            }) => {
+              expect(where?.createdAt).toMatchObject(boundaryFilter);
+              return Promise.resolve(
+                caseRows.filter((item) =>
+                  matchesExclusiveRange(item.createdAt, where?.createdAt),
+                ),
+              );
+            },
+          ),
+      },
+      aIReview: {
+        findMany: jest
+          .fn()
+          .mockImplementation(
+            ({
+              where,
+            }: {
+              where?: { createdAt?: { gte: Date; lt: Date } };
+            }) => {
+              expect(where?.createdAt).toMatchObject(boundaryFilter);
+              return Promise.resolve(
+                reviewRows.filter((item) =>
+                  matchesExclusiveRange(item.createdAt, where?.createdAt),
+                ),
+              );
+            },
+          ),
+      },
+      aITriageResult: {
+        findMany: jest
+          .fn()
+          .mockImplementation(
+            ({
+              where,
+            }: {
+              where?: { createdAt?: { gte: Date; lt: Date } };
+            }) => {
+              expect(where?.createdAt).toMatchObject(boundaryFilter);
+              return Promise.resolve(
+                triageRows.filter((item) =>
+                  matchesExclusiveRange(item.createdAt, where?.createdAt),
+                ),
+              );
+            },
+          ),
+      },
+    });
+
+    await expect(
+      service.getSummary(analyticsUser(), {
+        from: finalDay,
+        to: finalDay,
+      }),
+    ).resolves.toMatchObject({
+      totals: {
+        totalCases: 1,
+        aiReviewsTotal: 1,
+        aiCorrectionsTotal: 0,
+        aiSuggestionsAccepted: 1,
+        aiTriageFailureCount: 0,
+        aiTriageSuccessCount: 1,
+        casesWaitingForCitizen: 0,
+      },
+      sampleSizes: {
+        aiReviews: 1,
+        aiTriageRuns: 1,
+        triageDurations: 1,
+        closeDurations: 1,
+      },
+    });
+  });
+
   it('rejects invalid ranges', async () => {
     const service = createService({});
 
@@ -606,4 +769,12 @@ function analyticsUser(): CurrentUser {
     email: 'department.admin@arendal.local',
     role: UserRole.department_admin,
   };
+}
+
+function matchesExclusiveRange(value: Date, range?: { gte: Date; lt: Date }) {
+  if (!range) {
+    return true;
+  }
+
+  return value >= range.gte && value < range.lt;
 }

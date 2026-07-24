@@ -57,13 +57,14 @@ export class AnalyticsService {
 
   async getSummary(user: CurrentUser, range: AnalyticsRange) {
     assertValidRange(range);
+    const endExclusive = nextUtcDay(range.to);
     const [snapshots, cases, aiReviews, aiTriageResults] = await Promise.all([
       this.prisma.analyticsDailySnapshot.findMany({
         where: {
           tenantId: user.tenantId,
           date: {
             gte: range.from,
-            lte: range.to,
+            lt: endExclusive,
           },
         },
         orderBy: { date: 'asc' },
@@ -100,7 +101,7 @@ export class AnalyticsService {
           tenantId: user.tenantId,
           createdAt: {
             gte: range.from,
-            lte: range.to,
+            lt: endExclusive,
           },
         },
         select: {
@@ -127,7 +128,7 @@ export class AnalyticsService {
           tenantId: user.tenantId,
           createdAt: {
             gte: range.from,
-            lte: range.to,
+            lt: endExclusive,
           },
         },
         select: {
@@ -139,7 +140,7 @@ export class AnalyticsService {
           tenantId: user.tenantId,
           createdAt: {
             gte: range.from,
-            lte: range.to,
+            lt: endExclusive,
           },
         },
         select: {

@@ -510,7 +510,10 @@ test("internal analytics guest view stays compact and avoids advanced staff sect
       return fulfillJson(route, portfolioGuest());
     }
 
-    if (request.method() === "GET" && url.pathname.endsWith("/analytics/summary")) {
+    if (
+      request.method() === "GET" &&
+      url.pathname.endsWith("/analytics/summary")
+    ) {
       return fulfillJson(route, {
         from: "2026-05-01",
         to: "2026-05-31",
@@ -579,11 +582,10 @@ test("internal analytics guest view stays compact and avoids advanced staff sect
   ).toBeVisible();
   await expect(page.getByText("Synthetic analytics snapshot")).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Human-reviewed AI" }),
-  ).toBeVisible();
-  await expect(
     page.getByRole("heading", { name: "Workflow snapshot" }),
   ).toBeVisible();
+  await expect(page.getByText("Accepted / corrected reviews")).toBeVisible();
+  await expect(page.getByText("Failed triage runs")).toBeVisible();
   await expect(page.getByRole("button", { name: "Aggregate" })).toHaveCount(0);
   await expect(page.getByText("Daily volume")).toHaveCount(0);
   await expect(page.getByText("SSB enrichment")).toHaveCount(0);
@@ -620,7 +622,10 @@ test("internal analytics staff view keeps detailed metrics and rebuild controls"
       });
     }
 
-    if (request.method() === "GET" && url.pathname.endsWith("/analytics/summary")) {
+    if (
+      request.method() === "GET" &&
+      url.pathname.endsWith("/analytics/summary")
+    ) {
       return fulfillJson(route, {
         from: "2026-05-01",
         to: "2026-05-31",
@@ -702,7 +707,9 @@ test("internal analytics staff view keeps detailed metrics and rebuild controls"
   await expect(page.getByText("Reference: SSB table 07459")).toBeVisible();
   await expect(page.getByText("Daily volume")).toBeVisible();
   await expect(page.getByText("SSB enrichment")).toBeVisible();
-  await expect(page.getByText("Sample size is below 30 observations")).toHaveCount(3);
+  await expect(
+    page.getByText("Sample size is below 30 observations"),
+  ).toHaveCount(3);
 });
 
 async function mockApi(

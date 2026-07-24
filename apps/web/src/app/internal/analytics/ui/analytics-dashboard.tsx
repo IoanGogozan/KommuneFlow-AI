@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api";
-import { formatInternalDateTime, formatInternalNumber } from "@/lib/internal-display";
+import {
+  formatInternalDateTime,
+  formatInternalNumber,
+} from "@/lib/internal-display";
 import type { InternalDictionary } from "@/lib/internal-i18n";
 import { useInternalI18n } from "@/lib/internal-locale";
 import { useInternalSession } from "@/lib/use-internal-session";
@@ -232,6 +235,8 @@ function GuestAnalyticsView({
   const acceptedReviews = summary?.totals.aiSuggestionsAccepted ?? 0;
   const reviewCount = summary?.totals.aiReviewsTotal ?? 0;
   const correctionCount = summary?.totals.aiCorrectionsTotal ?? 0;
+  const failedRuns = summary?.totals.aiTriageFailureCount ?? 0;
+  const triageRuns = summary?.sampleSizes.aiTriageRuns ?? 0;
   const waitingCount = summary?.totals.casesWaitingForCitizen ?? 0;
 
   return (
@@ -272,89 +277,73 @@ function GuestAnalyticsView({
         <CompactMetricCard
           label={t.analytics.aiReviews}
           value={summary ? reviewCount : "..."}
+          detail={summary ? t.analytics.guestReviewsDetail : t.analytics.noData}
+        />
+        <CompactMetricCard
+          label={t.analytics.guestAcceptedCorrected}
+          value={summary ? `${acceptedReviews} / ${correctionCount}` : "..."}
           detail={
             summary
-              ? `${acceptedReviews}/${reviewCount} ${t.analytics.guestReviewsDetail}`
+              ? t.analytics.guestAcceptedCorrectedDetail
               : t.analytics.noData
           }
         />
         <CompactMetricCard
-          label={t.analytics.aiAcceptanceRate}
-          value={summary ? formatPercent(summary.totals.aiSuggestionAcceptanceRate) : "..."}
-          detail={summary ? t.analytics.guestAcceptanceDetail : t.analytics.noData}
-        />
-        <CompactMetricCard
-          label={t.analytics.waitingForCitizen}
-          value={summary ? waitingCount : "..."}
-          detail={summary ? t.analytics.guestWaitingDetail : t.analytics.noData}
+          label={t.analytics.guestFailedRuns}
+          value={summary ? `${failedRuns}/${triageRuns}` : "..."}
+          detail={
+            summary ? t.analytics.guestFailedRunsDetail : t.analytics.noData
+          }
         />
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">
-          {t.analytics.guestAiSectionTitle}
-        </h2>
-        <p className="mt-1 text-sm leading-6 text-slate-600">
-          {t.analytics.guestAiSectionText}
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          {t.analytics.guestWorkflowEyebrow}
         </p>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <CompactMetricCard
-            label={t.analytics.aiAcceptanceRate}
-            value={summary ? formatPercent(summary.totals.aiSuggestionAcceptanceRate) : "..."}
-            detail={
-              summary
-                ? `${acceptedReviews}/${reviewCount} ${t.analytics.guestReviewsDetail}`
-                : t.analytics.noData
-            }
-          />
-          <CompactMetricCard
-            label={t.analytics.aiCorrectionRate}
-            value={summary ? formatPercent(summary.totals.aiCorrectionRate) : "..."}
-            detail={
-              summary
-                ? `${correctionCount}/${reviewCount} ${t.analytics.guestReviewsDetail}`
-                : t.analytics.noData
-            }
-          />
-        </div>
-        <p className="mt-4 text-sm leading-6 text-slate-600">
-          {t.analytics.guestAiNote}
-        </p>
-      </section>
-
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">
+        <h2 className="mt-2 text-lg font-semibold text-slate-950">
           {t.analytics.guestWorkflowTitle}
         </h2>
         <p className="mt-1 text-sm leading-6 text-slate-600">
           {t.analytics.guestWorkflowText}
         </p>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <CompactMetricCard
-            label={t.analytics.medianTriage}
-            value={summary
-              ? `${formatNullableNumber(
-                  summary.totals.medianTimeToTriageMinutes,
-                  t.common.missing,
-                )} min`
-              : "..."}
-            detail={
-              summary
-                ? `${summary.sampleSizes.triageDurations} ${t.analytics.guestMeasuredTriage}`
-                : t.analytics.noData
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <Breakdown
+            title={t.analytics.byStatus}
+            values={summary?.totals.casesByStatus ?? {}}
+            emptyLabel={t.analytics.noData}
+            translateLabel={(label) =>
+              translateAnalyticsBreakdownLabel(label, t)
+            }
+          />
+          <Breakdown
+            title={t.analytics.byDepartment}
+            values={summary?.totals.casesByDepartment ?? {}}
+            emptyLabel={t.analytics.noData}
+            translateLabel={(label) =>
+              translateAnalyticsBreakdownLabel(label, t)
             }
           />
           <CompactMetricCard
-            label={t.analytics.avgClose}
-            value={summary
-              ? `${formatNullableNumber(
-                  summary.totals.averageTimeToCloseHours,
-                  t.common.missing,
-                )} h`
-              : "..."}
+            label={t.analytics.waitingForCitizen}
+            value={summary ? waitingCount : "..."}
+            detail={
+              summary ? t.analytics.guestWaitingDetail : t.analytics.noData
+            }
+          />
+          <CompactMetricCard
+            label={t.analytics.medianTriage}
+            value={
+              summary
+                ? `${formatNullableNumber(
+                    summary.totals.medianTimeToTriageMinutes,
+                    t.common.missing,
+                  )} min`
+                : "..."
+            }
             detail={
               summary
-                ? `${summary.sampleSizes.closeDurations} ${t.analytics.guestMeasuredClose}`
+                ? `${summary.sampleSizes.triageDurations} ${t.analytics.guestMeasuredTriage}`
                 : t.analytics.noData
             }
           />
@@ -479,14 +468,10 @@ function StaffAnalyticsView({
                   )} min`
                 : "...",
               detail: summary
-                ? `${t.analytics.median}: ${
-                    summary
-                      ? formatNullableNumber(
-                          summary.totals.medianTimeToTriageMinutes,
-                          t.common.missing,
-                        )
-                      : "..."
-                  } min · ${summary.sampleSizes.triageDurations} ${t.analytics.sampledTriage}`
+                ? `${t.analytics.median}: ${formatNullableNumber(
+                    summary.totals.medianTimeToTriageMinutes,
+                    t.common.missing,
+                  )} min · ${summary.sampleSizes.triageDurations} ${t.analytics.sampledTriage}`
                 : t.analytics.noData,
             },
             {
@@ -498,14 +483,10 @@ function StaffAnalyticsView({
                   )} h`
                 : "...",
               detail: summary
-                ? `${t.analytics.median}: ${
-                    summary
-                      ? formatNullableNumber(
-                          summary.totals.medianTimeToCloseHours,
-                          t.common.missing,
-                        )
-                      : "..."
-                  } h · ${summary.sampleSizes.closeDurations} ${t.analytics.sampledClose}`
+                ? `${t.analytics.median}: ${formatNullableNumber(
+                    summary.totals.medianTimeToCloseHours,
+                    t.common.missing,
+                  )} h · ${summary.sampleSizes.closeDurations} ${t.analytics.sampledClose}`
                 : t.analytics.noData,
             },
             {
@@ -534,11 +515,15 @@ function StaffAnalyticsView({
                     t.common.missing,
                   )
                 : "...",
-              detail: summary ? formatPopulationDetail(summary, t) : t.analytics.noData,
+              detail: summary
+                ? formatPopulationDetail(summary, t)
+                : t.analytics.noData,
             },
             {
               label: t.analytics.minutesSaved,
-              value: summary ? summary.totals.estimatedManualMinutesSaved : "...",
+              value: summary
+                ? summary.totals.estimatedManualMinutesSaved
+                : "...",
               detail: summary
                 ? `${summary.assumptions.estimatedManualMinutesSavedLabel} ${summary.assumptions.acceptedAiSuggestionMinutesSaved} ${t.analytics.minutes} / ${summary.assumptions.correctedAiSuggestionMinutesSaved} ${t.analytics.minutes}.`
                 : t.analytics.noData,
@@ -608,16 +593,19 @@ function StaffAnalyticsView({
           title={t.analytics.byDepartment}
           values={summary?.totals.casesByDepartment ?? {}}
           emptyLabel={t.analytics.noData}
+          translateLabel={(label) => translateAnalyticsBreakdownLabel(label, t)}
         />
         <Breakdown
           title={t.analytics.byCategory}
           values={summary?.totals.casesByCategory ?? {}}
           emptyLabel={t.analytics.noData}
+          translateLabel={(label) => translateAnalyticsBreakdownLabel(label, t)}
         />
         <Breakdown
           title={t.analytics.byStatus}
           values={summary?.totals.casesByStatus ?? {}}
           emptyLabel={t.analytics.noData}
+          translateLabel={(label) => translateAnalyticsBreakdownLabel(label, t)}
         />
       </section>
 
@@ -769,10 +757,12 @@ function Breakdown({
   title,
   values,
   emptyLabel,
+  translateLabel,
 }: {
   title: string;
   values: Record<string, number>;
   emptyLabel: string;
+  translateLabel: (label: string) => string;
 }) {
   const entries = Object.entries(values).sort(
     (left, right) => right[1] - left[1],
@@ -787,7 +777,9 @@ function Breakdown({
             key={label}
             className="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2 text-sm"
           >
-            <span className="truncate text-slate-700">{label}</span>
+            <span className="truncate text-slate-700">
+              {translateLabel(label)}
+            </span>
             <span className="font-semibold text-slate-950">{value}</span>
           </div>
         ))}
@@ -797,6 +789,34 @@ function Breakdown({
       </div>
     </section>
   );
+}
+
+function translateAnalyticsBreakdownLabel(
+  label: string,
+  t: InternalDictionary,
+) {
+  const department =
+    t.common.departments[label as keyof typeof t.common.departments];
+  if (department) {
+    return department;
+  }
+
+  const category =
+    t.common.categories[label as keyof typeof t.common.categories];
+  if (category) {
+    return category;
+  }
+
+  const status = t.overview.statuses[label as keyof typeof t.overview.statuses];
+  if (status) {
+    return status;
+  }
+
+  if (label === "unassigned") {
+    return t.common.unassigned;
+  }
+
+  return t.common.unknown;
 }
 
 function getDefaultRange() {
