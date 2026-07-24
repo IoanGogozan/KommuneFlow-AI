@@ -44,7 +44,7 @@ echo "PASS local gateway health check"
 if [ -n "${SMOKE_BASIC_AUTH_USER:-}" ] && \
    [ -n "${SMOKE_BASIC_AUTH_PASSWORD:-}" ] && \
    [ -n "${APP_BASE_URL:-}" ]; then
-  ./scripts/smoke-test.sh "$APP_BASE_URL"
+  bash ./scripts/smoke-test.sh "$APP_BASE_URL"
 else
   echo "SKIP public smoke test: set SMOKE_BASIC_AUTH_USER and SMOKE_BASIC_AUTH_PASSWORD to enable it"
 fi
