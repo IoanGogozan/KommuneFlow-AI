@@ -104,9 +104,6 @@ services:
   gateway:
     image: caddy:2-alpine
     restart: unless-stopped
-    environment:
-      DEMO_BASIC_AUTH_USER: ${DEMO_BASIC_AUTH_USER:?DEMO_BASIC_AUTH_USER is required}
-      DEMO_BASIC_AUTH_HASH: ${DEMO_BASIC_AUTH_HASH:?DEMO_BASIC_AUTH_HASH is required}
     expose:
       - "8080"
     volumes:

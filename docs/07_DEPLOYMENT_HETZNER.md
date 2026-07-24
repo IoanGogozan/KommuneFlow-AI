@@ -6,7 +6,7 @@ This document defines the production-like Hetzner deployment for KommuneFlow AI.
 
 ## Current Status
 
-As of 2026-05-19, the Hetzner demo is online behind HTTPS and Caddy Basic Auth. Live smoke verification passed for:
+On 2026-05-19, the historical Hetzner demo was verified behind HTTPS and Caddy Basic Auth. The current deployment configuration uses application-level authentication instead. That historical smoke verification passed for:
 
 - web root
 - public Norwegian intake page
@@ -97,8 +97,6 @@ Required values:
 APP_DOMAIN=your-domain.example
 APP_BASE_URL=https://your-domain.example
 ACME_EMAIL=admin@your-domain.example
-DEMO_BASIC_AUTH_USER=<demo gate username>
-DEMO_BASIC_AUTH_HASH=<Caddy bcrypt hash>
 POSTGRES_DB=kommuneflow_ai
 POSTGRES_USER=kommuneflow
 POSTGRES_PASSWORD=<long random secret>
@@ -134,13 +132,7 @@ OPENAI_TIMEOUT_MS=15000
 
 `OPENAI_API_KEY` must never be committed, pasted into screenshots, included in logs, or stored in backup artifacts. Keep it only in the server-side `.env.production` or a real secret manager. Use `AI_PROVIDER=openai` only after `OPENAI_API_KEY` is configured.
 
-Generate the Basic Auth hash with Caddy:
-
-```bash
-docker run --rm caddy:2-alpine caddy hash-password --plaintext 'replace-with-demo-gate-password'
-```
-
-The Caddy Basic Auth gate protects the public demo before traffic reaches the web or API containers. It is separate from seeded application users.
+The public web perimeter does not require infrastructure credentials. Application JWT/RBAC protects internal data; enable the allowlisted, least-privilege guest session only for portfolio deployments.
 
 ## Deployment Procedure
 
@@ -194,16 +186,12 @@ docker compose -f docker-compose.prod.yml --env-file .env.production ps
 14. Run the smoke test:
 
 ```bash
-SMOKE_BASIC_AUTH_USER=<demo gate username> \
-SMOKE_BASIC_AUTH_PASSWORD=<demo gate password> \
 sh scripts/smoke-test.sh https://your-domain.example
 ```
 
 If the deployment has seeded synthetic internal users, run the authenticated smoke checks as well:
 
 ```bash
-SMOKE_BASIC_AUTH_USER=<demo gate username> \
-SMOKE_BASIC_AUTH_PASSWORD=<demo gate password> \
 SMOKE_INTERNAL_EMAIL=department.admin@kristiansand.local \
 SMOKE_INTERNAL_PASSWORD=<demo internal password> \
 sh scripts/smoke-test.sh https://your-domain.example
@@ -226,7 +214,7 @@ The smoke test checks:
 
 Manual checks after the script:
 
-- authenticate through the Caddy Basic Auth prompt
+- open the public portfolio perimeter without infrastructure credentials
 - log in with a demo user
 - open `/internal/operations`
 - verify the AI Configuration panel shows the expected provider
@@ -382,4 +370,4 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 - Run `sh scripts/smoke-test.sh` after deploy changes.
 - Run a restore test before calling the deployment backup-ready.
 - Use encrypted offsite backups with documented retention and deletion.
-- Do not expose a public demo with seeded credentials unless protected by separate access control such as Caddy Basic Auth.
+- Do not expose seeded credentials publicly; use the least-privilege guest session or a temporary reviewer account shared through a controlled channel.

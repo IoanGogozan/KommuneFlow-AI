@@ -41,12 +41,10 @@ compose=(docker compose -f compose.home.yml --env-file .env)
   wget -qO- http://127.0.0.1:8080/_gateway/health | grep -qx 'ok'
 echo "PASS local gateway health check"
 
-if [ -n "${SMOKE_BASIC_AUTH_USER:-}" ] && \
-   [ -n "${SMOKE_BASIC_AUTH_PASSWORD:-}" ] && \
-   [ -n "${APP_BASE_URL:-}" ]; then
+if [ -n "${APP_BASE_URL:-}" ]; then
   bash ./scripts/smoke-test.sh "$APP_BASE_URL"
 else
-  echo "SKIP public smoke test: set SMOKE_BASIC_AUTH_USER and SMOKE_BASIC_AUTH_PASSWORD to enable it"
+  echo "SKIP public smoke test: APP_BASE_URL is not set"
 fi
 
 echo "PASS home-server release completed"

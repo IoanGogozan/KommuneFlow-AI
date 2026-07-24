@@ -19,7 +19,7 @@ KommuneFlow AI demonstrates security and privacy engineering patterns. It is not
 - Safe error responses with request IDs and no stack traces in API responses.
 - JSON/form body limits in the API.
 - Multipart upload limits in Multer and request body limits in Caddy.
-- Caddy Basic Auth gate for public demo deployments.
+- Application-level JWT authentication, RBAC, tenant scoping, and a feature-flagged least-privilege guest session for public portfolio deployments.
 - Upload validation for size, extension, MIME type, magic bytes, unsafe filenames, checksums, and private storage paths.
 - Private document storage and audited document downloads.
 - Soft-delete for documents and retention cleanup that removes expired physical files before deleting document metadata.
@@ -71,7 +71,7 @@ KommuneFlow AI demonstrates security and privacy engineering patterns. It is not
 ## Public Demo Rules
 
 - Use synthetic data only.
-- Do not expose a public demo with seeded demo credentials unless the entire demo is separately protected, for example with Caddy Basic Auth or a temporary recruiter account.
+- Do not expose seeded demo credentials publicly. Use the least-privilege guest session or distribute a temporary reviewer account through a controlled channel.
 - Do not show demo passwords in the login form.
 - Prefer `AI_PROVIDER=mock` for public portfolio demos.
 - Do not send real personal data to external AI providers.

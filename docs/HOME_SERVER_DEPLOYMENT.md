@@ -10,7 +10,7 @@ Deployment status: verified on the physical home server on 2026-07-19. All four 
 Internet
   -> global Caddy (public 80/443)
   -> external Docker network: proxy
-  -> kommuneflow-ai gateway:8080 (Basic Auth, HTTP only)
+  -> kommuneflow-ai gateway:8080 (routing and security headers, HTTP only)
   -> private app_internal network
        -> web:3000
        -> api:3101
@@ -19,13 +19,13 @@ Internet
 
 Only the application gateway joins the shared `proxy` network. PostgreSQL, API, and web are reachable only on the project-private network. No KommuneFlow service publishes a host port.
 
-The global Caddy terminates TLS. The project-local Caddy trusts forwarded headers only from private proxy ranges, preserves the public HTTPS scheme and host, applies Basic Auth, and forwards `/api/*` to the API and all other traffic to the web application.
+The global Caddy terminates TLS. The project-local Caddy trusts forwarded headers only from private proxy ranges, preserves the public HTTPS scheme and host, applies security headers, and forwards `/api/*` to the API and all other traffic to the web application. Authentication and authorization are enforced by the application.
 
 ## Deployment Boundaries
 
 - Use synthetic seeded data only.
 - Keep `AI_PROVIDER=mock` and `OPENAI_API_KEY` empty.
-- Keep the entire application behind Basic Auth.
+- Keep the guest-session feature flag and tenant allowlist explicit; application JWT/RBAC remains the security boundary.
 - Store the real `.env` only on the server with mode `600`.
 - Use `prisma migrate deploy`; never use development migrations or database reset on the server.
 - Seed separately and only with explicit confirmation.
@@ -75,16 +75,6 @@ chmod 600 .env
 Edit `.env` and set `APP_DOMAIN=kommune.norvix.no`, matching HTTPS URLs, and independent secrets. Never commit the real file.
 
 Generate independent URL-safe random values by running `openssl rand -hex 32` separately for the PostgreSQL password, JWT secret, session secret, status-code pepper, demo password, and recruiter password.
-
-Generate the Basic Auth password hash:
-
-```bash
-docker run --rm caddy:2-alpine \
-  caddy hash-password \
-  --plaintext 'replace-with-a-strong-basic-auth-password'
-```
-
-Keep the bcrypt hash in single quotes in `.env` because it contains `$` characters. Store the plaintext Basic Auth password in a password manager; it is not recoverable from the hash.
 
 ### 3. Confirm the shared proxy network
 
@@ -160,8 +150,6 @@ Expected response: `ok`.
 ### 9. Verify the public deployment
 
 ```bash
-SMOKE_BASIC_AUTH_USER='<basic-auth-user>' \
-SMOKE_BASIC_AUTH_PASSWORD='<basic-auth-password>' \
 SMOKE_INTERNAL_EMAIL='recruiter.demo@kristiansand.local' \
 SMOKE_INTERNAL_PASSWORD='<recruiter-password>' \
 sh scripts/smoke-test.sh https://kommune.norvix.no
@@ -169,8 +157,8 @@ sh scripts/smoke-test.sh https://kommune.norvix.no
 
 Also verify manually:
 
-1. unauthenticated requests receive a Basic Auth challenge;
-2. `/nb` and `/en` load after authentication;
+1. `/`, `/demo`, `/nb`, `/en`, and `/internal/login` load without infrastructure credentials;
+2. protected APIs return `401` without an application cookie;
 3. API health and readiness succeed;
 4. internal login and seeded cases work;
 5. citizen intake, status lookup, and document upload work;
