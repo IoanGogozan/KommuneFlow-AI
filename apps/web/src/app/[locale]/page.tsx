@@ -22,6 +22,7 @@ export default async function IntakePage({ params, searchParams }: PageProps) {
   }
 
   const dictionary = dictionaries[localeParam];
+  const uploadsAllowed = process.env.PUBLIC_DEMO_ALLOW_UPLOADS !== "false";
 
   return (
     <main className="min-h-screen bg-white">
@@ -76,6 +77,7 @@ export default async function IntakePage({ params, searchParams }: PageProps) {
               locale={localeParam}
               initialTenantSlug={municipality}
               portfolioMode={portfolio === "1"}
+              uploadsAllowed={uploadsAllowed}
             />
           </div>
         </section>

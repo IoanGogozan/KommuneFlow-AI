@@ -13,6 +13,9 @@ import type { CurrentUser } from '../../auth/current-user';
 import { CurrentUserParam } from '../../auth/current-user.decorator';
 import { KartverketAddressService } from './kartverket-address.service';
 import { addressSearchQuerySchema } from './kartverket-address.schemas';
+import { getPublicDemoSafetyConfig } from '../../../config/public-demo-safety';
+
+const publicDemoSafety = getPublicDemoSafetyConfig();
 
 @Controller('integrations/kartverket')
 @UseGuards(AuthGuard)
@@ -43,7 +46,12 @@ export class PublicKartverketAddressController {
   ) {}
 
   @Get('address-search')
-  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Throttle({
+    default: {
+      limit: publicDemoSafety.addressLimit,
+      ttl: publicDemoSafety.addressTtlMs,
+    },
+  })
   async search(
     @Param('tenantSlug') tenantSlug: string,
     @Query() query: unknown,

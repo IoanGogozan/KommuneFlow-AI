@@ -20,6 +20,9 @@ import { AuthGuard } from './auth.guard';
 import { CurrentUserParam } from './current-user.decorator';
 import type { CurrentUser } from './current-user';
 import { clearAuthCookie, setAuthCookie } from './auth-cookie';
+import { getPublicDemoSafetyConfig } from '../../config/public-demo-safety';
+
+const publicDemoSafety = getPublicDemoSafetyConfig();
 
 @Controller('auth')
 export class AuthController {
@@ -52,7 +55,12 @@ export class AuthController {
   }
 
   @Post('demo-session')
-  @Throttle({ default: { limit: 10, ttl: 600_000 } })
+  @Throttle({
+    default: {
+      limit: publicDemoSafety.demoSessionLimit,
+      ttl: publicDemoSafety.demoSessionTtlMs,
+    },
+  })
   async createDemoSession(
     @Body() body: unknown,
     @Req() request: Request & RequestWithId,

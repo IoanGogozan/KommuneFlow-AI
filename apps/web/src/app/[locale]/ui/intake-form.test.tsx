@@ -44,7 +44,9 @@ describe("IntakeForm", () => {
     );
 
     expect(screen.getByText("Public portfolio demo")).toBeVisible();
-    expect(screen.getByText("Use synthetic information only.")).toBeVisible();
+    expect(
+      screen.getByText(/This is a shared synthetic demo/),
+    ).toBeVisible();
     await user.type(screen.getByLabelText("Name"), "Ada Citizen");
     await user.type(screen.getByLabelText("Email"), "ada@example.local");
     await user.type(screen.getByLabelText("Title"), "Synthetic request");
@@ -219,6 +221,25 @@ describe("IntakeForm", () => {
     await user.click(screen.getAllByRole("button", { name: "Remove" })[0]);
     expect(screen.queryByText("one.pdf")).not.toBeInTheDocument();
     expect(screen.getByText("two.png")).toBeVisible();
+  });
+
+  it("explains and removes citizen uploads when the public flag is disabled", () => {
+    const { container } = render(
+      <IntakeForm
+        dictionary={dictionaries.en}
+        locale="en"
+        initialTenantSlug="arendal"
+        portfolioMode
+        uploadsAllowed={false}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "File uploads are disabled in the public portfolio environment. Seeded employee cases include document examples.",
+      ),
+    ).toBeVisible();
+    expect(container.querySelector('input[type="file"]')).toBeNull();
   });
 
   it("uses correct Bokmål characters", () => {
