@@ -4,11 +4,13 @@ import { FormEvent, ReactNode, useState } from "react";
 import { getApiBaseUrl } from "@/lib/api";
 import type { IntakeDictionary, Locale } from "@/lib/i18n";
 import { formatInternalDateTime } from "@/lib/internal-display";
+import { EnterPortfolioDemoButton } from "@/components/enter-portfolio-demo-button";
 
 type IntakeFormProps = {
   dictionary: IntakeDictionary;
   locale: Locale;
   initialTenantSlug?: string;
+  portfolioMode?: boolean;
 };
 
 type SubmissionResult = {
@@ -52,6 +54,7 @@ export function IntakeForm({
   dictionary,
   locale,
   initialTenantSlug,
+  portfolioMode = false,
 }: IntakeFormProps) {
   const initialTenant =
     demoTenants.find((tenant) => tenant.slug === initialTenantSlug) ?? null;
@@ -80,6 +83,8 @@ export function IntakeForm({
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [hasNoAddress, setHasNoAddress] = useState(false);
   const [result, setResult] = useState<SubmissionResult | null>(null);
+  const [lastSubmission, setLastSubmission] =
+    useState<SubmissionResult | null>(null);
   const [statusCaseReference, setStatusCaseReference] = useState("");
   const [statusAccessCode, setStatusAccessCode] = useState("");
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
@@ -200,7 +205,9 @@ export function IntakeForm({
         throw new Error("Request failed");
       }
 
-      setResult((await response.json()) as SubmissionResult);
+      const submission = (await response.json()) as SubmissionResult;
+      setResult(submission);
+      setLastSubmission(submission);
       form.reset();
       setSelectedDocuments([]);
       clearAddress();
@@ -304,6 +311,8 @@ export function IntakeForm({
   }
 
   if (result) {
+    const employeeDemoUrl = `/internal/cases?search=${encodeURIComponent(result.caseReference)}`;
+
     return (
       <section className="submission-success border border-[#003b71] bg-white p-6">
         <div className="bg-[#eaf4fb] p-4">
@@ -349,6 +358,16 @@ export function IntakeForm({
         </div>
 
         <div className="submission-actions mt-6 grid gap-3 sm:grid-cols-2">
+          {portfolioMode && selectedTenant ? (
+            <EnterPortfolioDemoButton
+              className="bg-[#003b71] px-4 py-3 text-sm font-semibold text-white disabled:bg-slate-400"
+              idleLabel={dictionary.continueEmployeeDemo}
+              loadingLabel={dictionary.enteringEmployeeDemo}
+              redirectTo={employeeDemoUrl}
+              retryLabel={dictionary.retryEmployeeDemo}
+              tenantSlug={selectedTenant.slug}
+            />
+          ) : null}
           <button type="button" onClick={() => copyValue(result.caseReference)} className="border-2 border-[#003b71] bg-white px-4 py-3 text-sm font-semibold text-[#003b71]">
             {dictionary.copyReference}
           </button>
@@ -358,7 +377,7 @@ export function IntakeForm({
           <button type="button" onClick={checkSubmittedCase} className="bg-[#003b71] px-4 py-3 text-sm font-semibold text-white">
             {dictionary.checkThisCase}
           </button>
-          <button type="button" onClick={() => { setResult(null); setStatusCaseReference(""); setStatusAccessCode(""); setStatusResult(null); }} className="border-2 border-[#003b71] bg-white px-4 py-3 text-sm font-semibold text-[#003b71]">
+          <button type="button" onClick={() => { setResult(null); setLastSubmission(null); setStatusCaseReference(""); setStatusAccessCode(""); setStatusResult(null); }} className="border-2 border-[#003b71] bg-white px-4 py-3 text-sm font-semibold text-[#003b71]">
             {dictionary.submitAnotherRequest}
           </button>
           <button type="button" onClick={() => window.print()} className="border-2 border-slate-500 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
@@ -376,6 +395,15 @@ export function IntakeForm({
 
   return (
     <div className="grid gap-5">
+      {portfolioMode ? (
+        <aside
+          className="border border-sky-300 bg-sky-50 p-4 text-sky-950"
+          aria-label={dictionary.portfolioBannerTitle}
+        >
+          <p className="font-semibold">{dictionary.portfolioBannerTitle}</p>
+          <p className="mt-1 text-sm">{dictionary.portfolioBannerText}</p>
+        </aside>
+      ) : null}
       <div>
         <p className="mb-4 inline-flex bg-[#eaf4fb] px-3 py-1 text-sm font-semibold text-[#003b71]">
           {dictionary.badge}
@@ -755,6 +783,7 @@ export function IntakeForm({
           <p className="mt-4 text-sm text-red-700">{statusLookupError}</p>
         ) : null}
         {statusResult ? (
+          <>
           <dl className="mt-5 grid gap-3 bg-[#f5f9fc] p-4 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-slate-600">{dictionary.tenantLabel}</dt>
@@ -795,6 +824,17 @@ export function IntakeForm({
               </dd>
             </div>
           </dl>
+          {portfolioMode && selectedTenant && lastSubmission ? (
+            <EnterPortfolioDemoButton
+              className="mt-4 w-full bg-[#003b71] px-4 py-3 text-sm font-semibold text-white disabled:bg-slate-400"
+              idleLabel={dictionary.continueEmployeeDemo}
+              loadingLabel={dictionary.enteringEmployeeDemo}
+              redirectTo={`/internal/cases?search=${encodeURIComponent(lastSubmission.caseReference)}`}
+              retryLabel={dictionary.retryEmployeeDemo}
+              tenantSlug={selectedTenant.slug}
+            />
+          ) : null}
+          </>
         ) : null}
         </form>
       ) : null}

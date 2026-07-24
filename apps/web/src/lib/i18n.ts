@@ -6,6 +6,8 @@ export type IntakeDictionary = {
   languageLabel: string;
   switchLanguage: string;
   employeePortalLabel: string;
+  portfolioBannerTitle: string;
+  portfolioBannerText: string;
   badge: string;
   title: string;
   intro: string;
@@ -74,6 +76,9 @@ export type IntakeDictionary = {
   checkThisCase: string;
   submitAnotherRequest: string;
   printDetails: string;
+  continueEmployeeDemo: string;
+  enteringEmployeeDemo: string;
+  retryEmployeeDemo: string;
   caseIdLabel: string;
   caseReferenceLabel: string;
   statusAccessCodeLabel: string;
@@ -97,6 +102,8 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     languageLabel: "Språk",
     switchLanguage: "English",
     employeePortalLabel: "Ansattportal",
+    portfolioBannerTitle: "Offentlig porteføljedemo",
+    portfolioBannerText: "Bruk kun syntetisk informasjon.",
     badge: "Innbyggerportal",
     title: "Send inn en henvendelse",
     intro:
@@ -183,6 +190,9 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     checkThisCase: "Sjekk denne saken nå",
     submitAnotherRequest: "Send en ny henvendelse",
     printDetails: "Skriv ut detaljer",
+    continueEmployeeDemo: "Fortsett i ansattdemoen",
+    enteringEmployeeDemo: "Åpner ansattdemo…",
+    retryEmployeeDemo: "Prøv igjen",
     caseIdLabel: "Saks-ID",
     caseReferenceLabel: "Saksreferanse",
     statusAccessCodeLabel: "Tilgangskode",
@@ -214,6 +224,8 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     languageLabel: "Language",
     switchLanguage: "Norsk",
     employeePortalLabel: "Employee portal",
+    portfolioBannerTitle: "Public portfolio demo",
+    portfolioBannerText: "Use synthetic information only.",
     badge: "Citizen portal",
     title: "Submit a request",
     intro:
@@ -299,6 +311,9 @@ export const dictionaries: Record<Locale, IntakeDictionary> = {
     checkThisCase: "Check this case now",
     submitAnotherRequest: "Submit another request",
     printDetails: "Print details",
+    continueEmployeeDemo: "Continue in employee demo",
+    enteringEmployeeDemo: "Entering employee demo…",
+    retryEmployeeDemo: "Try again",
     caseIdLabel: "Case ID",
     caseReferenceLabel: "Case reference",
     statusAccessCodeLabel: "Access code",

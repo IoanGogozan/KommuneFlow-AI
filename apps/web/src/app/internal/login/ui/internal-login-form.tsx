@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
 import { InternalLanguageToggle, useInternalI18n } from "@/lib/internal-locale";
+import { EnterPortfolioDemoButton } from "@/components/enter-portfolio-demo-button";
 
 export function InternalLoginForm() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export function InternalLoginForm() {
 
   return (
     <main className="min-h-screen bg-slate-100 px-5 py-10">
-      <section className="mx-auto max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="mx-auto max-w-lg rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-slate-500">{t.common.app}</p>
@@ -53,7 +54,22 @@ export function InternalLoginForm() {
           </div>
           <InternalLanguageToggle locale={locale} setLocale={setLocale} />
         </div>
-        <p className="mt-3 text-sm leading-6 text-slate-600">{t.login.intro}</p>
+        <section className="mt-6 rounded-md border border-sky-200 bg-sky-50 p-4">
+          <h2 className="text-xl font-semibold text-sky-950">
+            {t.login.demoTitle}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-sky-900">
+            {t.login.demoIntro}
+          </p>
+          <EnterPortfolioDemoButton
+            className="mt-4 w-full rounded-md bg-[#003b71] px-4 py-3 text-sm font-semibold text-white hover:bg-[#00294f] disabled:bg-slate-400"
+            idleLabel={t.login.demoTitle}
+          />
+        </section>
+        <h2 className="mt-8 text-xl font-semibold text-slate-950">
+          {t.login.staffTitle}
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">{t.login.intro}</p>
         <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
           <label className="grid gap-2">
             <span className="text-sm font-medium text-slate-700">

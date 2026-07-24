@@ -106,10 +106,16 @@ describe("InternalShell navigation", () => {
     );
 
     expect(screen.getByText("Portfolio guest")).toBeVisible();
+    expect(screen.getByText("Public portfolio session")).toBeVisible();
+    expect(screen.getByText(/Synthetic shared data/)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Exit demo" })).toBeVisible();
     expect(
       screen.getAllByRole("link", { name: "Analytics" }).length,
     ).toBeGreaterThan(0);
     expect(screen.queryByText("Administration â–¾")).not.toBeInTheDocument();
     expect(screen.queryByText("Governance â–¾")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Operations" }),
+    ).not.toBeInTheDocument();
   });
 });

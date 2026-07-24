@@ -2,7 +2,7 @@ import { expect, type Page, type Route, test } from "@playwright/test";
 
 const apiBaseUrl = "http://localhost:3101/api/v1";
 
-test("portfolio landing sends visitors to public demo instructions", async ({
+test("portfolio landing offers public citizen and one-click employee journeys", async ({
   page,
 }) => {
   await page.goto("/");
@@ -14,26 +14,23 @@ test("portfolio landing sends visitors to public demo instructions", async ({
       name: /Municipal case management/,
     }),
   ).toBeVisible();
-  await expect(
-    page.getByText(/Protected interactive demo · Synthetic data only/),
-  ).toBeVisible();
+  await expect(page.getByText(/No account required.*Synthetic data only/)).toBeVisible();
 
-  await expect(page.getByRole("link", { name: "Explore the demo" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Try citizen flow" })).toHaveAttribute(
     "href",
-    "/demo",
+    "/en?municipality=kristiansand&portfolio=1",
   );
-  await expect(page.locator('a[href="/en"], a[href="/internal/login"]')).toHaveCount(0);
-  await expect(page.locator("main").getByRole("button")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Explore employee demo" }),
+  ).toBeVisible();
+  await expect(page.locator('a[href="/internal/login"]')).toHaveCount(0);
 
-  const functionalLinks = page.getByRole("link");
-  const linkCount = await functionalLinks.count();
-  for (let index = 0; index < linkCount; index += 1) {
-    await page.keyboard.press("Tab");
-    await expect(functionalLinks.nth(index)).toBeFocused();
-  }
+  const citizenCta = page.getByRole("link", { name: "Try citizen flow" });
+  await citizenCta.focus();
+  await expect(citizenCta).toBeFocused();
 });
 
-test("demo instructions preserve the public page when opening protected flows", async ({
+test("demo page presents citizen, employee, and technical paths without credentials", async ({
   page,
 }) => {
   const requestedPaths: string[] = [];
@@ -45,27 +42,21 @@ test("demo instructions preserve the public page when opening protected flows", 
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Test the KommuneFlow demo",
+      name: "Choose a product journey",
     }),
   ).toBeVisible();
   expect(requestedPaths).not.toContain("/en");
   expect(requestedPaths).not.toContain("/internal/login");
 
-  const citizen = page.getByRole("link", { name: "Open citizen demo" });
-  const employee = page.getByRole("link", {
-    name: "Open employee workspace",
-  });
-  for (const [link, href] of [
-    [citizen, "/en"],
-    [employee, "/internal/login"],
-  ] as const) {
-    await expect(link).toHaveAttribute("href", href);
-    await expect(link).toHaveAttribute("target", "_blank");
-    await expect(link).toHaveAttribute("rel", "noopener noreferrer");
-  }
+  const citizen = page.getByRole("link", { name: "Try citizen flow" });
+  await expect(citizen).toHaveAttribute(
+    "href",
+    "/en?municipality=kristiansand&portfolio=1",
+  );
   await expect(
-    page.getByText(/protected application opens in a new tab/i),
+    page.getByRole("button", { name: "Enter employee demo" }),
   ).toBeVisible();
+  await expect(page.getByText(/credentials required/i)).toHaveCount(0);
   await expect(
     page.getByRole("link", { name: "Back to portfolio overview" }),
   ).toHaveAttribute("href", "/");
@@ -84,9 +75,12 @@ test("portfolio landing has no horizontal overflow at 320 pixels", async ({
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
 });
 
-test("public citizen intake and status lookup work through the browser", async ({
+test("public citizen journey continues into the restricted employee demo", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("kommuneflow.internal.locale", "en");
+  });
   await mockApi(page, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -156,10 +150,54 @@ test("public citizen intake and status lookup work through the browser", async (
       });
     }
 
+    if (
+      request.method() === "POST" &&
+      url.pathname.endsWith("/auth/demo-session")
+    ) {
+      expect(request.postDataJSON()).toEqual({ tenantSlug: "arendal" });
+      return fulfillJson(route, { user: portfolioGuest() }, 201);
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/auth/me")) {
+      return fulfillJson(route, portfolioGuest());
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/cases")) {
+      return fulfillJson(route, [
+        {
+          id: "case_1",
+          caseReference: "KF-2026-0001",
+          title: "Water leak near school entrance",
+          status: "waiting_for_citizen",
+          category: "road_transport",
+          urgency: "normal",
+          createdAt: "2026-05-09T10:00:00.000Z",
+          assignedDepartment: {
+            id: "department_1",
+            name: "Technical Department",
+            slug: "technical-department",
+          },
+          citizenProfile: {
+            name: "Ada Citizen",
+            email: "ada@example.local",
+          },
+        },
+      ]);
+    }
+
+    if (
+      request.method() === "GET" &&
+      url.pathname.endsWith("/analytics/summary")
+    ) {
+      return fulfillJson(route, {}, 503);
+    }
+
     return route.abort("notfound");
   });
 
-  await page.goto("/en");
+  await page.goto("/en?portfolio=1");
+  await expect(page.getByText("Public portfolio demo")).toBeVisible();
+  await expect(page.getByLabel("Password")).toHaveCount(0);
   await page.getByRole("combobox").first().selectOption("arendal");
   await page.getByLabel("Name").fill("Ada Citizen");
   await page.getByLabel("Email").fill("ada@example.local");
@@ -195,6 +233,26 @@ test("public citizen intake and status lookup work through the browser", async (
   await expect(page.getByText("Water leak near school entrance")).toBeVisible();
   await expect(page.getByText("Waiting for you")).toBeVisible();
   await expect(page.getByText("Technical Department")).toBeVisible();
+
+  await page
+    .getByRole("button", { name: "Continue in employee demo" })
+    .click();
+  await expect(page).toHaveURL(
+    /\/internal\/cases\?search=KF-2026-0001$/,
+  );
+  await expect(page).not.toHaveURL(/ABC123/);
+  await expect(page.getByText("Public portfolio session")).toBeVisible();
+  await expect(page.getByRole("searchbox")).toHaveValue("KF-2026-0001");
+  await expect(page.getByText("Water leak near school entrance")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Operations" }),
+  ).toHaveCount(0);
+  await expect(page.getByText(/Administration/)).toHaveCount(0);
+  await page.getByRole("link", { name: "Analytics" }).first().click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Analytics" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Aggregate" })).toHaveCount(0);
 });
 
 test("internal login posts credentials and redirects to case list", async ({
@@ -481,6 +539,27 @@ function internalUser() {
       "document:read:department",
       "ai:triage:run",
       "ai:triage:review",
+    ],
+  };
+}
+
+function portfolioGuest() {
+  return {
+    id: "guest_1",
+    email: "portfolio.guest@arendal.local",
+    name: "Portfolio Guest",
+    role: "portfolio_guest",
+    tenantId: "tenant_1",
+    tenant: { id: "tenant_1", name: "Arendal Kommune", slug: "arendal" },
+    departmentId: null,
+    department: null,
+    permissions: [
+      "case:read:all_tenant",
+      "case:update:all_tenant",
+      "document:read:department",
+      "ai:triage:run",
+      "ai:triage:review",
+      "analytics:read",
     ],
   };
 }

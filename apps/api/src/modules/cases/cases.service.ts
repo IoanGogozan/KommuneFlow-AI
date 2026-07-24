@@ -348,6 +348,7 @@ export class CasesService {
       take: 50,
       select: {
         id: true,
+        caseReference: true,
         title: true,
         category: true,
         status: true,

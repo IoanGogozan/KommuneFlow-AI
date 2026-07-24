@@ -113,13 +113,23 @@ export const internalDictionaryNb = {
     },
   },
   login: {
-    title: "Intern innlogging",
+    title: "Ansattilgang",
     intro: "Bruk en seedet kommunal ansattkonto for å åpne saksoversikten.",
+    demoTitle: "Utforsk porteføljedemoen",
+    demoIntro:
+      "Åpne et begrenset, syntetisk arbeidsområde uten brukerkonto.",
+    staffTitle: "Logg inn med ansattinformasjon",
     email: "E-post",
     password: "Passord",
     signIn: "Logg inn",
     signingIn: "Logger inn...",
     invalid: "Ugyldig e-post eller passord.",
+  },
+  portfolioSession: {
+    title: "Offentlig porteføljeøkt",
+    description:
+      "Syntetiske delte data · Endringer kan tilbakestilles automatisk",
+    exit: "Avslutt demo",
   },
   cases: {
     title: "Saksoversikt",

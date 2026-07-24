@@ -9,12 +9,13 @@ type PageProps = {
   }>;
   searchParams: Promise<{
     municipality?: string;
+    portfolio?: string;
   }>;
 };
 
 export default async function IntakePage({ params, searchParams }: PageProps) {
   const { locale: localeParam } = await params;
-  const { municipality } = await searchParams;
+  const { municipality, portfolio } = await searchParams;
 
   if (!isLocale(localeParam)) {
     notFound();
@@ -74,6 +75,7 @@ export default async function IntakePage({ params, searchParams }: PageProps) {
               dictionary={dictionary}
               locale={localeParam}
               initialTenantSlug={municipality}
+              portfolioMode={portfolio === "1"}
             />
           </div>
         </section>

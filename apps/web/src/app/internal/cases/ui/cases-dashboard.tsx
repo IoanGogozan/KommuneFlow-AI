@@ -17,6 +17,7 @@ import { InternalShell } from "../../ui/internal-shell";
 
 type CaseListItem = {
   id: string;
+  caseReference: string;
   title: string;
   category: string;
   status: string;
@@ -56,7 +57,9 @@ export function CasesDashboard() {
   } = useInternalSession();
   const [cases, setCases] = useState<CaseListItem[]>([]);
   const [allCases, setAllCases] = useState<CaseListItem[]>([]);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(
+    () => searchParams.get("search")?.trim() ?? "",
+  );
   const [error, setError] = useState<string | null>(null);
   const status = parseStatusFilter(searchParams.get("status"));
 
@@ -82,6 +85,7 @@ export function CasesDashboard() {
 
     return cases.filter((caseItem) => {
       const searchableValues = [
+        caseItem.caseReference,
         caseItem.title,
         caseItem.citizenProfile.name,
         caseItem.citizenProfile.email,
@@ -371,7 +375,7 @@ function CaseListRow({
             {caseItem.title}
           </p>
           <p className="mt-1 truncate text-slate-500">
-            {caseItem.citizenProfile.name}
+            {caseItem.caseReference} · {caseItem.citizenProfile.name}
           </p>
         </div>
 

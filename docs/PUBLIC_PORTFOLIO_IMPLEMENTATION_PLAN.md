@@ -34,7 +34,7 @@ Security invariants for every PR:
 | PR 1 | Portfolio guest authorization model           | Draft PR open | [PR #19](https://github.com/IoanGogozan/KommuneFlow-AI/pull/19); implemented and verified locally; Basic Auth unchanged |
 | PR 2 | One-click guest session                       | Draft PR open | [PR #20](https://github.com/IoanGogozan/KommuneFlow-AI/pull/20); stacked on draft PR #19; disabled by default           |
 | PR 3 | Public application perimeter                  | Draft PR open | [PR #21](https://github.com/IoanGogozan/KommuneFlow-AI/pull/21); stacked on draft PR #20; verified locally               |
-| PR 4 | Portfolio journey UX                          | Not started   | Landing, citizen-to-employee continuation, guest UX                                                                     |
+| PR 4 | Portfolio journey UX                          | Draft PR open | [PR #22](https://github.com/IoanGogozan/KommuneFlow-AI/pull/22); stacked on draft PR #21; verified locally               |
 | PR 5 | Public demo safety and reset                  | Not started   | Upload controls, rate limits, safe reset                                                                                |
 | PR 6 | Documentation, screenshots, live verification | Not started   | Evidence must match deployed behavior                                                                                   |
 
@@ -126,6 +126,21 @@ PR 3 result (update at completion):
 ## PR 4 — Portfolio journey UX
 
 Create the public landing and guided citizen/employee portfolio journey, place the one-click guest entry, continue from citizen success/status into the employee demo without putting access codes in URLs, communicate synthetic/shared/reset data and human-reviewed AI, and keep normal staff login available. Avoid broad redesign.
+
+PR 4 result (update at completion):
+
+- Implemented: direct landing CTAs for the public citizen flow and one-click employee demo; three-path `/demo` page; English/Bokmål portfolio-mode citizen banner; same-tenant continuation from submission/status into a guest session; case-reference URL search and list prefill; public-demo-first internal login while retaining accessible staff fields; guest session banner, role/scope, exit action, and permission-derived navigation; read-only analytics visibility
+- Citizen continuation: successful reference and access code remain in client state; only the case reference is URL-encoded into `/internal/cases?search=...`; the access code is never stored in the URL or browser storage; guest-session errors retain the citizen flow and provide retry
+- API support: authenticated case-list responses now include `caseReference` so the existing queue can filter and display the submitted case; no authorization or tenant-scope rule changed
+- Browser coverage: landing CTA and 320 px overflow checks; credential-free `/demo`; public portfolio banner; synthetic intake and status lookup; same-tenant guest-session creation; reference-prefilled case queue; guest banner; absent admin/operations navigation; analytics visible without Aggregate; access code absent from URL; existing staff login and case workflow/AI review coverage retained
+- Verified: lint; workspace typecheck; 246 API unit tests with coverage; 64 API e2e tests plus one intentionally skipped; 22 web unit tests; 6 browser e2e tests; 22 ETL tests; production build; one real full-stack citizen/employee/AI workflow
+- Full-stack note: the first run used the test's fallback password and received the expected authentication failure (`401`); rerunning with the local seeded demo password supplied through `FULLSTACK_DEMO_PASSWORD` passed
+- Accessibility: semantic headings and landmarks retained; native buttons/links and password-manager-compatible email/password fields preserved; loading buttons are disabled; guest and portfolio notices use visible text and labelled regions
+- Database migrations: none
+- Not implemented in this PR: public upload restrictions, reset automation, new rate-limit policy, screenshot regeneration, or live deployment verification
+- Deployment: implemented and verified locally, but not deployed
+- Rollback: revert PR 4; PR 1–3 authorization, one-click endpoint, application perimeter, and normal staff login remain independently usable
+- Draft PR: [#22 — feat: add public portfolio guest journey](https://github.com/IoanGogozan/KommuneFlow-AI/pull/22)
 
 ## PR 5 — Public demo safety and reset
 
