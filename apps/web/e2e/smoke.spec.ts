@@ -14,12 +14,13 @@ test("portfolio landing offers public citizen and one-click employee journeys", 
       name: /Municipal case management/,
     }),
   ).toBeVisible();
-  await expect(page.getByText(/No account required.*Synthetic data only/)).toBeVisible();
+  await expect(
+    page.getByText(/No account required.*Synthetic data only/),
+  ).toBeVisible();
 
-  await expect(page.getByRole("link", { name: "Try citizen flow" })).toHaveAttribute(
-    "href",
-    "/en?municipality=kristiansand&portfolio=1",
-  );
+  await expect(
+    page.getByRole("link", { name: "Try citizen flow" }),
+  ).toHaveAttribute("href", "/en?municipality=kristiansand&portfolio=1");
   await expect(
     page.getByRole("button", { name: "Explore employee demo" }),
   ).toBeVisible();
@@ -202,7 +203,9 @@ test("public citizen journey continues into the restricted employee demo", async
   await page.getByLabel("Name").fill("Ada Citizen");
   await page.getByLabel("Email").fill("ada@example.local");
   await page.getByLabel("Phone").fill("+47 40000000");
-  await page.getByRole("textbox", { name: "Address", exact: true }).fill("Storgata 12");
+  await page
+    .getByRole("textbox", { name: "Address", exact: true })
+    .fill("Storgata 12");
   await page.getByRole("button", { name: "Search address" }).click();
   await page.getByRole("button", { name: /Storgata 12, Arendal/ }).click();
   await page.getByLabel("Title").fill("Water leak near school entrance");
@@ -211,13 +214,11 @@ test("public citizen journey continues into the restricted employee demo", async
     .fill(
       "There is a water leak near the school entrance and the road is slippery.",
     );
-  await page
-    .locator('input[name="documents"]')
-    .setInputFiles({
-      name: "citizen-upload.pdf",
-      mimeType: "application/pdf",
-      buffer: Buffer.from("%PDF-1.4\n%EOF"),
-    });
+  await page.locator('input[name="documents"]').setInputFiles({
+    name: "citizen-upload.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4\n%EOF"),
+  });
   await page.getByRole("checkbox", { name: /Privacy/ }).check();
   await page.getByRole("button", { name: "Submit" }).click();
 
@@ -234,19 +235,13 @@ test("public citizen journey continues into the restricted employee demo", async
   await expect(page.getByText("Waiting for you")).toBeVisible();
   await expect(page.getByText("Technical Department")).toBeVisible();
 
-  await page
-    .getByRole("button", { name: "Continue in employee demo" })
-    .click();
-  await expect(page).toHaveURL(
-    /\/internal\/cases\?search=KF-2026-0001$/,
-  );
+  await page.getByRole("button", { name: "Continue in employee demo" }).click();
+  await expect(page).toHaveURL(/\/internal\/cases\?search=KF-2026-0001$/);
   await expect(page).not.toHaveURL(/ABC123/);
   await expect(page.getByText("Public portfolio session")).toBeVisible();
   await expect(page.getByRole("searchbox")).toHaveValue("KF-2026-0001");
   await expect(page.getByText("Water leak near school entrance")).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Operations" }),
-  ).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Operations" })).toHaveCount(0);
   await expect(page.getByText(/Administration/)).toHaveCount(0);
   await page.getByRole("link", { name: "Analytics" }).first().click();
   await expect(
@@ -458,7 +453,7 @@ test("internal case detail supports status update, document upload, and AI revie
   await expect(
     page
       .locator("section")
-      .filter({ hasText: "case_1" })
+      .filter({ hasText: "KF-2026-0001" })
       .getByRole("heading", { name: "Water leak near school entrance" }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Overview" })).toHaveAttribute(
@@ -476,13 +471,11 @@ test("internal case detail supports status update, document upload, and AI revie
   await expect(page.getByText("In progress").first()).toBeVisible();
 
   await page.getByRole("button", { name: "Overview" }).click();
-  await page
-    .locator('input[name="file"]')
-    .setInputFiles({
-      name: "internal-note.pdf",
-      mimeType: "application/pdf",
-      buffer: Buffer.from("%PDF-1.4\ninternal\n%EOF"),
-    });
+  await page.locator('input[name="file"]').setInputFiles({
+    name: "internal-note.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4\ninternal\n%EOF"),
+  });
   await page.getByRole("button", { name: "Upload" }).click();
   await expect(page.getByText("internal-note.pdf")).toBeVisible();
 
@@ -567,6 +560,7 @@ function portfolioGuest() {
 function caseDetail(status: string) {
   return {
     id: "case_1",
+    caseReference: "KF-2026-0001",
     title: "Water leak near school entrance",
     description:
       "There is a water leak near the school entrance and the road is slippery.",
