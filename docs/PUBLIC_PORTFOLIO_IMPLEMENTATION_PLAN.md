@@ -29,14 +29,14 @@ Security invariants for every PR:
 
 ## Delivery tracker
 
-| PR   | Scope                                         | Status        | Evidence / outcome                                                                                                      |
-| ---- | --------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| PR 1 | Portfolio guest authorization model           | Draft PR open | [PR #19](https://github.com/IoanGogozan/KommuneFlow-AI/pull/19); implemented and verified locally; Basic Auth unchanged |
-| PR 2 | One-click guest session                       | Draft PR open | [PR #20](https://github.com/IoanGogozan/KommuneFlow-AI/pull/20); stacked on draft PR #19; disabled by default           |
-| PR 3 | Public application perimeter                  | Draft PR open | [PR #21](https://github.com/IoanGogozan/KommuneFlow-AI/pull/21); stacked on draft PR #20; verified locally              |
-| PR 4 | Portfolio journey UX                          | Draft PR open | [PR #22](https://github.com/IoanGogozan/KommuneFlow-AI/pull/22); stacked on draft PR #21; verified locally              |
-| PR 5 | Public demo safety and reset                  | Draft PR open | [PR #23](https://github.com/IoanGogozan/KommuneFlow-AI/pull/23); stacked on draft PR #22; verified locally              |
-| PR 6 | Documentation, screenshots, live verification | In progress   | Branch `agent/public-guest-demo`; stacked on draft PR #23; evidence must distinguish local and deployed behavior        |
+| PR   | Scope                                         | Status        | Evidence / outcome                                                                                                       |
+| ---- | --------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| PR 1 | Portfolio guest authorization model           | Draft PR open | [PR #19](https://github.com/IoanGogozan/KommuneFlow-AI/pull/19); implemented and verified locally; Basic Auth unchanged  |
+| PR 2 | One-click guest session                       | Draft PR open | [PR #20](https://github.com/IoanGogozan/KommuneFlow-AI/pull/20); stacked on draft PR #19; disabled by default            |
+| PR 3 | Public application perimeter                  | Draft PR open | [PR #21](https://github.com/IoanGogozan/KommuneFlow-AI/pull/21); stacked on draft PR #20; verified locally               |
+| PR 4 | Portfolio journey UX                          | Draft PR open | [PR #22](https://github.com/IoanGogozan/KommuneFlow-AI/pull/22); stacked on draft PR #21; verified locally               |
+| PR 5 | Public demo safety and reset                  | Draft PR open | [PR #23](https://github.com/IoanGogozan/KommuneFlow-AI/pull/23); stacked on draft PR #22; verified locally               |
+| PR 6 | Documentation, screenshots, live verification | Draft PR open | [PR #24](https://github.com/IoanGogozan/KommuneFlow-AI/pull/24); stacked on draft PR #23; verified locally, not deployed |
 
 ## PR 1 — Portfolio guest authorization model
 
@@ -202,7 +202,7 @@ PR 6 result (update at completion):
 - Not verified: the PR 6 commit was not merged or deployed, so live public status codes, unauthenticated API matrix, guest matrix, browser journey, staff login, host cron, deployed reset, and rollback remain post-merge manual checks
 - Deployment: implemented and verified locally, but not deployed
 - Rollback: revert PR 6 to restore prior documentation/captures; no application schema, authorization, or runtime behavior changes need rollback
-- Draft PR: pending
+- Draft PR: [#24 — docs: publish public guest demo evidence](https://github.com/IoanGogozan/KommuneFlow-AI/pull/24)
 
 ## Required report after each PR
 
