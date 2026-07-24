@@ -76,29 +76,23 @@ export default function Home() {
             suggestions that require employee approval.
           </p>
           <div className={styles.heroActions}>
-            <Link
-              className={styles.primaryCta}
-              href="/en"
-              prefetch={false}
-            >
-              View citizen flow
+            <Link className={styles.primaryCta} href="/demo">
+              Explore the demo
             </Link>
-            <Link
+            <a
               className={styles.secondaryCta}
-              href="/internal/login"
-              prefetch={false}
+              href="https://github.com/IoanGogozan/KommuneFlow-AI"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              Open employee workspace
-            </Link>
+              View source on GitHub
+            </a>
           </div>
           <p className={styles.accessNote}>
-            Demo credentials required for interactive routes.
-            <Link href="/nb" prefetch={false}>
-              Norsk demo
-            </Link>
+            <a href="#workflow">Read how it works</a>
           </p>
           <p className={styles.statusLine}>
-            Protected demo <span aria-hidden="true">·</span> Synthetic data only{" "}
+            Protected interactive demo <span aria-hidden="true">·</span> Synthetic data only{" "}
             <span aria-hidden="true">·</span> Source available on GitHub
           </p>
         </div>
@@ -163,9 +157,9 @@ export default function Home() {
         </div>
         <figure>
           <Image
-            src="/screenshots/citizen-intake-nb.png"
+            src="/screenshots/citizen-intake-preview.png"
             width={1440}
-            height={1024}
+            height={850}
             sizes="(max-width: 800px) 100vw, 58vw"
             alt="Norwegian KommuneFlow citizen intake showing contact and request fields"
           />

@@ -2,7 +2,7 @@ import { expect, type Page, type Route, test } from "@playwright/test";
 
 const apiBaseUrl = "http://localhost:3101/api/v1";
 
-test("portfolio landing exposes only functional, protected-flow links", async ({
+test("portfolio landing sends visitors to public demo instructions", async ({
   page,
 }) => {
   await page.goto("/");
@@ -15,20 +15,14 @@ test("portfolio landing exposes only functional, protected-flow links", async ({
     }),
   ).toBeVisible();
   await expect(
-    page.getByText("Demo credentials required for interactive routes."),
+    page.getByText(/Protected interactive demo · Synthetic data only/),
   ).toBeVisible();
 
-  await expect(page.getByRole("link", { name: "View citizen flow" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Explore the demo" })).toHaveAttribute(
     "href",
-    "/en",
+    "/demo",
   );
-  await expect(
-    page.getByRole("link", { name: "Open employee workspace" }),
-  ).toHaveAttribute("href", "/internal/login");
-  await expect(page.getByRole("link", { name: "Norsk demo" })).toHaveAttribute(
-    "href",
-    "/nb",
-  );
+  await expect(page.locator('a[href="/en"], a[href="/internal/login"]')).toHaveCount(0);
   await expect(page.locator("main").getByRole("button")).toHaveCount(0);
 
   const functionalLinks = page.getByRole("link");
@@ -37,6 +31,44 @@ test("portfolio landing exposes only functional, protected-flow links", async ({
     await page.keyboard.press("Tab");
     await expect(functionalLinks.nth(index)).toBeFocused();
   }
+});
+
+test("demo instructions preserve the public page when opening protected flows", async ({
+  page,
+}) => {
+  const requestedPaths: string[] = [];
+  page.on("request", (request) =>
+    requestedPaths.push(new URL(request.url()).pathname),
+  );
+
+  await page.goto("/demo");
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "Test the KommuneFlow demo",
+    }),
+  ).toBeVisible();
+  expect(requestedPaths).not.toContain("/en");
+  expect(requestedPaths).not.toContain("/internal/login");
+
+  const citizen = page.getByRole("link", { name: "Open citizen demo" });
+  const employee = page.getByRole("link", {
+    name: "Open employee workspace",
+  });
+  for (const [link, href] of [
+    [citizen, "/en"],
+    [employee, "/internal/login"],
+  ] as const) {
+    await expect(link).toHaveAttribute("href", href);
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  }
+  await expect(
+    page.getByText(/protected application opens in a new tab/i),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Back to portfolio overview" }),
+  ).toHaveAttribute("href", "/");
 });
 
 test("portfolio landing has no horizontal overflow at 320 pixels", async ({
