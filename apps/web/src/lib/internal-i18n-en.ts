@@ -353,12 +353,13 @@ export const internalDictionaryEn = {
     aggregateError: "Could not aggregate analytics.",
     cases: "Cases",
     aiReviews: "AI reviews",
+    aiTriageRuns: "AI triage runs",
     aiCorrections: "AI corrections",
     aiCorrectionRate: "AI correction rate",
     aiAcceptanceRate: "AI acceptance rate",
     aiTriageFailures: "AI triage failures",
     waitingForCitizen: "Waiting for citizen",
-    minutesSaved: "Estimated minutes saved",
+    minutesSaved: "Illustrative minutes saved",
     avgTriage: "Avg. time to triage",
     medianTriage: "Median time to triage",
     avgClose: "Avg. time to close",
@@ -367,9 +368,9 @@ export const internalDictionaryEn = {
     population: "Population basis",
     ssbYear: "SSB year",
     ssbStatus: "SSB status",
-    effectTitle: "Effect measurement",
+    effectTitle: "Illustrative time-saving assumption",
     effectText:
-      "Estimated manual time saved is a documented estimate, not an exact measurement.",
+      "This is a documented assumption based on accepted and corrected AI reviews, not a measured time study.",
     lastRebuild: "Last rebuild",
     assumption: "Assumption",
     acceptedSave: "accepted AI suggestions save",
@@ -377,13 +378,14 @@ export const internalDictionaryEn = {
     minutes: "minutes",
     ssbTitle: "SSB enrichment",
     ssbText:
-      "Population data from Statistics Norway table 07459 is used to calculate cases per 1,000 inhabitants.",
+      "Population reference is based on SSB table 07459. Demo environments may use a seeded reference value rather than a live import.",
     source: "Source",
     ssbMissing:
       "SSB population data is missing for this range. Import municipality statistics and rebuild analytics to enable normalized metrics.",
     ssbStale:
       "SSB population data is stale. Re-import municipality statistics and rebuild analytics before using normalized metrics in decisions.",
-    imported: "Last imported",
+    imported: "Reference timestamp",
+    ssbSourceLabel: "Reference: SSB table 07459",
     byDepartment: "Case volume by department",
     byCategory: "Case volume by category",
     byStatus: "Case volume by status",
@@ -392,11 +394,13 @@ export const internalDictionaryEn = {
     noDaily: "No aggregated analytics for this range.",
     aiCorrection: "AI correction",
     aiFailure: "AI failure",
-    minSaved: "min saved",
+    minSaved: "Illustrative minutes",
     executiveTitle: "What the numbers mean",
     executiveText:
       "Use analytics to see whether AI creates value, where cases get stuck, and whether volume is changing.",
-    loadingInsight: "Loading decision context for the selected period.",
+    loadingInsight: "Loading summary for the selected period.",
+    smallSampleInsight:
+      "Sample size is below 30 observations, so this view is directional only.",
     aiQualityTitle: "AI quality",
     aiQualityText:
       "Shows whether AI suggestions can be used directly, or whether model behavior/routing should be adjusted.",
@@ -411,7 +415,7 @@ export const internalDictionaryEn = {
       "Cases are moving without an obvious bottleneck in the selected period.",
     flowBlocked:
       "A noticeable share of cases is waiting for the citizen. Check whether requests for more information can be clearer.",
-    reliabilityTitle: "AI stability",
+    reliabilityTitle: "AI reliability",
     reliabilityHealthy: "AI triage rarely fails in the selected period.",
     reliabilityNeedsReview:
       "The AI failure rate is high enough to review integration, prompt, or input data.",
@@ -423,11 +427,42 @@ export const internalDictionaryEn = {
       "A high number means case workers are waiting for replies before cases can continue.",
     aiFailureDetail:
       "Failures mean AI triage could not produce a usable suggestion.",
-    selectedPeriod: "Total for the selected period.",
-    estimateDetail:
-      "Estimated saved time based on accepted and corrected AI reviews.",
+    selectedPeriod:
+      "Cases are counted by created date. AI review counts are counted by review creation date.",
+    estimateDetail: "Illustrative only. Not a measured result.",
     populationMissingDetail:
-      "Missing SSB population data for normalized comparison.",
+      "Missing SSB population reference for normalized comparison.",
+    sampledTriage: "measured triage timings",
+    sampledClose: "measured close times",
+    guestEyebrow: "Public demo",
+    guestTitle: "Synthetic analytics snapshot",
+    guestIntro:
+      "This view summarizes seeded demo data only. It omits daily trends, SSB normalization, rebuild controls and other advanced staff metrics.",
+    guestRangeLabel: "Selected range",
+    guestDisclaimer:
+      "For portfolio review only. The numbers are synthetic and may reset.",
+    guestCases: "Cases",
+    guestCasesDetail: "created in the selected period",
+    guestReviewsDetail: "human reviews",
+    guestAiSectionTitle: "Human-reviewed AI",
+    guestAiSectionText:
+      "Accepted and corrected AI suggestions are shown with their review counts.",
+    guestAiNote:
+      "This guest view hides daily trends, SSB reference data, estimated minutes saved and aggregate controls.",
+    guestAcceptedCorrected: "Accepted / corrected reviews",
+    guestAccepted: "accepted",
+    guestCorrected: "corrected",
+    guestAcceptedCorrectedDetail: "Accepted and corrected review counts.",
+    guestFailedRuns: "Failed triage runs",
+    guestFailedRunsDetail: "Failures shown against the total triage runs.",
+    guestWaitingDetail: "cases are waiting for citizen input",
+    guestWorkflowEyebrow: "Workflow",
+    guestWorkflowTitle: "Workflow snapshot",
+    guestWorkflowText: "The guest view keeps the operational picture compact.",
+    guestMeasuredTriage: "measured triage timings",
+    guestMeasuredClose: "measured close timings",
+    guestWorkflowNote:
+      "Detailed trend analysis remains available to staff users.",
   },
   operations: {
     title: "Operations",
