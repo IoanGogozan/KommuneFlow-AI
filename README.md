@@ -38,8 +38,9 @@ portfolio path; normal staff login remains a separate controlled path.
 5. The guest reviews cases, opens a case, runs deterministic mock AI, and
    accepts or corrects the suggestion.
 6. The employee workflow changes only after explicit human review. The current
-   deployed guest Analytics page is a synthetic reference view; the compact
-   post-PR #29 layout is not live because PR #29 remains open.
+   deployed guest Analytics page is the compact live portfolio view with
+   synthetic counts, review totals, denominator-aware failure rate, waiting
+   citizen status, and median triage time with sample size.
 
 The guest role cannot access administration, privacy, audit, operations,
 document upload/delete, or analytics aggregation. These boundaries are enforced
@@ -115,9 +116,9 @@ See [AI governance](./docs/04_AI_GOVERNANCE.md) and
 - Bilingual citizen and internal portfolio workflows support Norwegian and
   English.
 - The public path uses synthetic data and disables public uploads.
-- Guest Analytics is a synthetic reference view, not a live SSB or municipal
-  performance report. The deployed commit still contains the earlier view;
-  post-PR #29 compact layout changes are pending merge and deployment.
+- Guest Analytics is a compact live portfolio reference view, not a live SSB
+  or municipal performance report. It shows synthetic counts and
+  sample-size-limited metrics rather than real municipal reporting.
 - SSB integration code exists, but this README does not claim a completed live
   import without dated evidence.
 - Background jobs, scheduled backup/restore testing, real OpenAI verification,

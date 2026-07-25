@@ -16,16 +16,13 @@ public path.
 5. Open the case Overview, AI review, and Workflow pages. Explain that the
    deterministic mock suggestion is separate from official values and that an
    employee must accept or correct it.
-6. Open Analytics. The currently deployed page is a synthetic reference view,
-   not a live operational report.
+6. Open Analytics. The deployed page is the compact guest Analytics view with
+   synthetic counts, review totals, denominator-aware failure rate, waiting
+   citizen status, and median triage time with sample size.
 
 ## Guest Analytics Talking Points
 
-PR #29 defines a compact guest Analytics layout, but PR #29 is still open and
-draft. It is not present in the current home-server deployment, so do not demo
-the post-PR #29 cards as live behavior until that PR is merged and deployed.
-
-The guest Analytics page shows:
+The live guest Analytics page shows a compact portfolio snapshot with:
 
 - synthetic case count;
 - human AI reviews;
@@ -33,12 +30,12 @@ The guest Analytics page shows:
 - failed triage runs with their total-run denominator;
 - cases by status and department;
 - cases waiting for a citizen;
-- median triage time with a sample size.
+- median triage time with a sample size;
+- synthetic-data disclaimer;
+- translated status and department labels.
 
-The intended post-PR #29 values are a deterministic portfolio reference
-snapshot with denominators and sample-size limitations. The current live page
-must not be described as that final layout until deployment evidence is added.
-Neither state is a live municipal performance report.
+This remains a deterministic portfolio reference snapshot with denominators
+and sample-size limitations. It is not a live municipal performance report.
 
 ## Security Talking Points
 

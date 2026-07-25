@@ -16,13 +16,14 @@ private server details, or real citizen data.
 | `08-case-overview.png` | Case Overview |
 | `09-ai-review.png` | Human AI review |
 | `10-workflow-activity.png` | Workflow and activity |
-| `11-analytics-read-only.png` | Current deployed guest Analytics reference view |
+| `11-analytics-read-only.png` | Current deployed compact guest Analytics view |
 | `12-normal-staff-login.png` | Separate unfilled staff login |
 
-`11-analytics-read-only.png` is a credential-free capture from the exact
-currently deployed commit. It is intentionally not presented as the compact
-post-PR #29 layout because that PR is not merged or deployed. The capture must
-not be read as live SSB aggregation or production performance evidence.
+`11-analytics-read-only.png` is a credential-free capture from the exact live
+deployment commit. It shows the compact guest Analytics layout with synthetic
+counts, review totals, denominator-aware failure rate, waiting-citizen status,
+and median triage time with sample size. The capture must not be read as live
+SSB aggregation or production performance evidence.
 
 Captures demonstrate local behavior and are not, by themselves, proof that a
 commit is deployed. Deployment evidence belongs in

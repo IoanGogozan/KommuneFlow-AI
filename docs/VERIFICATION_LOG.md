@@ -136,55 +136,35 @@ home server. Hetzner was not modified.
 The deployment required no schema migration and no global Caddy change. The
 existing six-hour guarded reset schedule remains installed.
 
-## 2026-07-25 - Documentation audit baseline
+## 2026-07-25 - Phase 4 live deployment verification
 
-PR #29 remains open and draft, so it has no merge commit to claim. The exact
-`origin/main` and home-server commit used for this audit is
-`07744f79cae713a476249a982d8ca5ec5ecb2f92`.
+This entry records the exact deployed merge commit
+`f863b1035df5bdffe5ab681e52c8602ce9b85820`. The live home-server deployment
+was manually verified after the merge of PR #29, and PR #31 had already been
+merged at `915be890485d79fb37b5c3a413febf641edc23e1`.
 
 | Scope | Result |
 | --- | --- |
-| Exact deployed commit | PASS - home-server release reported `07744f79cae713a476249a982d8ca5ec5ecb2f92` |
-| Home release | PASS - preflight, image build, migrations, health checks, and smoke checks completed |
-| Public pages | PASS - `/`, `/demo`, `/nb`, `/en`, `/internal/login`, and `/internal` returned `200` |
-| Protected perimeter | PASS - representative unauthenticated protected APIs returned `401` |
-| Guest browser flow | PASS - guest entry, case workflow, current deployed guest Analytics, and Exit demo to `/` verified |
-| Public uploads | PASS - disabled in the public deployment |
-| AI provider | PASS - public deployment uses deterministic mock AI |
-| Fatal logs | PASS - no fatal errors observed in the deployment window |
-| PR #29 status | OPEN and DRAFT - no merge commit exists yet |
+| Exact deployed commit | PASS - `f863b1035df5bdffe5ab681e52c8602ce9b85820` |
+| Merge lineage | PASS - PR #31 merged at `915be890485d79fb37b5c3a413febf641edc23e1`; `origin/main` advanced to `f863b1035df5bdffe5ab681e52c8602ce9b85820` |
+| Home release | PASS - `git fetch origin main`, `git pull --ff-only origin main`, `./scripts/home-release.sh`, guarded portfolio demo reset, container health, and public smoke checks completed |
+| Public pages | PASS - `/`, `/security`, `/en`, `/nb` returned `200` |
+| Guest flow | PASS - employee demo session, case queue, case detail, and Exit demo to `/` verified |
+| Guest Analytics | PASS - 9 synthetic cases, 6 human AI reviews, 4 accepted and 2 corrected, 1 failed triage run out of 8, 1 case waiting for citizen, median triage duration includes sample size, synthetic-data disclaimer visible, translated status and department labels |
+| Guest perimeter | PASS - no aggregate action, no date controls, no daily volume, no SSB enrichment, no cases-per-1,000 metric, no estimated-savings metric, no average-close-time KPI, no automated performance verdicts |
+| Security and workflow | PASS - public uploads disabled, AI suggestion separate from official values before review, explicit human review updates official values, protected unauthenticated APIs returned `401`, guest-restricted APIs returned `403` |
+| Runtime | PASS - postgres/api/web/gateway healthy; no relevant fatal, panic, unhandled, or migration errors found |
+| `pnpm install --frozen-lockfile` | PASS |
+| `pnpm audit:deps` | FAIL - 1 moderate vulnerability reported |
+| Relative-link check | PASS |
+| Secret-like scan | PASS |
+| Stale-claim scan | PASS |
+| `git diff --check` | PASS |
 
-### Repository and CI evidence retained from PR #29
+### Historical notes retained from earlier audits
 
-Local and CI lint, typecheck, API tests, API e2e, web tests, web e2e,
-full-stack e2e, build, and `git diff --check` passed as recorded on the PR.
-CodeQL passed. Gitleaks/Secret scan passed. `pnpm audit:deps` on that PR
-reported a dependency finding and is not described as clean.
-
-### Analytics evidence
-
-The corrected Kristiansand deterministic baseline on the PR #29 branch is 9
-cases, 6 human AI reviews, 4 accepted, 2 corrected, 1 failed run, 8 total
-triage runs, 1 case waiting for a citizen, and 24 illustrative minutes. PR #29
-was not merged or deployed at this audit date, so these values are not claimed
-as the current live guest page. The live capture remains the earlier Analytics
-view and must not be described as the compact post-PR #29 layout.
-
-### Current PR #30 CI status
-
-PR #30 is documentation-only, but its current CI run is not fully green yet.
-`CodeQL` and `Gitleaks` passed. The `CI` workflow failed at `Dependency audit`
-because `pnpm audit --audit-level high` reported `brace-expansion: DoS via
-unbounded expansion length causing an out-of-memory process crash`,
-advisory `GHSA-mh99-v99m-4gvg`, through transitive paths including
-`@eslint/eslintrc`, `@nestjs/cli`, and `jest`. This documentation PR does not
-change dependencies; any package update belongs in a separate focused
-dependency PR.
-
-### Verification boundaries
-
-Local tests and CI prove repository behavior. The home-server release and
-browser smoke prove the listed live behavior for the exact deployed commit.
-Real OpenAI remains unverified unless a protected manual workflow has a dated
-successful run recorded here. Backup scripts are manual tools; scheduled
-backup/restore testing is not claimed by this entry.
+- The earlier documentation audit baseline used `07744f79cae713a476249a982d8ca5ec5ecb2f92`.
+- The 2026-07-24 portfolio polish deployment used
+  `253913af67f4422d209477da667c094d44f41854`.
+- Earlier Analytics captures remain historical evidence only and should not be
+  read as the current live page.
