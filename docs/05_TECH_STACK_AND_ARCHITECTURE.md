@@ -21,7 +21,7 @@ system look enterprise-ready.
 The public deployment at `https://kommune.norvix.no` uses the home-server
 topology documented in [HOME_SERVER_DEPLOYMENT.md](./HOME_SERVER_DEPLOYMENT.md).
 Global Caddy terminates TLS on ports 80/443. The project gateway is on the
-private proxy network and listens on HTTP port 8080. It routes to the web and
+shared proxy network and listens on HTTP port 8080. It routes to the web and
 API containers and applies security headers and request-size limits. The API,
 web, and PostgreSQL services remain on the private project network and do not
 publish host ports.

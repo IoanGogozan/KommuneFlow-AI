@@ -50,29 +50,47 @@ The public guest route does not expose a password or bearer token.
 
 ## Protected Resources
 
-All protected routes require the auth cookie and are checked by server-side
-permission guards. Tenant scope is derived from the authenticated user and is
-not trusted from a client-only selector.
+Protected routes derive tenant scope from the authenticated user. This table
+is pinned to the current controller decorators and explicit inline permission
+checks; it does not infer route names.
 
-| Method | Path | Required capability |
+| Method | Path | Current enforcement |
 | --- | --- | --- |
-| `GET` | `/cases` | Case read capability |
-| `GET` | `/cases/:id` | Case read capability |
-| `GET` | `/cases/:id/activity` | Case read capability |
-| `PATCH` | `/cases/:id/status` | Department or tenant case update |
-| `POST` | `/cases/:id/internal-notes` | Department or tenant case update |
-| `GET` | `/analytics/summary` | `analytics:read` |
-| `POST` | `/analytics/aggregate` | `analytics:aggregate` |
-| `GET` | `/ai/status` | `ai:diagnostics:read` |
-| `POST` | `/ai-triage/cases/:id/run` | `ai:triage:run` |
-| `POST` | `/ai-triage/:id/review` | `ai:triage:review` |
+| `GET` | `/cases` | `@UseGuards(AuthGuard, PermissionsGuard)`; no route-level permission decorator. Read access is enforced in `CasesService.list` with `case:read:all_tenant` or `case:read:department`. |
+| `GET` | `/cases/:id` | `@UseGuards(AuthGuard, PermissionsGuard)`; no route-level permission decorator. Read access is enforced in `CasesService.findById` with `case:read:all_tenant` or `case:read:department`. |
+| `GET` | `/cases/:id/activity` | `@UseGuards(AuthGuard, PermissionsGuard)`; no route-level permission decorator. Read access is enforced in `CasesService.listActivity` with `case:read:all_tenant` or `case:read:department`. |
+| `PATCH` | `/cases/:id/status` | `@RequireAnyPermissions('case:update:department', 'case:update:all_tenant')` |
+| `POST` | `/cases/:id/internal-notes` | `@RequireAnyPermissions('case:update:department', 'case:update:all_tenant')` |
+| `GET` | `/cases/:caseId/documents` | `@UseGuards(AuthGuard, PermissionsGuard)`; no route-level permission decorator. Access is enforced in the documents service against the authenticated user's tenant and document-read permissions. |
+| `GET` | `/cases/:caseId/documents/:documentId/download` | `@UseGuards(AuthGuard, PermissionsGuard)`; no route-level permission decorator. Access is enforced in the documents service against the authenticated user's tenant and document-read permissions. |
+| `POST` | `/cases/:caseId/documents` | `@RequirePermissions('document:upload')` |
+| `DELETE` | `/cases/:caseId/documents/:documentId` | `@RequirePermissions('document:upload')` |
+| `GET` | `/cases/:caseId/ai-triage/latest` | `@UseGuards(AuthGuard, PermissionsGuard)`; no route-level permission decorator. Case access is enforced in the AI service through the authenticated user context. |
+| `POST` | `/cases/:caseId/ai-triage` | `@RequirePermissions('ai:triage:run')` |
+| `POST` | `/cases/:caseId/ai-triage/:resultId/review` | `@RequirePermissions('ai:triage:review')` |
+| `GET` | `/internal/ai/diagnostics` | `@RequirePermissions('ai:diagnostics:read')` |
+| `GET` | `/ai/status` | `@UseGuards(AuthGuard)` plus inline `roleHasPermission` check for either `ai:diagnostics:read` or `operations:read` |
+| `GET` | `/analytics/summary` | Controller-level `@RequirePermissions('analytics:read')` |
+| `POST` | `/analytics/aggregate` | Route-level `@RequirePermissions('analytics:aggregate')` |
+| `GET` | `/audit/events` | `@RequirePermissions('audit:read')` |
+| `GET` | `/privacy/status` | `@RequirePermissions('audit:read')` |
+| `GET` | `/privacy/citizen-data-export` | `@RequirePermissions('privacy:export')` |
+| `POST` | `/privacy/citizen-profiles/:citizenProfileId/anonymize` | `@RequirePermissions('privacy:anonymize')` |
+| `GET` | `/privacy/retention-policy` | `@RequirePermissions('privacy:export')` |
+| `PATCH` | `/privacy/retention-policy` | `@RequirePermissions('privacy:anonymize')` |
+| `POST` | `/privacy/retention-cleanup` | `@RequirePermissions('privacy:anonymize')` |
+| `GET` | `/operations/metrics-summary` | `@RequirePermissions('operations:read')` |
+| `POST` | `/integrations/ssb/imports/municipality-population` | `@RequirePermissions('tenant:manage')` |
+| `GET` | `/admin/users` | `@UseGuards(AuthGuard)` plus inline `roleHasPermission(user.role, 'user:manage')` check |
+| `GET` | `/departments` | `@UseGuards(AuthGuard)`; authenticated tenant member route with no explicit permission decorator |
+| `GET` | `/admin/departments` | `@UseGuards(AuthGuard)` plus inline role check for any of `user:manage`, `routing_rules:manage`, or `tenant:manage` |
+| `GET` | `/admin/routing-rules` | `@UseGuards(AuthGuard)` plus inline `roleHasPermission(user.role, 'routing_rules:manage')` check |
 | `GET` | `/health` | Public health check |
 | `GET` | `/readiness` | Public readiness check |
 
-Documents, operations, privacy, tenant, user, department, routing-rule, and
-audit routes are protected by their corresponding capability. Consult the
-controller source when adding a route; this document intentionally does not
-invent endpoints that are not present in current controllers.
+When a route relies on an inline role check instead of a permission decorator,
+that is called out explicitly above. Consult the controller source when adding
+a route.
 
 ## Analytics
 

@@ -18,7 +18,7 @@ flowchart TD
 ```
 
 Global Caddy terminates TLS on ports 80/443. The project-local gateway joins
-the private proxy network, listens on HTTP port 8080, routes traffic, applies
+the shared proxy network, listens on HTTP port 8080, routes traffic, applies
 security headers, and limits API request bodies. API, web, and PostgreSQL are
 on the private project network and do not publish host ports.
 

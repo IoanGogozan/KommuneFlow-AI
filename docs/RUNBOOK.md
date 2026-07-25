@@ -163,7 +163,10 @@ Then verify:
 - case list
 - document listing on a known case
 
-Record the date and result of each restore test in deployment notes. The Hetzner demo is online, but restore testing is still required before claiming operational production readiness.
+Record the date and result of each restore test in deployment notes. The
+verified live deployment is the home-server portfolio environment at
+`https://kommune.norvix.no`. Hetzner material in this repository is
+alternative/historical only and does not replace restore testing evidence.
 
 Production restore tests should be scheduled and documented. A backup strategy is not complete until a restore from encrypted offsite storage has been tested.
 

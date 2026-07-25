@@ -64,7 +64,7 @@ flowchart LR
 ```
 
 The current public deployment is the home-server topology: global Caddy
-terminates TLS, while the project gateway runs on the private proxy network
+terminates TLS, while the project gateway runs on the shared proxy network
 and applies routing, security headers, and request-size limits. PostgreSQL,
 API, and web remain on the private project network. See the
 [deployment runbook](./docs/HOME_SERVER_DEPLOYMENT.md) and
@@ -184,16 +184,12 @@ permission, and response conventions.
 
 The current public deployment is the home server at
 `https://kommune.norvix.no`. The deployment runbook documents the project
-Compose file, global Caddy boundary, private proxy network, health checks,
+Compose file, global Caddy boundary, shared proxy network, health checks,
 release procedure, backups, rollback notes, and evidence links. It uses mock AI
 and synthetic data.
 
-```bash
-docker compose -f compose.home.yml --env-file .env.home up -d --build
-```
-
-Run the repository's documented release procedure rather than treating this
-command as a complete operational release. See
+Use the documented home release procedure instead of a direct Compose command.
+Run `./scripts/home-release.sh` on the home server and follow
 [Home-server deployment](./docs/HOME_SERVER_DEPLOYMENT.md).
 
 Alternative deployment material is explicitly separated from the current
@@ -206,7 +202,7 @@ deployment:
 
 - `apps/api`: NestJS API, Prisma schema, migrations, seed, and tests.
 - `apps/web`: Next.js citizen and internal portfolio workflows.
-- `apps/shared`: shared public documentation-safe types and capability data.
+- `packages/shared`: shared public documentation-safe types and capability data.
 - `apps/etl`: Python integration helpers and tests.
 - `docs`: current product, security, deployment, demo, and evidence documents.
 - `deploy`: container gateway and reverse-proxy configuration.

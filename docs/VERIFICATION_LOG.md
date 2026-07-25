@@ -9,7 +9,7 @@ evidence. It is not the current deployed state.
 
 | Item                | Value                                                                      |
 | ------------------- | -------------------------------------------------------------------------- |
-| Source              | Historical release candidate; current exact commit is recorded below        |
+| Source              | Merged `main` commit `286c769bdfc2314f6ecc724444523e0588f4bef0`             |
 | Environment         | Local Windows / PowerShell / Docker Desktop                                |
 | Node                | `v26.2.0`                                                                  |
 | pnpm                | `10.28.2`                                                                  |
@@ -99,6 +99,15 @@ Playwright verified the deployed public site without a browser Basic Auth prompt
 
 The synthetic live-verification case is intentionally subject to the six-hour demo reset.
 
+### Historical Analytics limitation
+
+Later Analytics review work on PR #29 found a duplication issue in the
+guest-facing Analytics baseline logic. That later finding limits what this
+2026-07-24 Analytics evidence proves: it still supports page accessibility,
+guest perimeter behavior, and presence or absence of controls, but it should
+not be reused as proof that every historical Analytics total or daily grouping
+was already correct.
+
 ### Remaining manual limitation
 
 - The rollback procedure and prerequisites were reviewed, but an actual rollback was not triggered because the release was healthy.
@@ -108,8 +117,8 @@ The synthetic live-verification case is intentionally subject to the six-hour de
 ## 2026-07-24 — Portfolio polish deployment
 
 PR #26 was merged after CI, CodeQL, and Gitleaks passed, then commit
-An earlier portfolio polish commit was deployed only to the physical home
-server. Hetzner was not modified.
+`253913af67f4422d209477da667c094d44f41854` was deployed only to the physical
+home server. Hetzner was not modified.
 
 | Check                   | Exact result                                                                                                   |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -145,12 +154,12 @@ PR #29 remains open and draft, so it has no merge commit to claim. The exact
 | Fatal logs | PASS - no fatal errors observed in the deployment window |
 | PR #29 status | OPEN and DRAFT - no merge commit exists yet |
 
-### Automated evidence retained from PR #29
+### Repository and CI evidence retained from PR #29
 
 Local and CI lint, typecheck, API tests, API e2e, web tests, web e2e,
 full-stack e2e, build, and `git diff --check` passed as recorded on the PR.
-CodeQL passed. Gitleaks/Secret scan passed. `pnpm audit:deps` reported one
-moderate finding and is not described as clean.
+CodeQL passed. Gitleaks/Secret scan passed. `pnpm audit:deps` on that PR
+reported a dependency finding and is not described as clean.
 
 ### Analytics evidence
 
@@ -160,6 +169,17 @@ triage runs, 1 case waiting for a citizen, and 24 illustrative minutes. PR #29
 was not merged or deployed at this audit date, so these values are not claimed
 as the current live guest page. The live capture remains the earlier Analytics
 view and must not be described as the compact post-PR #29 layout.
+
+### Current PR #30 CI status
+
+PR #30 is documentation-only, but its current CI run is not fully green yet.
+`CodeQL` and `Gitleaks` passed. The `CI` workflow failed at `Dependency audit`
+because `pnpm audit --audit-level high` reported `brace-expansion: DoS via
+unbounded expansion length causing an out-of-memory process crash`,
+advisory `GHSA-mh99-v99m-4gvg`, through transitive paths including
+`@eslint/eslintrc`, `@nestjs/cli`, and `jest`. This documentation PR does not
+change dependencies; any package update belongs in a separate focused
+dependency PR.
 
 ### Verification boundaries
 
