@@ -1,0 +1,14 @@
+diff --git a/dist/commonjs/index.js b/dist/commonjs/index.js
+index be9df86be09c7655787a65c55ae6da01858894c3..cc5e4482c156dee7d1b2e692640de5ae1e151e87 100644
+--- a/dist/commonjs/index.js
++++ b/dist/commonjs/index.js
+@@ -260,4 +260,9 @@ function expand_(str, max, maxLength, isTop) {
+     }
+     return acc;
+ }
++module.exports = expand;
++module.exports.expand = expand;
++module.exports.EXPANSION_MAX = exports.EXPANSION_MAX;
++module.exports.EXPANSION_MAX_LENGTH = exports.EXPANSION_MAX_LENGTH;
++module.exports.default = expand;
+ //# sourceMappingURL=index.js.map

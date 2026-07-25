@@ -7,7 +7,11 @@ import { cases } from './seed/data/cases';
 import { departments } from './seed/data/departments';
 import { tenants } from './seed/data/tenants';
 import { seedCases } from './seed/seed-cases';
-import { hoursAgo, startOfUtcDay } from './seed/time';
+import {
+  createDemoSeedContext,
+  rebuildDemoAnalytics,
+  type DemoAnalyticsBaselineResult,
+} from './seed/analytics-baseline';
 import type { SeedContext, TenantSlug } from './seed/types';
 
 config({ path: '../../.env' });
@@ -18,6 +22,9 @@ export type DemoResetResult = {
   deletedFiles: number;
   cutoff: Date;
   seedCasesRestored: number;
+  analyticsSnapshotsDeleted: number;
+  analyticsSnapshotsRestored: number;
+  analyticsBaselineCases: number;
 };
 
 export async function runDemoReset(
@@ -26,11 +33,19 @@ export async function runDemoReset(
     env?: NodeJS.ProcessEnv;
     now?: Date;
     removeFile?: (path: string) => Promise<void>;
-    restoreSeeds?: (prisma: PrismaClient, now: Date) => Promise<number>;
+    restoreSeeds?: (
+      prisma: PrismaClient,
+      context: SeedContext,
+    ) => Promise<number>;
+    restoreAnalytics?: (
+      prisma: PrismaClient,
+      context: SeedContext,
+    ) => Promise<DemoAnalyticsBaselineResult>;
   } = {},
 ): Promise<DemoResetResult> {
   const env = options.env ?? process.env;
   const now = options.now ?? new Date();
+  const context = createDemoSeedContext(now);
   const safety = validateResetSafety(env);
   const cutoff = new Date(
     now.getTime() - safety.resetAfterHours * 60 * 60 * 1000,
@@ -128,7 +143,11 @@ export async function runDemoReset(
 
   const seedCasesRestored = await (options.restoreSeeds ?? restoreSeedCases)(
     prisma,
-    now,
+    context,
+  );
+  const analyticsResult = await (options.restoreAnalytics ?? rebuildDemoAnalytics)(
+    prisma,
+    context,
   );
 
   return {
@@ -137,6 +156,9 @@ export async function runDemoReset(
     deletedFiles,
     cutoff,
     seedCasesRestored,
+    analyticsSnapshotsDeleted: analyticsResult.analyticsSnapshotsDeleted,
+    analyticsSnapshotsRestored: analyticsResult.analyticsSnapshotsRestored,
+    analyticsBaselineCases: analyticsResult.analyticsBaselineCases,
   };
 }
 
@@ -197,16 +219,7 @@ function resolveStorageFile(uploadRoot: string, storageKey: string) {
   return target;
 }
 
-async function restoreSeedCases(prisma: PrismaClient, now: Date) {
-  const context: SeedContext = {
-    snapshotDate: startOfUtcDay(now),
-    importedAt: hoursAgo(2),
-    analyticsRebuiltAt: hoursAgo(1),
-    tenantMap: new Map(),
-    departmentMap: new Map(),
-    adminByTenant: new Map(),
-  };
-
+async function restoreSeedCases(prisma: PrismaClient, context: SeedContext) {
   for (const tenantSpec of tenants) {
     const tenant = await prisma.tenant.findUniqueOrThrow({
       where: { slug: tenantSpec.slug },
