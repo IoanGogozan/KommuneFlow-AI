@@ -46,7 +46,7 @@ Run only the web app:
 pnpm dev:web
 ```
 
-For production Docker Compose operations, use the commands and rollback notes in [Hetzner Deployment](./07_DEPLOYMENT_HETZNER.md).
+For current home-server Docker Compose operations, use [Home-Server Deployment](./HOME_SERVER_DEPLOYMENT.md). The [Hetzner assets](./alternatives/07_DEPLOYMENT_HETZNER.md) are alternative/historical material.
 
 ## View Logs
 
@@ -163,7 +163,10 @@ Then verify:
 - case list
 - document listing on a known case
 
-Record the date and result of each restore test in deployment notes. The Hetzner demo is online, but restore testing is still required before claiming operational production readiness.
+Record the date and result of each restore test in deployment notes. The
+verified live deployment is the home-server portfolio environment at
+`https://kommune.norvix.no`. Hetzner material in this repository is
+alternative/historical only and does not replace restore testing evidence.
 
 Production restore tests should be scheduled and documented. A backup strategy is not complete until a restore from encrypted offsite storage has been tested.
 

@@ -1,173 +1,45 @@
 # Tech Stack And Architecture
 
-## Purpose Of This Document
+## Selected Stack
 
-This document defines the concrete technology stack, folder structure, backend architecture, frontend architecture, database approach, integrations, and code quality rules.
+- TypeScript with Next.js for the web application.
+- NestJS for the API.
+- PostgreSQL with Prisma for persistence and migrations.
+- Zod for request and AI-output validation.
+- Python ELT helpers and tests for integration-oriented work.
+- Docker Compose for local and current home-server deployment.
+- Caddy for the project gateway and TLS boundary integration.
+- Jest, Vitest, and Playwright for automated verification.
 
-## Required Stack
+OpenAI is optional behind the `AIProvider` interface. The public deployment
+uses a deterministic mock provider. The stack was selected for the current
+portfolio implementation; it is not presented as a recommendation to make the
+system look enterprise-ready.
 
-### Frontend
+## Current Home-Server Deployment
 
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- i18n support for Norwegian and English
-- Vitest and Testing Library for component/integration tests
-- Playwright for browser smoke tests
+The public deployment at `https://kommune.norvix.no` uses the home-server
+topology documented in [HOME_SERVER_DEPLOYMENT.md](./HOME_SERVER_DEPLOYMENT.md).
+Global Caddy terminates TLS on ports 80/443. The project gateway is on the
+shared proxy network and listens on HTTP port 8080. It routes to the web and
+API containers and applies security headers and request-size limits. The API,
+web, and PostgreSQL services remain on the private project network and do not
+publish host ports.
 
-### Backend
+The exact current commit and checks belong in
+[VERIFICATION_LOG.md](./VERIFICATION_LOG.md), not in this architecture summary.
 
-- Node.js
-- TypeScript
-- NestJS
-- PostgreSQL
-- Prisma
-- Zod for validation
-- Pino for structured logging
-- OpenAI API integration through an internal provider interface
+## Alternatives And Exploration
 
-NestJS is recommended because the goal is to look more enterprise and public-sector ready. Express is acceptable only if the module structure is very clean.
+[Hetzner deployment assets](./alternatives/07_DEPLOYMENT_HETZNER.md) describe an
+alternative/historical deployment path and are not evidence of the current
+live target. [Azure/Fabric](./explorations/AZURE_FABRIC_EXTENSION.md) is
+architecture exploration and is not implemented.
 
-### Database
+## Boundaries
 
-- PostgreSQL
-- Prisma as the selected ORM and migration tool
-- Migrations required
-- Seed data required
-- No manual schema changes outside migrations
-
-### Local Development
-
-- Docker Desktop
-- Docker Compose
-- PostgreSQL container
-
-### AI
-
-- OpenAI API
-- Internal `AIProvider` interface
-- `OpenAIProvider` implementation
-- `MockAIProvider` for tests
-
-### Deployment
-
-Deployment to Hetzner Cloud is mandatory.
-
-The production-like deployment must use:
-
-- Hetzner Cloud VPS
-- Docker Compose
-- PostgreSQL
-- Reverse proxy with HTTPS
-- Environment variables
-- Firewall
-- Backups or snapshots
-- Basic monitoring/logging
-
-### Microsoft Stack Extension
-
-The current deployment documentation targets Hetzner, but the application is intentionally portable. For Microsoft-oriented environments, see [Azure, AI Foundry, and Fabric Extension](./AZURE_FABRIC_EXTENSION.md). The proposed mapping uses Azure Container Apps or App Service, Azure Database for PostgreSQL, Blob Storage, Key Vault, Application Insights, Azure OpenAI/AI Foundry, and Microsoft Fabric.
-
-## Recommended Monorepo Structure
-
-```txt
-apps/
-  api/
-  etl/
-  web/
-packages/
-  shared/
-docs/
-docker-compose.yml
-README.md
-.env.example
-```
-
-## Backend Module Structure
-
-Recommended NestJS structure:
-
-```txt
-src/
-  main.ts
-  app.module.ts
-  config/
-  database/
-  modules/
-    auth/
-    users/
-    departments/
-    cases/
-    documents/
-    ai-triage/
-    audit/
-    analytics/
-    privacy/
-    notifications/
-  shared/
-    errors/
-    guards/
-    middleware/
-    validation/
-    logging/
-    security/
-    types/
-```
-
-## Code Quality Rules
-
-- TypeScript strict mode must be enabled.
-- Avoid `any` unless justified.
-- Controllers must not contain business logic.
-- Services must contain business workflows.
-- Repositories must contain database access.
-- Validation schemas must be explicit.
-- Errors must be handled consistently.
-- File names must be clear and English.
-- Large files must be split.
-
-## File Size Guidelines
-
-- Controller files: preferably under 150 lines.
-- Service files: preferably under 300 lines.
-- Repository files: preferably under 250 lines.
-- Utility files: preferably under 150 lines.
-- Tests can be longer, but should be organized clearly.
-
-## API Design Rules
-
-- Use REST endpoints for MVP.
-- Use versioned API prefix: `/api/v1`.
-- Use consistent response format.
-- Use pagination for list endpoints.
-- Use filtering for case lists.
-- Use structured error responses.
-
-Example error response:
-
-```json
-{
-  "error": {
-    "code": "FORBIDDEN",
-    "message": "You do not have permission to access this resource.",
-    "requestId": "req_123"
-  }
-}
-```
-
-## Internationalization Rules
-
-- UI strings must not be hardcoded directly in components.
-- Use translation keys.
-- Supported locales: `nb`, `en`.
-- Backend enum values must stay English.
-- Database values must stay English.
-- User-facing labels are translated in frontend.
-
-Example:
-
-```txt
-case.status.in_progress = "Under behandling" // nb
-case.status.in_progress = "In progress" // en
-```
+The public system uses synthetic data, disables public uploads, and exposes a
+restricted guest path. Authentication, authorization, tenant isolation, and
+request validation are implemented server-side. Full background processing,
+live SSB normalization, scheduled backup/restore testing, and production
+municipal operations remain outside the verified portfolio scope.

@@ -1,146 +1,118 @@
 # API Reference
 
-Base path:
+Base path: `/api/v1`. All examples use placeholder values. Do not put access
+codes, passwords, cookies, or tokens in URLs.
 
-```txt
-/api/v1
+## Public Cases
+
+### Create case
+
+`POST /public/tenants/:tenantSlug/cases`
+
+The public intake accepts a JSON payload. Multipart documents are accepted by
+the controller but are rejected when public uploads are disabled, which is the
+current public deployment policy.
+
+### Look up case status
+
+`POST /public/tenants/:tenantSlug/cases/status`
+
+Send both values in the JSON body:
+
+```json
+{
+  "caseReference": "KF-YYYY-XXXX",
+  "statusAccessCode": "<access-code>"
+}
 ```
 
-Internal endpoints use the `kommuneflow_access_token` `HttpOnly` cookie after login. The backend also accepts bearer tokens for API/test compatibility.
+The response is `200` for a valid lookup. The controller sets:
 
-## Auth
+```http
+Cache-Control: no-store
+Pragma: no-cache
+```
 
-| Method | Path                 | Auth                | Purpose                                                                                                |
-| ------ | -------------------- | ------------------- | ------------------------------------------------------------------------------------------------------ |
-| `POST` | `/auth/login`        | public              | Log in internal user and set auth cookie                                                               |
-| `POST` | `/auth/demo-session` | public when enabled | Resolve an allowlisted tenant's seeded `portfolio_guest` server-side and set a short-lived auth cookie |
-| `POST` | `/auth/logout`       | cookie              | Clear auth cookie                                                                                      |
-| `GET`  | `/auth/me`           | internal            | Return the current internal user profile and permissions                                               |
+The access code must not be placed in a query string, path segment, browser
+history entry, example URL, screenshot, or log.
 
-`POST /auth/demo-session` accepts only an optional `tenantSlug`; callers cannot select a user, role, email, or permissions. It is disabled by default, origin-validated, throttled, and never returns the JWT or credential material in JSON.
+## Authentication
 
-## Public Citizen Intake
+| Method | Path | Purpose | Authentication |
+| --- | --- | --- | --- |
+| `POST` | `/auth/login` | Normal staff login; JSON credentials | Public endpoint, throttled |
+| `POST` | `/auth/demo-session` | Allowlisted short-lived portfolio guest session | Public endpoint, feature-flagged and throttled |
+| `POST` | `/auth/logout` | Clear the auth cookie | Cookie if present |
+| `GET` | `/auth/me` | Return the current profile | Auth cookie required |
 
-| Method | Path                                                                              | Auth   | Purpose                                                                                      |
-| ------ | --------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------- |
-| `POST` | `/public/tenants/:tenantSlug/cases`                                               | public | Create citizen case; multipart documents are rejected when `PUBLIC_DEMO_ALLOW_UPLOADS=false` |
-| `GET`  | `/public/tenants/:tenantSlug/cases/status?caseReference=...&statusAccessCode=...` | public | Look up safe public status fields for a submitted case                                       |
+Authentication responses use the HttpOnly auth cookie configured by the API.
+The public guest route does not expose a password or bearer token.
 
-Supports JSON body or multipart form data:
+## Protected Resources
 
-- `payload`: JSON string matching citizen/case intake schema
-- `documents`: optional PDF/PNG/JPG files
+Protected routes derive tenant scope from the authenticated user. This table
+is pinned to the current controller decorators and explicit inline permission
+checks; it does not infer route names.
 
-The public portfolio deployment uses `PUBLIC_DEMO_ALLOW_UPLOADS=false`. Local upload testing can explicitly enable it. Intake, status lookup, public address search, and demo-session limits are configured through the `PUBLIC_DEMO_*_THROTTLE_*` variables documented in the environment examples.
+| Method | Path | Current enforcement |
+| --- | --- | --- |
+| `GET` | `/cases` | `@UseGuards(AuthGuard, PermissionsGuard)`; no route-level permission decorator. Read access is enforced in `CasesService.list` with `case:read:all_tenant` or `case:read:department`. |
+| `GET` | `/cases/:id` | `@UseGuards(AuthGuard, PermissionsGuard)`; no route-level permission decorator. Read access is enforced in `CasesService.findById` with `case:read:all_tenant` or `case:read:department`. |
+| `GET` | `/cases/:id/activity` | `@UseGuards(AuthGuard, PermissionsGuard)`; no route-level permission decorator. Read access is enforced in `CasesService.listActivity` with `case:read:all_tenant` or `case:read:department`. |
+| `PATCH` | `/cases/:id/status` | `@RequireAnyPermissions('case:update:department', 'case:update:all_tenant')` |
+| `POST` | `/cases/:id/internal-notes` | `@RequireAnyPermissions('case:update:department', 'case:update:all_tenant')` |
+| `GET` | `/cases/:caseId/documents` | `@UseGuards(AuthGuard, PermissionsGuard)`; no route-level permission decorator. Access is enforced in the documents service against the authenticated user's tenant and document-read permissions. |
+| `GET` | `/cases/:caseId/documents/:documentId/download` | `@UseGuards(AuthGuard, PermissionsGuard)`; no route-level permission decorator. Access is enforced in the documents service against the authenticated user's tenant and document-read permissions. |
+| `POST` | `/cases/:caseId/documents` | `@RequirePermissions('document:upload')` |
+| `DELETE` | `/cases/:caseId/documents/:documentId` | `@RequirePermissions('document:upload')` |
+| `GET` | `/cases/:caseId/ai-triage/latest` | `@UseGuards(AuthGuard, PermissionsGuard)`; no route-level permission decorator. Case access is enforced in the AI service through the authenticated user context. |
+| `POST` | `/cases/:caseId/ai-triage` | `@RequirePermissions('ai:triage:run')` |
+| `POST` | `/cases/:caseId/ai-triage/:resultId/review` | `@RequirePermissions('ai:triage:review')` |
+| `GET` | `/internal/ai/diagnostics` | `@RequirePermissions('ai:diagnostics:read')` |
+| `GET` | `/ai/status` | `@UseGuards(AuthGuard)` plus inline `roleHasPermission` check for either `ai:diagnostics:read` or `operations:read` |
+| `GET` | `/analytics/summary` | Controller-level `@RequirePermissions('analytics:read')` |
+| `POST` | `/analytics/aggregate` | Route-level `@RequirePermissions('analytics:aggregate')` |
+| `GET` | `/audit/events` | `@RequirePermissions('audit:read')` |
+| `GET` | `/privacy/status` | `@RequirePermissions('audit:read')` |
+| `GET` | `/privacy/citizen-data-export` | `@RequirePermissions('privacy:export')` |
+| `POST` | `/privacy/citizen-profiles/:citizenProfileId/anonymize` | `@RequirePermissions('privacy:anonymize')` |
+| `GET` | `/privacy/retention-policy` | `@RequirePermissions('privacy:export')` |
+| `PATCH` | `/privacy/retention-policy` | `@RequirePermissions('privacy:anonymize')` |
+| `POST` | `/privacy/retention-cleanup` | `@RequirePermissions('privacy:anonymize')` |
+| `GET` | `/operations/metrics-summary` | `@RequirePermissions('operations:read')` |
+| `POST` | `/integrations/ssb/imports/municipality-population` | `@RequirePermissions('tenant:manage')` |
+| `GET` | `/admin/users` | `@UseGuards(AuthGuard)` plus inline `roleHasPermission(user.role, 'user:manage')` check |
+| `GET` | `/departments` | `@UseGuards(AuthGuard)`; authenticated tenant member route with no explicit permission decorator |
+| `GET` | `/admin/departments` | `@UseGuards(AuthGuard)` plus inline role check for any of `user:manage`, `routing_rules:manage`, or `tenant:manage` |
+| `GET` | `/admin/routing-rules` | `@UseGuards(AuthGuard)` plus inline `roleHasPermission(user.role, 'routing_rules:manage')` check |
+| `GET` | `/health` | Public health check |
+| `GET` | `/readiness` | Public readiness check |
 
-## Cases
-
-| Method  | Path                        | Auth                                                 | Purpose                                            |
-| ------- | --------------------------- | ---------------------------------------------------- | -------------------------------------------------- |
-| `GET`   | `/cases`                    | internal                                             | List tenant/department-scoped cases                |
-| `GET`   | `/cases/:id`                | internal                                             | Get case detail                                    |
-| `GET`   | `/cases/:id/activity`       | internal                                             | List safe case activity/audit summaries            |
-| `PATCH` | `/cases/:id/status`         | `case:update:department` or `case:update:all_tenant` | Update case status within the authenticated tenant |
-| `POST`  | `/cases/:id/internal-notes` | `case:update:department` or `case:update:all_tenant` | Add internal note within the authenticated tenant  |
-
-## Internal Administration
-
-| Method | Path                   | Auth                   | Purpose                                     |
-| ------ | ---------------------- | ---------------------- | ------------------------------------------- |
-| `GET`  | `/departments`         | internal               | List departments for the current tenant     |
-| `GET`  | `/admin/departments`   | admin permission       | List tenant departments with admin metadata |
-| `GET`  | `/admin/users`         | `user:manage`          | List tenant users without password hashes   |
-| `GET`  | `/admin/routing-rules` | `routing_rules:manage` | List tenant routing rules                   |
-
-## Documents
-
-| Method   | Path                                            | Auth              | Purpose                                             |
-| -------- | ----------------------------------------------- | ----------------- | --------------------------------------------------- |
-| `GET`    | `/cases/:caseId/documents`                      | internal          | List accessible documents                           |
-| `POST`   | `/cases/:caseId/documents`                      | `document:upload` | Upload internal document                            |
-| `GET`    | `/cases/:caseId/documents/:documentId/download` | internal          | Download accessible document and create audit event |
-| `DELETE` | `/cases/:caseId/documents/:documentId`          | `document:upload` | Soft-delete document metadata                       |
-
-## AI Triage
-
-| Method | Path                                        | Auth                                    | Purpose                                         |
-| ------ | ------------------------------------------- | --------------------------------------- | ----------------------------------------------- |
-| `GET`  | `/cases/:caseId/ai-triage/latest`           | internal                                | Get latest AI triage result                     |
-| `POST` | `/cases/:caseId/ai-triage`                  | `ai:triage:run`                         | Generate AI triage suggestion                   |
-| `POST` | `/cases/:caseId/ai-triage/:resultId/review` | `ai:triage:review`                      | Human review/approval/correction                |
-| `GET`  | `/ai/status`                                | operations or AI diagnostics permission | Return safe AI provider status                  |
-| `GET`  | `/internal/ai/diagnostics`                  | `ai:diagnostics:read`                   | Return safe AI diagnostics for privileged users |
-
-## Audit
-
-| Method | Path            | Auth         | Purpose                                                      |
-| ------ | --------------- | ------------ | ------------------------------------------------------------ |
-| `GET`  | `/audit/events` | `audit:read` | List tenant-scoped audit events with safe metadata summaries |
+When a route relies on an inline role check instead of a permission decorator,
+that is called out explicitly above. Consult the controller source when adding
+a route.
 
 ## Analytics
 
-| Method | Path                                               | Auth                  | Purpose                                                           |
-| ------ | -------------------------------------------------- | --------------------- | ----------------------------------------------------------------- |
-| `GET`  | `/analytics/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` | `analytics:read`      | Read aggregated analytics                                         |
-| `POST` | `/analytics/aggregate`                             | `analytics:aggregate` | Rerun aggregation for date range; unavailable to portfolio guests |
+`GET /analytics/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` reads an inclusive date
+range of whole UTC days. The backend converts `to` to the exclusive next-day
+boundary. `POST /analytics/aggregate` uses the same date semantics and is
+separate from guest read access.
 
-## Public API Integrations
+The public guest view is a deterministic synthetic snapshot. It includes
+counts and denominators where the UI displays a rate, but it is not a live SSB
+aggregation or a municipal performance report.
 
-| Method | Path                                                                           | Auth                 | Purpose                                                               |
-| ------ | ------------------------------------------------------------------------------ | -------------------- | --------------------------------------------------------------------- |
-| `GET`  | `/integrations/kartverket/address-search?q=address`                            | internal             | Search Kartverket Adresse-API through authenticated internal endpoint |
-| `GET`  | `/public/tenants/:tenantSlug/integrations/kartverket/address-search?q=address` | public, rate-limited | Search Kartverket Adresse-API during citizen intake                   |
-| `POST` | `/integrations/ssb/imports/municipality-population`                            | `tenant:manage`      | Import municipality population statistics from SSB table `07459`      |
+## Errors And Headers
 
-## Privacy
+Validation errors use a safe response shape with a request identifier. Protected
+requests without a valid session return `401`; authenticated users without the
+required capability return `403`. Rate limits and public upload policy can
+return `4xx` or `503` responses depending on the endpoint and environment.
 
-| Method  | Path                                                    | Auth                | Purpose                                           |
-| ------- | ------------------------------------------------------- | ------------------- | ------------------------------------------------- |
-| `GET`   | `/privacy/status`                                       | `audit:read`        | Show privacy module capabilities                  |
-| `GET`   | `/privacy/citizen-data-export`                          | `privacy:export`    | Export citizen data by profile ID or email        |
-| `POST`  | `/privacy/citizen-profiles/:citizenProfileId/anonymize` | `privacy:anonymize` | Anonymize citizen profile identifiers             |
-| `GET`   | `/privacy/retention-policy`                             | `privacy:export`    | Read tenant retention policy                      |
-| `PATCH` | `/privacy/retention-policy`                             | `privacy:anonymize` | Update tenant retention policy                    |
-| `POST`  | `/privacy/retention-cleanup`                            | `privacy:anonymize` | Run retention cleanup dry-run or confirmed delete |
+## Source Of Truth
 
-Retention cleanup responses include candidate counts, deleted counts, and `documentStorage` counters for physical uploaded-file cleanup:
-
-```json
-{
-  "mode": "delete",
-  "candidates": {
-    "deletedDocuments": 2
-  },
-  "deleted": {
-    "deletedDocuments": 2
-  },
-  "documentStorage": {
-    "filesDeleted": 2,
-    "filesAlreadyMissing": 0,
-    "cleanupFailures": 0
-  }
-}
-```
-
-## Operations
-
-| Method | Path                          | Auth              | Purpose                                         |
-| ------ | ----------------------------- | ----------------- | ----------------------------------------------- |
-| `GET`  | `/health`                     | public            | Liveness check                                  |
-| `GET`  | `/readiness`                  | public            | Database and upload storage readiness           |
-| `GET`  | `/operations/metrics-summary` | `operations:read` | Read operational metrics for the current tenant |
-
-## Error Shape
-
-Errors use a consistent response shape:
-
-```json
-{
-  "error": {
-    "code": "BAD_REQUEST",
-    "message": "Invalid request.",
-    "requestId": "request-id",
-    "path": "/api/v1/example"
-  }
-}
-```
+The current controllers and schemas under `apps/api/src/modules` are the
+authoritative API source. This page is documentation and must be updated when
+those routes change. Verification results are recorded in
+[VERIFICATION_LOG.md](./VERIFICATION_LOG.md).
