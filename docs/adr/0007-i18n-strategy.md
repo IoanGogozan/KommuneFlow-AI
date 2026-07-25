@@ -1,21 +1,20 @@
-# ADR 0007: I18n Strategy
+# ADR 0007: Internationalization Strategy
 
 ## Status
 
-Accepted
-
-## Context
-
-The product is inspired by Norwegian municipal services. Citizen-facing UI must support Norwegian Bokmal and English. Developer-facing code and docs should remain English for maintainability.
+Accepted and implemented for the current portfolio workflows.
 
 ## Decision
 
-Use explicit frontend dictionaries for UI copy, with `nb` and `en` locales.
-
-Backend enums, database names, API routes, source code, tests, and documentation stay in English.
+The application supports Norwegian (`nb`) and English (`en`) dictionaries for
+the citizen intake and internal portfolio workflows. Locale-specific labels,
+status names, analytics labels, and navigation are selected in the web layer;
+the API stores stable keys and does not depend on translated display text.
 
 ## Consequences
 
-- Citizen intake can be presented in Norwegian and English.
-- Internal developer artifacts remain consistent and searchable.
-- The current internal dashboard is mostly English and should be expanded to full i18n in a future polish pass.
+- The public and employee demo can be shown in both supported languages.
+- Stable status, department, category, and permission keys remain suitable for
+  API responses and tests.
+- New visible strings must be added to both dictionaries before use.
+- This decision does not claim support for additional locales.

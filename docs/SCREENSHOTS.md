@@ -1,33 +1,39 @@
 # Product Screenshots
 
-Generated locally on 2026-07-24 with the reset seeded synthetic dataset at a consistent 1440 × 1000 viewport.
+The committed captures are local synthetic evidence at a consistent 1440 x
+1000 viewport. They contain no passwords, cookies, access codes, API keys,
+private server details, or real citizen data.
 
-| File                            | Product surface                                                  |
-| ------------------------------- | ---------------------------------------------------------------- |
-| `01-public-landing.png`         | Public portfolio landing and account-free CTAs                   |
-| `02-citizen-intake-preview.png` | Short citizen intake preview used by portfolio evidence          |
-| `03-citizen-form.png`           | Public portfolio citizen form with upload-disabled explanation   |
-| `04-submission-success.png`     | Submission success with sensitive code elements masked           |
-| `05-status-lookup.png`          | Prefilled citizen status lookup                                  |
-| `06-guest-dashboard.png`        | Restricted guest dashboard, tenant scope, and shared-demo notice |
-| `07-guest-case-queue.png`       | Guest case queue filtered to the submitted reference             |
-| `08-case-overview.png`          | Opened case with Overview selected                               |
-| `09-ai-review.png`              | AI review and official/suggested comparison                      |
-| `10-workflow-activity.png`      | Workflow, notes, and activity                                    |
-| `11-analytics-read-only.png`    | Guest analytics without aggregation control                      |
-| `12-normal-staff-login.png`     | Separate normal staff login path with no populated credentials   |
+| File | Product surface |
+| --- | --- |
+| `01-public-landing.png` | Public portfolio landing and account-free CTAs |
+| `02-citizen-intake-preview.png` | Citizen intake preview |
+| `03-citizen-form.png` | Upload-disabled public citizen form |
+| `04-submission-success.png` | Submission success with sensitive code elements masked |
+| `05-status-lookup.png` | Citizen status lookup |
+| `06-guest-dashboard.png` | Restricted guest dashboard |
+| `07-guest-case-queue.png` | Guest case queue |
+| `08-case-overview.png` | Case Overview |
+| `09-ai-review.png` | Human AI review |
+| `10-workflow-activity.png` | Workflow and activity |
+| `11-analytics-read-only.png` | Current deployed guest Analytics reference view |
+| `12-normal-staff-login.png` | Separate unfilled staff login |
 
-The captures contain only local synthetic data. No passwords, cookies, private server details, API keys, or deployed-environment access codes are included. They demonstrate local behavior and are not evidence that the same commit is deployed.
+`11-analytics-read-only.png` is a credential-free capture from the exact
+currently deployed commit. It is intentionally not presented as the compact
+post-PR #29 layout because that PR is not merged or deployed. The capture must
+not be read as live SSB aggregation or production performance evidence.
 
-Regenerate with:
+Captures demonstrate local behavior and are not, by themselves, proof that a
+commit is deployed. Deployment evidence belongs in
+[VERIFICATION_LOG.md](./VERIFICATION_LOG.md).
+
+Regenerate safely with the repository screenshot command against an explicitly
+named test or screenshot database:
 
 ```bash
-NODE_ENV=test \
-SCREENSHOT_DATA_ALLOW_RESET=true \
-DATABASE_URL='postgresql://.../kommuneflow_screenshot' \
-pnpm screenshots:demo
+NODE_ENV=test SCREENSHOT_DATA_ALLOW_RESET=true DATABASE_URL='postgresql://.../kommuneflow_screenshot' pnpm screenshots:demo
 ```
 
-Screenshot generation refuses production configuration and database names that
-do not contain `screenshot` or `test`. It resets and seeds only the explicitly
-selected screenshot database before capture, generates a random unpublished seed password, enters the employee area through the real guest-session endpoint, and keeps normal staff login as an unfilled standalone capture.
+The generator refuses production configuration, resets only the selected test
+database, uses synthetic seed data, and leaves normal staff credentials blank.

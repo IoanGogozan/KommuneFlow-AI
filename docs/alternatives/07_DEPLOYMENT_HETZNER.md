@@ -1,4 +1,7 @@
-# Hetzner Deployment
+# Hetzner Deployment (Alternative / Historical)
+
+This is not the current live deployment. The current public target is the
+home-server deployment documented in `../HOME_SERVER_DEPLOYMENT.md`.
 
 ## Purpose Of This Document
 
@@ -315,7 +318,7 @@ Encrypt database and upload backups before copying them to storage outside the V
 Optional backup encryption variables:
 
 ```txt
-BACKUP_GPG_RECIPIENT=ops-backups@example.com
+BACKUP_GPG_RECIPIENT=<backup-recipient>
 # or
 BACKUP_GPG_PASSPHRASE=<strong backup passphrase>
 BACKUP_KEEP_PLAINTEXT=no

@@ -1,69 +1,60 @@
-# KommuneFlow AI Documentation Index
-
-This directory contains the active documentation for KommuneFlow AI. Older planning, checklist, tracker, and one-off implementation documents have been removed when their content was superseded by focused integration docs, the runbook, deployment docs, or the README.
-
-All technical documentation, code, database entities, API routes, comments, commit messages, issue titles, pull requests, environment variables, and internal developer-facing text must be written in English.
-
-The application UI must support:
-
-- Norwegian Bokmal (`nb`) as the primary product language
-- English (`en`) as the secondary UI language
+# Documentation Index
 
 ## Start Here
 
-| Document                                                           | Purpose                                                                                                           |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| [API_REFERENCE.md](./API_REFERENCE.md)                             | Current REST API endpoint groups and auth requirements.                                                           |
-| [RUNBOOK.md](./RUNBOOK.md)                                         | Operational procedures for restart, logs, migrations, backup, restore, AI provider failure, and database failure. |
-| [07_DEPLOYMENT_HETZNER.md](./07_DEPLOYMENT_HETZNER.md)             | Hetzner deployment plan and verification checklist.                                                               |
-| [12_PROFESSIONAL_QUALITY_BAR.md](./12_PROFESSIONAL_QUALITY_BAR.md) | Portfolio quality bar for repository polish, demo quality, documentation, deployment, and interview readiness.    |
+These documents describe the current verified portfolio implementation:
 
-## Product And Architecture
+- [README](../README.md): product problem, scope, setup, and links.
+- [API Reference](./API_REFERENCE.md): current controller routes and request conventions.
+- [Security and privacy](./03_SECURITY_AND_PRIVACY.md): implemented controls and limitations.
+- [AI Governance](./04_AI_GOVERNANCE.md): provider abstraction, review boundaries, and AI limits.
+- [Home-Server Deployment](./HOME_SERVER_DEPLOYMENT.md): current operational topology and release procedure.
+- [Demo Script](./DEMO_SCRIPT.md): short public walkthrough.
+- [Verification Log](./VERIFICATION_LOG.md): dated local, CI, and live evidence.
 
-| Document                                                                 | Purpose                                                                                                         |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| [01_PRODUCT_REQUIREMENTS.md](./01_PRODUCT_REQUIREMENTS.md)               | Product, users, MVP scope, core workflows, and final goals.                                                     |
-| [02_DOMAIN_MODEL.md](./02_DOMAIN_MODEL.md)                               | Entities, roles, permissions, statuses, relationships, and tenant isolation rules.                              |
-| [03_SECURITY_AND_PRIVACY.md](./03_SECURITY_AND_PRIVACY.md)               | Authentication, authorization, privacy, GDPR-style requirements, file upload security, and acceptance criteria. |
-| [04_AI_GOVERNANCE.md](./04_AI_GOVERNANCE.md)                             | Responsible AI rules, human review, prompt versioning, structured output, and AI tests.                         |
-| [05_TECH_STACK_AND_ARCHITECTURE.md](./05_TECH_STACK_AND_ARCHITECTURE.md) | Stack, backend/frontend architecture, database approach, code quality rules, and API conventions.               |
-| [security/PRODUCTION_SECURITY_HARDENING.md](./security/PRODUCTION_SECURITY_HARDENING.md) | Implemented controls, known production gaps, target controls, and public demo safety rules. |
-| [AZURE_FABRIC_EXTENSION.md](./AZURE_FABRIC_EXTENSION.md)                 | Microsoft Azure, AI Foundry, and Fabric target architecture for organizations using that stack.                 |
-| [06_TESTING_STRATEGY.md](./06_TESTING_STRATEGY.md)                       | Current test layers, commands, coverage gates, browser smoke tests, and CI/local release-gate expectations.     |
-| [09_DEFINITION_OF_DONE.md](./09_DEFINITION_OF_DONE.md)                   | Common feature completion criteria.                                                                             |
+## Current Product And Engineering Docs
 
-## Focused Implementation Docs
+| Document | Purpose |
+| --- | --- |
+| [Product requirements](./01_PRODUCT_REQUIREMENTS.md) | Vision and implemented portfolio scope, clearly separated. |
+| [Domain model](./02_DOMAIN_MODEL.md) | Current domain entities and relationships. |
+| [Tech stack and architecture](./05_TECH_STACK_AND_ARCHITECTURE.md) | Selected implementation and deployment architecture. |
+| [Testing strategy](./06_TESTING_STRATEGY.md) | Test layers and verification expectations. |
+| [Screenshots](./SCREENSHOTS.md) | Synthetic UI evidence and regeneration rules. |
+| [Runbook](./RUNBOOK.md) | Operational procedures and links. |
+| [Branch protection](./BRANCH_PROTECTION.md) | Repository check policy. |
 
-| Document                                                                       | Purpose                                                                                                             |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| [observability.md](./observability.md)                                         | Request IDs, structured logs, health/readiness, operations metrics, dashboard, integration events, and maintenance. |
-| [analytics/elt-pipeline.md](./analytics/elt-pipeline.md)                       | Python ELT pipeline, commands, transforms, quality checks, and idempotent loading.                                  |
-| [integrations/ssb.md](./integrations/ssb.md)                                   | SSB population import, local storage, idempotency, analytics enrichment, and limitations.                           |
-| [integrations/kartverket-address.md](./integrations/kartverket-address.md)     | Kartverket Adresse-API usage, stored fields, privacy behavior, failure handling, tests, and manual verification.    |
-| [security/negative-testing.md](./security/negative-testing.md)                 | Negative security coverage for auth, RBAC, tenant isolation, uploads, AI, external integrations, and CI.            |
-| [privacy/PRIVACY_NOTICE.md](./privacy/PRIVACY_NOTICE.md)                       | Citizen-facing and deployment privacy notice baseline.                                                              |
-| [privacy/DATA_PROCESSING_INVENTORY.md](./privacy/DATA_PROCESSING_INVENTORY.md) | Data categories, purpose, storage, access, retention, and privacy notes.                                            |
-| [privacy/DPIA_LITE.md](./privacy/DPIA_LITE.md)                                 | Lightweight privacy risk assessment and remaining real-deployment gaps.                                             |
+## Security, Privacy, And Integrations
 
-## Portfolio Materials
+- `03_SECURITY_AND_PRIVACY.md` and `security/`: security controls and hardening gaps.
+- `privacy/`: privacy notice, data inventory, and DPIA-lite.
+- `integrations/`: Kartverket, SSB, and manual provider verification notes.
+- `observability.md`: operational event and monitoring notes.
 
-| Document                           | Purpose                                              |
-| ---------------------------------- | ---------------------------------------------------- |
-| [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) | Interview-ready product walkthrough.                 |
-| [SCREENSHOTS.md](./SCREENSHOTS.md) | Planned portfolio screenshots and capture filenames. |
+## ADRs
 
-## How To Use These Documents
+The ADRs record design decisions, including decisions that explain current
+implementation constraints. They are not a promise that every future target
+has been implemented.
 
-Before implementing a feature:
+- `adr/0001` authentication cookies and rate limiting
+- `adr/0002` tenant filtering
+- `adr/0003` human-reviewed AI suggestions
+- `adr/0004` AI provider abstraction
+- `adr/0005` Compose deployment on Hetzner as an earlier decision
+- `adr/0006` PostgreSQL
+- `adr/0007` internationalization
 
-1. Read the relevant source-of-truth document.
-2. Check the README, API reference, runbook, and focused docs for the current implementation status.
-3. Confirm the feature's definition of done.
-4. Update the relevant source-of-truth document when behavior, commands, environment variables, or deployment steps change.
-5. Implement in a small, reviewable step.
-6. Add tests for security, authorization, tenant isolation, and important workflows.
-7. Check observability, security release-gate, and professional quality requirements before marking a phase complete.
+## Alternatives And Explorations
 
-## Product Positioning
+- [Hetzner deployment assets](./alternatives/07_DEPLOYMENT_HETZNER.md) are an
+  alternative/historical deployment, not the current live home-server target.
+- [Azure/Fabric extension](./explorations/AZURE_FABRIC_EXTENSION.md) is
+  unimplemented architecture exploration.
 
-KommuneFlow AI is a professional portfolio project inspired by Norwegian municipal service development. It is a multi-tenant platform for citizen case intake, document handling, AI-assisted case triage, role-based access control, audit logging, privacy workflows, retention, and operational analytics. AI is used as decision support with human review. The concrete deployment documentation targets Hetzner Cloud using Docker Compose, PostgreSQL, HTTPS, firewall rules, and a documented backup strategy. The Azure/Fabric extension document shows how the same system can map to Azure Container Apps or App Service, Azure Database for PostgreSQL, Blob Storage, Key Vault, Application Insights, Azure OpenAI/AI Foundry, and Microsoft Fabric.
+## Archive
+
+The former portfolio implementation plan and professional quality bar were
+removed because GitHub PR history and the verification log supersede them.
+Historical claims must be read from Git history, not treated as active product
+documentation.

@@ -46,7 +46,7 @@ Run only the web app:
 pnpm dev:web
 ```
 
-For production Docker Compose operations, use the commands and rollback notes in [Hetzner Deployment](./07_DEPLOYMENT_HETZNER.md).
+For current home-server Docker Compose operations, use [Home-Server Deployment](./HOME_SERVER_DEPLOYMENT.md). The [Hetzner assets](./alternatives/07_DEPLOYMENT_HETZNER.md) are alternative/historical material.
 
 ## View Logs
 

@@ -2,11 +2,14 @@
 
 No secrets, cookies, API keys, deployed access codes, or real citizen data are recorded here.
 
-## 2026-07-24 public guest portfolio release candidate
+## Historical entry: 2026-07-24 public guest portfolio release candidate
+
+This entry records the earlier release candidate and is retained as historical
+evidence. It is not the current deployed state.
 
 | Item                | Value                                                                      |
 | ------------------- | -------------------------------------------------------------------------- |
-| Source              | Merged `main` commit `286c769bdfc2314f6ecc724444523e0588f4bef0`            |
+| Source              | Historical release candidate; current exact commit is recorded below        |
 | Environment         | Local Windows / PowerShell / Docker Desktop                                |
 | Node                | `v26.2.0`                                                                  |
 | pnpm                | `10.28.2`                                                                  |
@@ -44,7 +47,7 @@ The first unconfigured full-stack run reached staff login and returned the expec
 
 The optional production Caddy check initially omitted required Caddy environment placeholders and failed parsing at `email`. It passed after neutral validation-only values were provided. The required home Caddy validation passed on its first run.
 
-Screenshot generation exposed and corrected three tooling issues during PR 6: reset/seed originally ran after capture instead of before it, Windows Node 26 required a shell wrapper for the static pnpm child commands, and repeated development captures reached the intentionally strict intake throttle. The final successful run used a fresh API process with test-only high limits, reset and seeded the dedicated screenshot database before browsing, created the employee session through `/auth/demo-session`, and generated exactly the twelve files listed in `docs/SCREENSHOTS.md`.
+Screenshot generation exposed and corrected three tooling issues during the earlier documentation phase: reset/seed originally ran after capture instead of before it, Windows Node 26 required a shell wrapper for the static pnpm child commands, and repeated development captures reached the intentionally strict intake throttle. The final successful run used a fresh API process with test-only high limits, reset and seeded the dedicated screenshot database before browsing, created the employee session through `/auth/demo-session`, and generated exactly the twelve files listed in `docs/SCREENSHOTS.md`.
 
 ### Implemented and verified locally
 
@@ -62,7 +65,7 @@ Screenshot generation exposed and corrected three tooling issues during PR 6: re
 | Pre-release database backup | PASS — PostgreSQL custom-format backup created; SHA-256 checksum verified                                                                               |
 | Configuration backup        | PASS — prior `.env` preserved with mode `600`                                                                                                           |
 | Home preflight              | PASS — repository, Docker, Compose, Git, required variables, mock AI, HTTPS URLs, `main`, Compose, no host ports, Caddy, proxy network, and disk checks |
-| Deployed commit             | PASS — server repository reports `286c769bdfc2314f6ecc724444523e0588f4bef0`                                                                             |
+| Deployed commit             | Historical entry; see the dated current deployment entry below                                                                                         |
 | Image build                 | PASS — API and web production images rebuilt on the home server                                                                                         |
 | Migration                   | PASS — additive `20260724133000_add_portfolio_guest_role` applied; all 18 migrations current                                                            |
 | Runtime health              | PASS — PostgreSQL, API, web, and gateway healthy                                                                                                        |
@@ -105,8 +108,8 @@ The synthetic live-verification case is intentionally subject to the six-hour de
 ## 2026-07-24 — Portfolio polish deployment
 
 PR #26 was merged after CI, CodeQL, and Gitleaks passed, then commit
-`253913af67f4422d209477da667c094d44f41854` was deployed only to the physical
-home server. Hetzner was not modified.
+An earlier portfolio polish commit was deployed only to the physical home
+server. Hetzner was not modified.
 
 | Check                   | Exact result                                                                                                   |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -123,3 +126,45 @@ home server. Hetzner was not modified.
 
 The deployment required no schema migration and no global Caddy change. The
 existing six-hour guarded reset schedule remains installed.
+
+## 2026-07-25 - Documentation audit baseline
+
+PR #29 remains open and draft, so it has no merge commit to claim. The exact
+`origin/main` and home-server commit used for this audit is
+`07744f79cae713a476249a982d8ca5ec5ecb2f92`.
+
+| Scope | Result |
+| --- | --- |
+| Exact deployed commit | PASS - home-server release reported `07744f79cae713a476249a982d8ca5ec5ecb2f92` |
+| Home release | PASS - preflight, image build, migrations, health checks, and smoke checks completed |
+| Public pages | PASS - `/`, `/demo`, `/nb`, `/en`, `/internal/login`, and `/internal` returned `200` |
+| Protected perimeter | PASS - representative unauthenticated protected APIs returned `401` |
+| Guest browser flow | PASS - guest entry, case workflow, current deployed guest Analytics, and Exit demo to `/` verified |
+| Public uploads | PASS - disabled in the public deployment |
+| AI provider | PASS - public deployment uses deterministic mock AI |
+| Fatal logs | PASS - no fatal errors observed in the deployment window |
+| PR #29 status | OPEN and DRAFT - no merge commit exists yet |
+
+### Automated evidence retained from PR #29
+
+Local and CI lint, typecheck, API tests, API e2e, web tests, web e2e,
+full-stack e2e, build, and `git diff --check` passed as recorded on the PR.
+CodeQL passed. Gitleaks/Secret scan passed. `pnpm audit:deps` reported one
+moderate finding and is not described as clean.
+
+### Analytics evidence
+
+The corrected Kristiansand deterministic baseline on the PR #29 branch is 9
+cases, 6 human AI reviews, 4 accepted, 2 corrected, 1 failed run, 8 total
+triage runs, 1 case waiting for a citizen, and 24 illustrative minutes. PR #29
+was not merged or deployed at this audit date, so these values are not claimed
+as the current live guest page. The live capture remains the earlier Analytics
+view and must not be described as the compact post-PR #29 layout.
+
+### Verification boundaries
+
+Local tests and CI prove repository behavior. The home-server release and
+browser smoke prove the listed live behavior for the exact deployed commit.
+Real OpenAI remains unverified unless a protected manual workflow has a dated
+successful run recorded here. Backup scripts are manual tools; scheduled
+backup/restore testing is not claimed by this entry.

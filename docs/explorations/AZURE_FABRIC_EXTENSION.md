@@ -1,4 +1,7 @@
-# Azure, AI Foundry, and Fabric Extension
+# Azure, AI Foundry, and Fabric Extension (Unimplemented Exploration)
+
+This document describes architecture exploration only. It is not implemented
+and is not the current deployment.
 
 KommuneFlow AI currently runs as a portable TypeScript/Python application with Docker-based deployment documentation. This document shows how the same architecture can be moved into a Microsoft-oriented stack without claiming that the current demo is already deployed there.
 
