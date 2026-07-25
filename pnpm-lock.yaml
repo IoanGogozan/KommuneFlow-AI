@@ -10,6 +10,11 @@ overrides:
   postcss: '>=8.5.10'
   sharp: 0.35.3
 
+patchedDependencies:
+  brace-expansion@5.0.8:
+    hash: 32207fdf3684d40db4e46a24a0b1c8fcb8683d0517f57c7bf833a9b5e89f21f4
+    path: patches/brace-expansion@5.0.8.patch
+
 importers:
 
   .:
@@ -7698,7 +7703,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  brace-expansion@5.0.8:
+  brace-expansion@5.0.8(patch_hash=32207fdf3684d40db4e46a24a0b1c8fcb8683d0517f57c7bf833a9b5e89f21f4):
     dependencies:
       balanced-match: 4.0.4
 
@@ -9639,15 +9644,15 @@ snapshots:
 
   minimatch@10.2.5:
     dependencies:
-      brace-expansion: 5.0.8
+      brace-expansion: 5.0.8(patch_hash=32207fdf3684d40db4e46a24a0b1c8fcb8683d0517f57c7bf833a9b5e89f21f4)
 
   minimatch@3.1.5:
     dependencies:
-      brace-expansion: 5.0.8
+      brace-expansion: 5.0.8(patch_hash=32207fdf3684d40db4e46a24a0b1c8fcb8683d0517f57c7bf833a9b5e89f21f4)
 
   minimatch@9.0.9:
     dependencies:
-      brace-expansion: 5.0.8
+      brace-expansion: 5.0.8(patch_hash=32207fdf3684d40db4e46a24a0b1c8fcb8683d0517f57c7bf833a9b5e89f21f4)
 
   minimist@1.2.8: {}
 
