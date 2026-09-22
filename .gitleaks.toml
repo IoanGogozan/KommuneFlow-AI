@@ -1,0 +1,13 @@
+title = "KommuneFlow Gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "NestJS starter CircleCI badge placeholder in the original apps/api/README.md. Not a credential."
+condition = "AND"
+paths = ['''(^|/)apps/api/README\.md$''']
+regexes = ['''abc123def456''']
